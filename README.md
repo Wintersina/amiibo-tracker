@@ -61,5 +61,5 @@ This Django app allows you to track your personal Amiibo collection using a Goog
     ```
 <h2> Example: </h2>
 
-![img.png](img.png)
-![img_1.png](img_1.png)
+![img_2.png](img_2.png)
+![img_3.png](img_3.png)
