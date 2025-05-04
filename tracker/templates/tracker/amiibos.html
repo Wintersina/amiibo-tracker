@@ -73,11 +73,12 @@
         }
 
         .game-series-group {
-            border: 2px solid #666;
+            border: 2px solid var(--card-border);
             border-radius: 10px;
             margin-bottom: 2em;
             padding: 1em;
-            background: #fff;
+            background-color: var(--card-bg);
+            transition: background-color 0.3s ease, border-color 0.3s ease;
         }
 
         .game-series-header {
@@ -88,10 +89,66 @@
             font-weight: bold;
             margin-bottom: 1em;
         }
+
+        :root {
+            --bg: #f9f9f9;
+            --text: #000;
+            --card-bg: #fff;
+            --card-border: #ccc;
+            --collected-bg: #e0ffe0;
+            --button-bg: #007bff;
+            --button-hover: #0056b3;
+        }
+
+        body.dark {
+            --bg: #121212;
+            --text: #f0f0f0;
+            --card-bg: #1e1e1e;
+            --card-border: #333;
+            --collected-bg: #274e27;
+            --button-bg: #4e8cff;
+            --button-hover: #3466cc;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        .amiibo-card {
+            background-color: var(--card-bg);
+            border-color: var(--card-border);
+        }
+
+        .collected {
+            background-color: var(--collected-bg);
+        }
+
+        button {
+            background-color: var(--button-bg);
+        }
+
+        button:hover {
+            background-color: var(--button-hover);
+        }
+
+        .dark-toggle {
+            position: absolute;
+            top: 1em;
+            right: 1em;
+            background: transparent;
+            border: none;
+            font-size: 1.5em;
+            cursor: pointer;
+        }
+
     </style>
 
 </head>
 <body>
+<button id="darkModeToggle" class="dark-toggle">🌙</button>
+
 <h1>Amiibo Collection</h1>
 
 {% regroup amiibos by amiiboSeries as grouped_amiibos %}
@@ -151,6 +208,13 @@
         container.style.display = isOpen ? 'none' : 'block';
         button.textContent = isOpen ? '+' : '-';
     }
+
+    document.getElementById('darkModeToggle').addEventListener('click', () => {
+        document.body.classList.toggle('dark');
+        const toggle = document.getElementById('darkModeToggle');
+        toggle.textContent = document.body.classList.contains('dark') ? '☀️' : '🌙';
+    });
+
 </script>
 
 </body>
