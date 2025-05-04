@@ -24,8 +24,8 @@ def amiibo_list(request):
     rows = sheet.get_all_values()[1:]  # Skip header row
 
     collected_status = {row[0]: row[2] for row in rows}  # {ID: '1' or '0'}
-
-    amiibos = [amiibo for amiibo in amiibos if amiibo["type"] != "Card" and amiibo["type"] != "Band"]
+    ignore_types = ["Yarn", "Card", "Band"]
+    amiibos = [amiibo for amiibo in amiibos if amiibo["type"] not in ignore_types]
     seed_new_amiibo(amiibos)
     for amiibo in amiibos:
         amiibo_id =  amiibo["head"] + amiibo["gameSeries"] + amiibo["tail"]
