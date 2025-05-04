@@ -133,22 +133,49 @@
             background-color: var(--button-hover);
         }
 
-        .dark-toggle {
-            position: absolute;
-            top: 1em;
-            right: 1em;
-            background: transparent;
-            border: none;
-            font-size: 1.5em;
-            cursor: pointer;
-        }
+.top-controls {
+    position: relative;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    padding: 1em;
+    gap: 1em;
+    z-index: 10;
+}
+
+.filter-select {
+    padding: 0.4em 1em;
+    font-size: 1em;
+    border-radius: 8px;
+    background-color: var(--card-bg);
+    color: var(--text);
+    border: 1px solid var(--card-border);
+    cursor: pointer;
+    z-index: 1;
+}
+
+.dark-toggle {
+    font-size: 1.5em;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    z-index: 2;
+    color: var(--text);
+}
+
 
     </style>
 
 </head>
 <body>
-<button id="darkModeToggle" class="dark-toggle">🌙</button>
-
+<div class="top-controls">
+    <select id="filterSelect" class="filter-select">
+        <option value="all">Show All</option>
+        <option value="collected">Collected Only</option>
+        <option value="uncollected">Uncollected Only</option>
+    </select>
+    <button id="darkModeToggle" class="dark-toggle" aria-label="Toggle Dark Mode">🌙</button>
+</div>
 <h1>Amiibo Collection</h1>
 
 {% regroup amiibos by amiiboSeries as grouped_amiibos %}
@@ -213,6 +240,24 @@
         document.body.classList.toggle('dark');
         const toggle = document.getElementById('darkModeToggle');
         toggle.textContent = document.body.classList.contains('dark') ? '☀️' : '🌙';
+    });
+
+    document.getElementById('filterSelect').addEventListener('change', (e) => {
+        const value = e.target.value;
+        const cards = document.querySelectorAll('.amiibo-card');
+
+        cards.forEach(card => {
+            const isCollected = card.classList.contains('collected');
+            if (value === 'all') {
+                card.style.display = 'flex';
+            } else if (value === 'collected' && isCollected) {
+                card.style.display = 'flex';
+            } else if (value === 'uncollected' && !isCollected) {
+                card.style.display = 'flex';
+            } else {
+                card.style.display = 'none';
+            }
+        });
     });
 
 </script>
