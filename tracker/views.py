@@ -14,7 +14,6 @@ def get_sheet():
     sheet = client.open("AmiiboCollection").sheet1
     return sheet
 
-
 def fetch_amiibos():
     response = requests.get("https://amiiboapi.com/api/amiibo/")
     return response.json().get("amiibo", [])
