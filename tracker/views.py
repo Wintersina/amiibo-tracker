@@ -6,6 +6,7 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 import json
 
+
 def get_sheet():
     scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
     creds = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", scope)
@@ -13,9 +14,11 @@ def get_sheet():
     sheet = client.open("AmiiboCollection").sheet1
     return sheet
 
+
 def fetch_amiibos():
     response = requests.get("https://amiiboapi.com/api/amiibo/")
     return response.json().get("amiibo", [])
+
 
 def amiibo_list(request):
     amiibos = fetch_amiibos()
@@ -28,12 +31,13 @@ def amiibo_list(request):
     amiibos = [amiibo for amiibo in amiibos if amiibo["type"] not in ignore_types]
     seed_new_amiibo(amiibos)
     for amiibo in amiibos:
-        amiibo_id =  amiibo["head"] + amiibo["gameSeries"] + amiibo["tail"]
+        amiibo_id = amiibo["head"] + amiibo["gameSeries"] + amiibo["tail"]
         amiibo["collected"] = collected_status.get(amiibo_id) == "1"
 
     sorted_amiibos = sorted(amiibos, key=lambda x: (x["amiiboSeries"], x["name"]))
 
     return render(request, "tracker/amiibos.html", {"amiibos": sorted_amiibos})
+
 
 def seed_new_amiibo(amiibos: list[dict]):
     sheet = get_sheet()
@@ -50,6 +54,7 @@ def seed_new_amiibo(amiibos: list[dict]):
 
     if new_rows:
         sheet.append_rows(new_rows, value_input_option="USER_ENTERED")
+
 
 @csrf_exempt
 def toggle_collected(request):

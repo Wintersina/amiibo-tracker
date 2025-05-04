@@ -1,6 +1,8 @@
 # Amiibo Tracker
 
-This Django app allows you to track your personal Amiibo collection using a Google Sheet as a backend database. It fetches the latest Amiibo list from the [Amiibo API](https://amiiboapi.com/) and lets you mark which ones you've collected.
+This Django app allows you to track your personal Amiibo collection using a Google Sheet as a backend database. It
+fetches the latest Amiibo list from the [Amiibo API](https://amiiboapi.com/) and lets you mark which ones you've
+collected.
 
 ## Features
 
@@ -8,7 +10,7 @@ This Django app allows you to track your personal Amiibo collection using a Goog
 - Google Sheet as a personal backend database
 - Mark Amiibos as collected/uncollected with one click
 - Amiibo images included
-- This filters out, Card, Plush and others. 
+- This filters out, Card, Plush and others.
 
 ## Setup Instructions
 
@@ -46,7 +48,7 @@ This Django app allows you to track your personal Amiibo collection using a Goog
         "universe_domain": "googleapis
       }
       ```
-   
+
 4. **Create a Google Sheet**:
     - Name it `AmiiboCollection`
     - Add the header `Amiibo ID` in the first row
@@ -59,6 +61,7 @@ This Django app allows you to track your personal Amiibo collection using a Goog
     ```bash
     python manage.py runserver
     ```
+
 <h2> Example: </h2>
 
 ![img_2.png](img_2.png)
