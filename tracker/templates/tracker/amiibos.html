@@ -3,8 +3,20 @@
 <head>
     <title>Amiibo Tracker</title>
     <style>
+        body {
+            font-family: system-ui, sans-serif;
+            background-color: #f9f9f9;
+            margin: 0;
+            padding: 2em;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
         .amiibo-card {
-            border: 1px solid #ccc;
+            border: 1px solid #ddd;
+            border-radius: 12px;
             padding: 1em;
             margin: 1em;
             display: flex;
@@ -12,81 +24,134 @@
             align-items: center;
             justify-content: space-between;
             width: 150px;
-            height: 250px; /* fixed height */
+            height: 250px;
             text-align: center;
-            box-sizing: border-box;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+            background-color: white;
+            transition: transform 0.2s ease;
+        }
+
+        .amiibo-card:hover {
+            transform: scale(1.03);
         }
 
         .amiibo-card img {
             max-height: 100px;
             object-fit: contain;
+            margin-bottom: 0.5em;
         }
+
         .collected {
-            background-color: #d0f0d0;
+            background-color: #e0ffe0;
+            border-color: #9f9;
+        }
+
+        button {
+            padding: 0.5em 1em;
+            font-size: 0.9em;
+            background-color: #007bff;
+            border: none;
+            color: white;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        .toggle-btn {
+            font-size: 1.2em;
+            border: none;
+            margin-right: 0.5em;
+            vertical-align: middle;
+        }
+
+        .toggle-btn.rotate {
+            transform: rotate(90deg);
+        }
+
+        .game-series-group {
+            border: 2px solid #666;
+            border-radius: 10px;
+            margin-bottom: 2em;
+            padding: 1em;
+            background: #fff;
+        }
+
+        .game-series-header {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-bottom: 1em;
         }
     </style>
+
 </head>
 <body>
-    <h1>Amiibo Collection</h1>
+<h1>Amiibo Collection</h1>
 
-    {% regroup amiibos by amiiboSeries as grouped_amiibos %}
+{% regroup amiibos by amiiboSeries as grouped_amiibos %}
 
-    <div id="amiibo-list">
-        {% for group in grouped_amiibos %}
-            <div class="game-series-group" style="border: 2px solid #666; margin-bottom: 2em; padding: 1em;">
-                <h2 style="cursor: pointer;" onclick="toggleGroup(this)">
-                    <span class="toggle-symbol">−</span> {{ group.grouper }}
-                </h2>
-                <div class="amiibo-container">
-                    <div style="display: flex; flex-wrap: wrap;">
-                        {% for amiibo in group.list %}
-                            <div class="amiibo-card {% if amiibo.collected %}collected{% endif %}" data-id="{{ amiibo.head }}{{ amiibo.gameSeries }}{{ amiibo.tail }}">
-                                <img src="{{ amiibo.image }}" alt="{{ amiibo.name }}" width="100">
-                                <p>{{ amiibo.name }}</p>
-                                <button onclick="toggleCollected(this)">
-                                    {% if amiibo.collected %}Unmark{% else %}Collect{% endif %}
-                                </button>
-                            </div>
-                        {% endfor %}
-                    </div>
+<div id="amiibo-list">
+    {% for group in grouped_amiibos %}
+        <div class="game-series-group">
+            <div class="game-series-header" onclick="toggleGroup(this)">
+                <button class="toggle-btn">-</button>
+                {{ group.grouper }}
+            </div>
+            <div class="amiibo-container">
+                <div style="display: flex; flex-wrap: wrap;">
+                    {% for amiibo in group.list %}
+                        <div class="amiibo-card {% if amiibo.collected %}collected{% endif %}"
+                             data-id="{{ amiibo.head }}{{ amiibo.gameSeries }}{{ amiibo.tail }}">
+                            <img src="{{ amiibo.image }}" alt="{{ amiibo.name }}">
+                            <p>{{ amiibo.name }}</p>
+                            <button onclick="toggleCollected(this)">
+                                {% if amiibo.collected %}Unmark{% else %}Collect{% endif %}
+                            </button>
+                        </div>
+                    {% endfor %}
                 </div>
             </div>
-        {% endfor %}
-    </div>
+        </div>
 
-    <script>
-        async function toggleCollected(button) {
-            const card = button.parentElement;
-            const amiiboId = card.dataset.id;
-            const action = card.classList.contains('collected') ? 'uncollect' : 'collect';
+    {% endfor %}
+</div>
 
-            const response = await fetch('/toggle/', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': '{{ csrf_token }}'
-                },
-                body: JSON.stringify({ amiibo_id: amiiboId, action: action })
-            });
+<script>
+    async function toggleCollected(button) {
+        const card = button.parentElement;
+        const amiiboId = card.dataset.id;
+        const action = card.classList.contains('collected') ? 'uncollect' : 'collect';
 
-            if (response.ok) {
-                card.classList.toggle('collected');
-                button.textContent = action === 'collect' ? 'Unmark' : 'Collect';
-            }
+        const response = await fetch('/toggle/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({amiibo_id: amiiboId, action: action})
+        });
+
+        if (response.ok) {
+            card.classList.toggle('collected');
+            button.textContent = action === 'collect' ? 'Unmark' : 'Collect';
         }
+    }
 
-        function toggleGroup(header) {
-            const container = header.nextElementSibling;
-            const symbol = header.querySelector('.toggle-symbol');
-            if (container.style.display === 'none') {
-                container.style.display = 'block';
-                symbol.textContent = '−';
-            } else {
-                container.style.display = 'none';
-                symbol.textContent = '+';
-            }
-        }
-    </script>
+    function toggleGroup(header) {
+        const button = header.querySelector('.toggle-btn');
+        const container = header.nextElementSibling;
+
+        const isOpen = container.style.display !== 'none';
+        container.style.display = isOpen ? 'none' : 'block';
+        button.textContent = isOpen ? '+' : '-';
+    }
+</script>
 
 </body>
 </html>
