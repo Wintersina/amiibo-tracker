@@ -20,10 +20,20 @@ def fetch_amiibos():
 def amiibo_list(request):
     amiibos = fetch_amiibos()
     sheet = get_sheet()
-    collected_ids = sheet.col_values(1)[1:]
+
+    # Get all rows except the header
+    rows = sheet.get_all_values()[1:]  # Skip header row
+
+    # Create a dictionary for collected data: {amiibo_id: collected_status}
+    collected_status = {row[0]: row[2] for row in rows}  # {ID: '1' or '0'}
+
+    # Filter out 'Card' Amiibos and add collection status to them
+    amiibos = [amiibo for amiibo in amiibos if amiibo["type"] != "Card" and amiibo["type"] != "Band"]
+
     for amiibo in amiibos:
         amiibo_id = amiibo["head"] + amiibo["tail"]
-        amiibo["collected"] = amiibo_id in collected_ids
+        amiibo["collected"] = collected_status.get(amiibo_id) == "1"
+
     return render(request, "tracker/amiibos.html", {"amiibos": amiibos})
 
 @csrf_exempt

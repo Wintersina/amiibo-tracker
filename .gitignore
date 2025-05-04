@@ -1,0 +1,6 @@
+__pycache__/
+.env
+.idea
+.DS_Store
+credentials.json
+db.sqlite3
