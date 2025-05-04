@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Amiibo Tracker</title>
+    <style>
+        .amiibo-card {
+            border: 1px solid #ccc;
+            padding: 1em;
+            margin: 1em;
+            display: inline-block;
+            width: 150px;
+            text-align: center;
+        }
+        .collected {
+            background-color: #d0f0d0;
+        }
+    </style>
+</head>
+<body>
+    <h1>My Amiibo Collection</h1>
+    <div id="amiibo-list">
+        {% for amiibo in amiibos %}
+        <div class="amiibo-card {% if amiibo.collected %}collected{% endif %}" data-id="{{ amiibo.head }}{{ amiibo.tail }}">
+            <img src="{{ amiibo.image }}" alt="{{ amiibo.name }}" width="100">
+            <p>{{ amiibo.name }}</p>
+            <button onclick="toggleCollected(this)"> 
+                {% if amiibo.collected %}Unmark{% else %}Collect{% endif %}
+            </button>
+        </div>
+        {% endfor %}
+    </div>
+
+    <script>
+        async function toggleCollected(button) {
+            const card = button.parentElement;
+            const amiiboId = card.dataset.id;
+            const action = card.classList.contains('collected') ? 'uncollect' : 'collect';
+
+            const response = await fetch('/toggle/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({ amiibo_id: amiiboId, action: action })
+            });
+
+            if (response.ok) {
+                card.classList.toggle('collected');
+                button.textContent = action === 'collect' ? 'Unmark' : 'Collect';
+            }
+        }
+    </script>
+</body>
+</html>
