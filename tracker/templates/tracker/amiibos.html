@@ -20,7 +20,7 @@
     <h1>Amiibo Collection</h1>
     <div id="amiibo-list">
         {% for amiibo in amiibos %}
-        <div class="amiibo-card {% if amiibo.collected %}collected{% endif %}" data-id="{{ amiibo.head }}{{ amiibo.tail }}">
+        <div class="amiibo-card {% if amiibo.collected %}collected{% endif %}" data-id="{{ amiibo.head }}{{ amiibo.gameSeries }}{{ amiibo.tail }}">
             <img src="{{ amiibo.image }}" alt="{{ amiibo.name }}" width="100">
             <p>{{ amiibo.name }}</p>
             <button onclick="toggleCollected(this)">
