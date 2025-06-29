@@ -133,35 +133,48 @@
             background-color: var(--button-hover);
         }
 
-.top-controls {
-    position: relative;
-    display: flex;
-    justify-content: flex-end;
-    align-items: center;
-    padding: 1em;
-    gap: 1em;
-    z-index: 10;
-}
+        .top-controls {
+            position: sticky;
+            top: 0;
+            background-color: var(--bg);
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            padding: 1em;
+            gap: 1em;
+            z-index: 100;
+            border-bottom: 1px solid var(--card-border);
+        }
 
-.filter-select {
-    padding: 0.4em 1em;
-    font-size: 1em;
-    border-radius: 8px;
-    background-color: var(--card-bg);
-    color: var(--text);
-    border: 1px solid var(--card-border);
-    cursor: pointer;
-    z-index: 1;
-}
 
-.dark-toggle {
-    font-size: 1.5em;
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    z-index: 2;
-    color: var(--text);
-}
+        .filter-select {
+            padding: 0.4em 1em;
+            font-size: 1em;
+            border-radius: 8px;
+            background-color: var(--card-bg);
+            color: var(--text);
+            border: 1px solid var(--card-border);
+            cursor: pointer;
+            z-index: 1;
+        }
+
+        .dark-toggle {
+            font-size: 1.5em;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            z-index: 2;
+            color: var(--text);
+        }
+        .search-input {
+            padding: 0.4em 1em;
+            font-size: 1em;
+            border-radius: 8px;
+            background-color: var(--card-bg);
+            color: var(--text);
+            border: 1px solid var(--card-border);
+            outline: none;
+        }
 
 
     </style>
@@ -169,6 +182,7 @@
 </head>
 <body>
 <div class="top-controls">
+    <input id="searchInput" class="search-input" type="text" placeholder="Search Amiibo...">
     <select id="filterSelect" class="filter-select">
         <option value="all">Show All</option>
         <option value="collected">Collected Only</option>
@@ -176,6 +190,7 @@
     </select>
     <button id="darkModeToggle" class="dark-toggle" aria-label="Toggle Dark Mode">🌙</button>
 </div>
+
 <h1>Amiibo Collection</h1>
 
 {% regroup amiibos by amiiboSeries as grouped_amiibos %}
@@ -259,6 +274,18 @@
             }
         });
     });
+
+    document.getElementById('searchInput').addEventListener('input', () => {
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    const cards = document.querySelectorAll('.amiibo-card');
+
+    cards.forEach(card => {
+        const name = card.querySelector('p').textContent.toLowerCase();
+        const series = card.closest('.game-series-group').querySelector('.game-series-header').textContent.toLowerCase();
+        const matches = name.includes(searchTerm) || series.includes(searchTerm);
+        card.style.display = matches ? 'flex' : 'none';
+    });
+});
 
 </script>
 
