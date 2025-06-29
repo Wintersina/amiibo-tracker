@@ -4,7 +4,7 @@ from django.http import JsonResponse
 from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
 
-from tracker.service_domain import AmiiboService
+from tracker.service_domain import AmiiboService, GoogleSheetConfigManager
 
 
 @csrf_exempt
@@ -31,6 +31,8 @@ def toggle_collected(request):
 
 def amiibo_list(request):
     service = AmiiboService()
+    config = GoogleSheetConfigManager()
+    dark_mode = config.is_dark_mode()
 
     # Fetch all amiibos from external API
     amiibos = service.fetch_amiibos()
@@ -54,4 +56,26 @@ def amiibo_list(request):
     sorted_amiibos = sorted(amiibos, key=lambda x: (x["amiiboSeries"], x["name"]))
 
     # Render the template
-    return render(request, "tracker/amiibos.html", {"amiibos": sorted_amiibos})
+    return render(
+        request,
+        "tracker/amiibos.html",
+        {"amiibos": sorted_amiibos, "dark_mode": dark_mode},
+    )
+
+
+@csrf_exempt
+def toggle_dark_mode(request):
+    if request.method == "POST":
+
+        try:
+            data = json.loads(request.body)
+
+            enable_dark = data.get("dark_mode", True)
+
+            config = GoogleSheetConfigManager()
+            config.set_dark_mode(enable_dark)
+
+            return JsonResponse({"status": "success"})
+        except Exception as e:
+            return JsonResponse({"status": "error", "message": str(e)}, status=500)
+    return JsonResponse({"status": "invalid method"}, status=400)
