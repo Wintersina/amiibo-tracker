@@ -6,14 +6,21 @@ from oauth2client.service_account import ServiceAccountCredentials
 
 
 class AmiiboService:
-    def __init__(self, sheet_name="AmiiboCollection", credentials_file="credentials.json"):
+    def __init__(
+        self, sheet_name="AmiiboCollection", credentials_file="credentials.json"
+    ):
         self.sheet_name = sheet_name
         self.credentials_file = credentials_file
 
     @cached_property
     def sheet(self):
-        scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-        creds = ServiceAccountCredentials.from_json_keyfile_name(self.credentials_file, scope)
+        scope = [
+            "https://spreadsheets.google.com/feeds",
+            "https://www.googleapis.com/auth/drive",
+        ]
+        creds = ServiceAccountCredentials.from_json_keyfile_name(
+            self.credentials_file, scope
+        )
         client = gspread.authorize(creds)
         return client.open(self.sheet_name).sheet1
 

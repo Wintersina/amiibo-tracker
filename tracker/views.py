@@ -9,24 +9,25 @@ from tracker.service_domain import AmiiboService
 
 @csrf_exempt
 def toggle_collected(request):
-    if request.method == 'POST':
+    if request.method == "POST":
         try:
             data = json.loads(request.body)
-            amiibo_id = data['amiibo_id']
-            action = data['action']
+            amiibo_id = data["amiibo_id"]
+            action = data["action"]
 
             service = AmiiboService()
             success = service.toggle_collected(amiibo_id, action)
 
             if not success:
-                return JsonResponse({'status': 'not found'}, status=404)
+                return JsonResponse({"status": "not found"}, status=404)
 
-            return JsonResponse({'status': 'success'})
+            return JsonResponse({"status": "success"})
 
         except Exception as e:
-            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+            return JsonResponse({"status": "error", "message": str(e)}, status=500)
 
-    return JsonResponse({'status': 'invalid method'}, status=400)
+    return JsonResponse({"status": "invalid method"}, status=400)
+
 
 def amiibo_list(request):
     service = AmiiboService()
