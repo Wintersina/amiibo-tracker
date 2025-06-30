@@ -1,15 +1,14 @@
 import json
-import os
 
-from django.conf import settings
 from django.http import JsonResponse
 from django.shortcuts import redirect, render
 from django.views import View
 from django.views.decorators.csrf import csrf_exempt
 from google_auth_oauthlib.flow import Flow
 from googleapiclient.discovery import build
-from google.oauth2.credentials import Credentials
 
+from constants import OauthConstants
+from tracker.google_sheet_client_manager import GoogleSheetClientManager
 from tracker.service_domain import AmiiboService, GoogleSheetConfigManager
 
 
@@ -37,27 +36,20 @@ def toggle_collected(request):
 
 class MainView(View):
 
-    CLIENT_SECRETS = os.path.join(settings.BASE_DIR, "client_secret.json")
-    SCOPES = [
-        "https://www.googleapis.com/auth/spreadsheets",
-        "https://www.googleapis.com/auth/drive",
-    ]
-    REDIRECT_URI = "http://localhost:8000/oauth2callback/"
-
     def oauth_login(self, request):
         flow = Flow.from_client_secrets_file(
-            self.CLIENT_SECRETS, scopes=self.SCOPES, redirect_uri=self.REDIRECT_URI
+            self.CLIENT_SECRETS,
+            scopes=OauthConstants.SCOPES,
+            redirect_uri=OauthConstants.REDIRECT_URI,
         )
         auth_url, _ = flow.authorization_url(
             access_type="offline", include_granted_scopes="true"
         )
-        request.session["flow"] = flow.authorization_url  # store flow if needed
+        request.session["flow"] = flow.authorization_url
         return redirect(auth_url)
 
     def oauth2callback(self, request):
-        flow = Flow.from_client_secrets_file(
-            self.CLIENT_SECRETS, scopes=self.SCOPES, redirect_uri=self.REDIRECT_URI
-        )
+        flow = GoogleSheetClientManager().get_flow()
         flow.fetch_token(authorization_response=request.build_absolute_uri())
         creds = flow.credentials
         request.session["credentials"] = creds.to_json()
@@ -68,12 +60,11 @@ class MainView(View):
         if not creds_json:
             return redirect("oauth_login")
 
-        creds = Credentials.from_authorized_user_info(
-            json.loads(creds_json), self.SCOPES
+        google_sheet_client_manager = GoogleSheetClientManager(creds_json=creds_json)
+        service = AmiiboService(google_sheet_client_manager=google_sheet_client_manager)
+        config = GoogleSheetConfigManager(
+            google_sheet_client_manager=google_sheet_client_manager
         )
-
-        service = AmiiboService()
-        config = GoogleSheetConfigManager()
         dark_mode = config.is_dark_mode()
 
         # Fetch all amiibos from external API
