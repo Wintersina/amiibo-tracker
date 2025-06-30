@@ -81,6 +81,8 @@ Example format of `credentials.json`:
 ### 5. Run the Django development server
 
 ```bash
+# for local run
+export OAUTHLIB_INSECURE_TRANSPORT=1
 python manage.py runserver
 ```
 

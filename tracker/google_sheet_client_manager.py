@@ -6,7 +6,8 @@ import gspread
 from django.conf import settings
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import Flow
-from googleapiclient.discovery import build
+
+# from googleapiclient.discovery import build
 from oauth2client.service_account import ServiceAccountCredentials
 
 from constants import OauthConstants
@@ -63,9 +64,10 @@ class GoogleSheetClientManager:
         )
         return creds
 
-    def get_flow(self) -> Flow:
+    @staticmethod
+    def get_flow() -> Flow:
         flow = Flow.from_client_secrets_file(
-            self.CLIENT_SECRETS,
+            GoogleSheetClientManager.CLIENT_SECRETS,
             scopes=OauthConstants.SCOPES,
             redirect_uri=OauthConstants.REDIRECT_URI,
         )

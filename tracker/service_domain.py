@@ -1,7 +1,6 @@
 from functools import cached_property
 
 import requests
-from googleapiclient.discovery import build
 
 from tracker.google_sheet_client_manager import GoogleSheetClientManager
 
