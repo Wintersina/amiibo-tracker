@@ -138,3 +138,9 @@ def toggle_dark_mode(request):
         except Exception as e:
             return JsonResponse({"status": "error", "message": str(e)}, status=500)
     return JsonResponse({"status": "invalid method"}, status=400)
+
+
+def index(request):
+    if request.user.is_authenticated:
+        return redirect("amiibo_list")
+    return render(request, "tracker/index.html")
