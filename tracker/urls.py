@@ -8,4 +8,5 @@ urlpatterns = [
     path("toggle-dark-mode/", views.toggle_dark_mode, name="toggle_dark_mode"),
     path("oauth-login/", views.oauth_login, name="oauth_login"),
     path("oauth2callback/", views.oauth2callback, name="oauth2callback"),
+    path("logout/", views.logout_view, name="logout"),
 ]

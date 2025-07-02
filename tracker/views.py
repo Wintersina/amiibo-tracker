@@ -8,6 +8,7 @@ from google_auth_oauthlib.flow import Flow
 from constants import OauthConstants
 from tracker.google_sheet_client_manager import GoogleSheetClientManager
 from tracker.service_domain import AmiiboService, GoogleSheetConfigManager
+from django.contrib.auth import logout as django_logout
 
 
 @csrf_exempt
@@ -57,26 +58,53 @@ def oauth_login(request):
     return redirect(auth_url)
 
 
+import requests
+
+
 def oauth2callback(request):
     state = request.session.get("oauth_state")
+
     flow = Flow.from_client_secrets_file(
         GoogleSheetClientManager.CLIENT_SECRETS,
         scopes=OauthConstants.SCOPES,
         redirect_uri=OauthConstants.REDIRECT_URI,
-        state=state,  # restore the state
+        state=state,
     )
     flow.fetch_token(authorization_response=request.build_absolute_uri())
     creds = flow.credentials
-    print("Access Token:", creds.token)
-    print("Refresh Token:", creds.refresh_token)
+
     request.session["credentials"] = creds.to_json()
+
+    user_info_response = requests.get(
+        "https://www.googleapis.com/oauth2/v2/userinfo",
+        headers={"Authorization": f"Bearer {creds.token}"},
+    )
+
+    if user_info_response.status_code == 200:
+        user_info = user_info_response.json()
+
+        request.session["user_name"] = user_info.get("name", "User")
+        request.session["email"] = user_info.get("email", "")
+        request.session["picture"] = user_info.get("picture", "")
+    else:
+        # fallback
+        request.session["user_name"] = "User"
+
     return redirect("amiibo_list")
+
+
+def logout_view(request):
+    request.session.flush()
+    django_logout(request)  # Optional: Django logout if using auth system
+    return redirect("index")
 
 
 def amiibo_list(request):
     creds_json = request.session.get("credentials")
     if not creds_json:
         return redirect("oauth_login")
+
+    user_name = request.session.get("user_name", "User")
 
     google_sheet_client_manager = GoogleSheetClientManager(creds_json=creds_json)
     service = AmiiboService(google_sheet_client_manager=google_sheet_client_manager)
@@ -110,7 +138,7 @@ def amiibo_list(request):
     return render(
         request,
         "tracker/amiibos.html",
-        {"amiibos": sorted_amiibos, "dark_mode": dark_mode},
+        {"amiibos": sorted_amiibos, "dark_mode": dark_mode, "user_name": user_name},
     )
 
 
