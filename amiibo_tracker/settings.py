@@ -10,6 +10,9 @@ STATICFILES_DIRS = [
     os.path.join(BASE_DIR, "static"),
 ]
 
+# Add this line
+STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
+
 SECRET_KEY = "your-secret-key"
 DEBUG = True
 ALLOWED_HOSTS = []
