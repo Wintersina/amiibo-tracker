@@ -1,3 +1,9 @@
+
+
+# windows:
+Get-ExecutionPolicy -List
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+
 gcloud auth activate-service-account --key-file=credentials.json
 gcloud config set project amiibo-tracker-458804
 gcloud builds submit --tag us-central1-docker.pkg.dev/amiibo-tracker-458804/amiibo-tracker/amiibo-tracker

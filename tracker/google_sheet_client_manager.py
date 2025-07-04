@@ -1,33 +1,24 @@
-import json
-import os
 from functools import cached_property
 
+import google.auth  # Import google.auth
 import gspread
-from django.conf import settings
 from google.oauth2.credentials import Credentials
-from google_auth_oauthlib.flow import Flow
-
-# from googleapiclient.discovery import build
-from oauth2client.service_account import ServiceAccountCredentials
 
 from constants import OauthConstants
 
 
 class GoogleSheetClientManager:
-    CLIENT_SECRETS = os.path.join(settings.BASE_DIR, "client_secret.json")
 
     def __init__(
         self,
         sheet_name="AmiiboCollection",
         work_sheet_amiibo_manager="AmiiboCollection",
         work_sheet_config_manager="AmiiboCollectionConfigManager",
-        credentials_file="credentials.json",
         creds_json=None,
     ):
         self.sheet_name = sheet_name
         self.work_sheet_amiibo_manager = work_sheet_amiibo_manager
         self.work_sheet_config_manager = work_sheet_config_manager
-        self.credentials_file = credentials_file
         self.creds_json = creds_json
 
         try:
@@ -58,37 +49,32 @@ class GoogleSheetClientManager:
 
         print(f"Successfully initialized with spreadsheet '{self.spreadsheet.title}'")
 
-    def get_creds(self, creds_json) -> Credentials:
-        creds = Credentials.from_authorized_user_info(creds_json, OauthConstants.SCOPES)
-        return creds
-
     @staticmethod
-    def get_flow() -> Flow:
-        flow = Flow.from_client_secrets_file(
-            GoogleSheetClientManager.CLIENT_SECRETS,
-            scopes=OauthConstants.SCOPES,
-            redirect_uri=OauthConstants.REDIRECT_URI,
+    def get_flow():
+        # This method is for OAuth 2.0 (user authentication flow), which is not what you want for server-to-server
+        # authentication with a service account. You can likely remove it or mark it as deprecated.
+        raise NotImplementedError(
+            "This method is for local user-based OAuth flow and not for cloud deployment."
         )
-        return flow
 
     @cached_property
     def client(self):
-        if oauth_creds := self.get_creds(self.creds_json):
-            return gspread.authorize(oauth_creds)
-        else:
 
-            creds = ServiceAccountCredentials.from_json_keyfile_name(
-                self.credentials_file, OauthConstants.SCOPES
+        if self.creds_json:
+            creds = Credentials.from_authorized_user_info(
+                self.creds_json, OauthConstants.SCOPES
             )
             client = gspread.authorize(creds)
-            return client
+        else:
+
+            credentials, project = google.auth.default(scopes=OauthConstants.SCOPES)
+            client = gspread.authorize(credentials)
+        return client
 
     def get_or_create_worksheet_by_name(self, worksheet_name):
-
         try:
             sheet = self.spreadsheet.worksheet(worksheet_name)
         except gspread.exceptions.WorksheetNotFound:
-
             sheet = self.spreadsheet.add_worksheet(
                 title=worksheet_name, rows=500, cols=3
             )
