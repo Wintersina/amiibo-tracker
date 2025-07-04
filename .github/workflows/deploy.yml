@@ -21,9 +21,21 @@ jobs:
           service_account_key: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
           export_default_credentials: true
 
-      - name: Configure Docker for Artifact Registry
+      # --- Critical Debugging Step (Keep this!) ---
+      - name: Verify Gcloud Authentication (Debugging)
         run: |
-          gcloud auth configure-docker us-central1-docker.pkg.dev
+          echo "--- Gcloud active account ---"
+          gcloud auth list
+          echo "--- Gcloud configuration ---"
+          gcloud config list
+          echo "--- End Gcloud Debugging Info ---"
+      # --- End Debugging Step ---
+
+      - name: Direct Docker Login to Artifact Registry
+        run: |
+          # The 'sudo' might not be strictly necessary on GitHub Actions runners,
+          # but is often included for Docker commands. Try without it first if issues.
+          gcloud auth print-access-token | docker login -u oauth2accesstoken --password-stdin https://us-central1-docker.pkg.dev
 
       - name: Build and Push Docker Image to Artifact Registry
         run: |
