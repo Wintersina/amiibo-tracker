@@ -12,9 +12,9 @@ STATICFILES_DIRS = [
 CLIENT_SECRET_SECRET_NAME = os.environ.get(
     "CLIENT_SECRET_SECRET_NAME", "django-oauth-client-secret"
 )
-GCP_PROJECT_ID = os.environ.get("GCP_PROJECT_ID", None)
+GCP_PROJECT_ID = os.environ.get("GCP_PROJECT_ID", "amiibo-tracker-45880")
 
-# Add this line
+
 STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 
 SECRET_KEY = "your-secret-key"
@@ -34,6 +34,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "tracker",
+    "storages",
 ]
 
 MIDDLEWARE = [
@@ -73,7 +74,6 @@ DATABASES = {
     }
 }
 
-STATIC_URL = "/static/"
 
 CACHES = {
     "default": {
@@ -81,3 +81,15 @@ CACHES = {
         "LOCATION": "unique-sheets-api-cache",
     }
 }
+
+
+GS_BUCKET_NAME = "amiibo-tracker-458804_cloudbuild"
+STATIC_URL = f"https://storage.googleapis.com/{GS_BUCKET_NAME}/static/"
+STATIC_ROOT = (
+    BASE_DIR / "staticfiles_collected"
+)  # This directory will be used by collectstatic locally/in Docker build
+
+# Use GCS for static files storage
+DEFAULT_FILE_STORAGE = "storages.backends.gcloud.GoogleCloudStorage"
+STATICFILES_STORAGE = "storages.backends.gcloud.GoogleCloudStorage"
+GS_DEFAULT_ACL = "publicRead"  # Make files publicly readable

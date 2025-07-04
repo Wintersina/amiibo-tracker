@@ -1,14 +1,12 @@
-# Start from official Python image
 FROM python:3.10-slim
 
-# Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
-# Install dependencies
 RUN apt-get update \
     && apt-get install -y build-essential libpq-dev curl \
-    && apt-get clean
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 
 WORKDIR /app
@@ -26,4 +24,4 @@ RUN python manage.py collectstatic --noinput
 EXPOSE 8080
 
 
-CMD ["gunicorn", "amiibo_tracker.wsgi:application", "--bind", "0.0.0.0:8080"]
+CMD ["/bin/bash", "-c", "python manage.py migrate --noinput && exec gunicorn --bind :$PORT amiibo_tracker.wsgi:application"]

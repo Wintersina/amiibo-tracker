@@ -6,4 +6,6 @@ class OauthConstants:
         "https://www.googleapis.com/auth/drive",
         "openid",
     ]
-    REDIRECT_URI = "http://localhost:8000/oauth2callback/"
+    REDIRECT_URI = (
+        "https://amiibo-tracker-106546309168.us-central1.run.app/oauth2callback/"
+    )
