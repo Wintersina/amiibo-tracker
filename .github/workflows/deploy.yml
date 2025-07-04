@@ -27,13 +27,13 @@ jobs:
 
       - name: Build and Push Docker Image to Artifact Registry
         run: |
-          IMAGE=us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/amiibo-tracker/amiibo-tracker
+          IMAGE=us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/amiibo-tracker
           docker build -t $IMAGE .
           docker push $IMAGE
 
       - name: Deploy to Cloud Run
         run: |
-          IMAGE=us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/amiibo-tracker/amiibo-tracker
+          IMAGE=us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/amiibo-tracker
           gcloud run deploy amiibo-tracker \
             --image $IMAGE \
             --platform managed \
