@@ -59,9 +59,7 @@ class GoogleSheetClientManager:
         print(f"Successfully initialized with spreadsheet '{self.spreadsheet.title}'")
 
     def get_creds(self, creds_json) -> Credentials:
-        creds = Credentials.from_authorized_user_info(
-            json.loads(creds_json), OauthConstants.SCOPES
-        )
+        creds = Credentials.from_authorized_user_info(creds_json, OauthConstants.SCOPES)
         return creds
 
     @staticmethod

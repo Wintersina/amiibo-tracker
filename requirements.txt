@@ -36,3 +36,10 @@ typing_extensions==4.14.0
 tzdata==2025.2
 uritemplate==4.2.0
 urllib3==2.5.0
+Django>=4.2
+gunicorn
+gspread
+oauth2client
+google-auth
+google-auth-oauthlib
+google-api-python-client

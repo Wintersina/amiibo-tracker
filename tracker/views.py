@@ -1,4 +1,5 @@
 import json
+from collections import defaultdict
 
 import googleapiclient
 from django.http import JsonResponse, HttpResponseBadRequest
@@ -145,14 +146,35 @@ def amiibo_list(request):
         amiibo_id = amiibo["head"] + amiibo["gameSeries"] + amiibo["tail"]
         amiibo["collected"] = collected_status.get(amiibo_id) == "1"
 
-    # Sort for nicer UI grouping
     sorted_amiibos = sorted(amiibos, key=lambda x: (x["amiiboSeries"], x["name"]))
 
+    grouped_amiibos = defaultdict(list)
+    for amiibo in sorted_amiibos:
+        grouped_amiibos[amiibo["amiiboSeries"]].append(amiibo)
+
+    enriched_groups = []
+    for series, amiibos in grouped_amiibos.items():
+        total = len(amiibos)
+        collected = sum(1 for a in amiibos if a["collected"])
+        enriched_groups.append(
+            {
+                "series": series,
+                "list": amiibos,
+                "collected_count": collected,
+                "total_count": total,
+            }
+        )
+    print(enriched_groups)
     # Render the template
     return render(
         request,
         "tracker/amiibos.html",
-        {"amiibos": sorted_amiibos, "dark_mode": dark_mode, "user_name": user_name},
+        {
+            "amiibos": sorted_amiibos,
+            "dark_mode": dark_mode,
+            "user_name": user_name,
+            "grouped_amiibos": enriched_groups,
+        },
     )
 
 

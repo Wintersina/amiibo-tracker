@@ -175,17 +175,22 @@
             border: 1px solid var(--card-border);
             outline: none;
         }
-
+        .group-count {
+            font-size: 0.9em;
+            color: var(--text);
+            margin-left: 0.5em;
+            font-weight: normal;
+        }
 
     </style>
-
 </head>
 <body class="{% if dark_mode %}dark{% endif %}">
 <div class="top-controls">
     <div style="margin-right: auto; font-weight: bold;">
-    Welcome, {{ user_name }} !
-
-                </div>
+        Welcome, {{ user_name }}.
+        <br>
+        <span id="collectionTotal"></span>
+    </div>
     <input id="searchInput" class="search-input" type="text" placeholder="Search Amiibo...">
     <select id="filterSelect" class="filter-select">
         <option value="all">Show All</option>
@@ -193,22 +198,19 @@
         <option value="uncollected">Uncollected Only</option>
     </select>
     <button id="darkModeToggle" class="dark-toggle" aria-label="Toggle Dark Mode">🌙</button>
-          <a href="{% url 'logout' %}" style="text-decoration: none;">
+    <a href="{% url 'logout' %}" style="text-decoration: none;">
         <button class="dark-toggle" aria-label="Logout"> Logout</button>
     </a>
-
 </div>
 
 <h1>Amiibo Collection</h1>
-
-{% regroup amiibos by amiiboSeries as grouped_amiibos %}
 
 <div id="amiibo-list">
     {% for group in grouped_amiibos %}
         <div class="game-series-group">
             <div class="game-series-header" onclick="toggleGroup(this)">
                 <button class="toggle-btn">-</button>
-                {{ group.grouper }}
+                {{ group.series }} <span class="group-count">({{ group.collected_count }} / {{ group.total_count }})</span>
             </div>
             <div class="amiibo-container">
                 <div style="display: flex; flex-wrap: wrap;">
@@ -225,7 +227,6 @@
                 </div>
             </div>
         </div>
-
     {% endfor %}
 </div>
 
@@ -247,6 +248,7 @@
         if (response.ok) {
             card.classList.toggle('collected');
             button.textContent = action === 'collect' ? 'Unmark' : 'Collect';
+            updateCollectedCount();
         }
     }
 
@@ -259,53 +261,59 @@
         button.textContent = isOpen ? '+' : '-';
     }
 
+    document.getElementById('filterSelect').addEventListener('change', filterAndSearch);
+    document.getElementById('searchInput').addEventListener('input', filterAndSearch);
 
+    function filterAndSearch() {
+        const value = document.getElementById('filterSelect').value;
+        const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+        const groups = document.querySelectorAll('.game-series-group');
 
-    document.getElementById('filterSelect').addEventListener('change', (e) => {
-        const value = e.target.value;
-        const cards = document.querySelectorAll('.amiibo-card');
+        groups.forEach(group => {
+            const cards = group.querySelectorAll('.amiibo-card');
+            let visibleCount = 0;
 
-        cards.forEach(card => {
-            const isCollected = card.classList.contains('collected');
-            if (value === 'all') {
-                card.style.display = 'flex';
-            } else if (value === 'collected' && isCollected) {
-                card.style.display = 'flex';
-            } else if (value === 'uncollected' && !isCollected) {
-                card.style.display = 'flex';
-            } else {
-                card.style.display = 'none';
-            }
+            cards.forEach(card => {
+                const isCollected = card.classList.contains('collected');
+                const name = card.querySelector('p').textContent.toLowerCase();
+                const matchesSearch = name.includes(searchTerm);
+                const matchesFilter =
+                    value === 'all' ||
+                    (value === 'collected' && isCollected) ||
+                    (value === 'uncollected' && !isCollected);
+
+                const shouldDisplay = matchesSearch && matchesFilter;
+                card.style.display = shouldDisplay ? 'flex' : 'none';
+                if (shouldDisplay) visibleCount++;
+            });
+
+            group.style.display = visibleCount > 0 ? 'block' : 'none';
+        });
+
+        updateCollectedCount();
+    }
+
+    function updateCollectedCount() {
+        const collected = document.querySelectorAll('.amiibo-card.collected');
+        document.getElementById('collectionTotal').textContent = `Collected: ${collected.length}`;
+    }
+
+    document.getElementById('darkModeToggle').addEventListener('click', async () => {
+        const body = document.body;
+        const isDark = body.classList.toggle('dark');
+        document.getElementById('darkModeToggle').textContent = isDark ? '☀️' : '🌙';
+
+        await fetch('/toggle-dark-mode/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({ dark_mode: isDark })
         });
     });
 
-    document.getElementById('searchInput').addEventListener('input', () => {
-    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-    const cards = document.querySelectorAll('.amiibo-card');
-
-    cards.forEach(card => {
-        const name = card.querySelector('p').textContent.toLowerCase();
-        const series = card.closest('.game-series-group').querySelector('.game-series-header').textContent.toLowerCase();
-        const matches = name.includes(searchTerm) || series.includes(searchTerm);
-        card.style.display = matches ? 'flex' : 'none';
-    });
-});
-document.getElementById('darkModeToggle').addEventListener('click', async () => {
-    const body = document.body;
-    const isDark = body.classList.toggle('dark');
-    document.getElementById('darkModeToggle').textContent = isDark ? '☀️' : '🌙';
-
-    // Persist the preference
-    await fetch('/toggle-dark-mode/', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': '{{ csrf_token }}'
-        },
-        body: JSON.stringify({ dark_mode: isDark })
-    });
-});
-
+    window.addEventListener('DOMContentLoaded', updateCollectedCount);
 </script>
 
 </body>
