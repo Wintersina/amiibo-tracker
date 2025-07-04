@@ -21,18 +21,21 @@ jobs:
           service_account_key: ${{ secrets.GCP_SA_KEY }}
           export_default_credentials: true
 
-      - name: Authenticate Docker with Google Cloud
-        run: gcloud auth configure-docker
-
-      - name: Build and Push Docker Image
+      - name: Configure Docker for Artifact Registry
         run: |
-          docker build -t gcr.io/${{ secrets.GCP_PROJECT_ID }}/amiibo-tracker .
-          docker push gcr.io/${{ secrets.GCP_PROJECT_ID }}/amiibo-tracker
+          gcloud auth configure-docker us-central1-docker.pkg.dev
+
+      - name: Build and Push Docker Image to Artifact Registry
+        run: |
+          IMAGE=us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/amiibo-tracker/amiibo-tracker
+          docker build -t $IMAGE .
+          docker push $IMAGE
 
       - name: Deploy to Cloud Run
         run: |
+          IMAGE=us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/amiibo-tracker/amiibo-tracker
           gcloud run deploy amiibo-tracker \
-            --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/amiibo-tracker \
+            --image $IMAGE \
             --platform managed \
             --region us-central1 \
             --allow-unauthenticated
