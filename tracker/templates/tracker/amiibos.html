@@ -182,6 +182,10 @@
 </head>
 <body class="{% if dark_mode %}dark{% endif %}">
 <div class="top-controls">
+    <div style="margin-right: auto; font-weight: bold;">
+    Welcome, {{ user_name }} !
+
+                </div>
     <input id="searchInput" class="search-input" type="text" placeholder="Search Amiibo...">
     <select id="filterSelect" class="filter-select">
         <option value="all">Show All</option>
@@ -189,6 +193,10 @@
         <option value="uncollected">Uncollected Only</option>
     </select>
     <button id="darkModeToggle" class="dark-toggle" aria-label="Toggle Dark Mode">🌙</button>
+          <a href="{% url 'logout' %}" style="text-decoration: none;">
+        <button class="dark-toggle" aria-label="Logout"> Logout</button>
+    </a>
+
 </div>
 
 <h1>Amiibo Collection</h1>
