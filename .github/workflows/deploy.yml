@@ -14,9 +14,13 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v3
 
-      - name: Configure Docker for Artifact Registry
+      - name: Print the thing
         run: |
           echo  ${{ secrets.GCP_PROJECT_ID }}
+
+      - name: Print the thing 2
+        run: |
+          echo "thing 2"
 
 #      - name: Set up Google Cloud SDK
 #        uses: google-github-actions/setup-gcloud@v1
