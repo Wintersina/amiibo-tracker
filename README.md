@@ -82,7 +82,13 @@ Example format of `credentials.json`:
 
 ```bash
 # for local run
-export OAUTHLIB_INSECURE_TRANSPORT=1
+python manage.py migrate
+export OAUTHLIB_INSECURE_TRANSPORT=1 # for mac 
+# set OAUTHLIB_INSECURE_TRANSPORT=1 for windows 
+# $env:OAUTHLIB_INSECURE_TRANSPORT = "1"
+
+
+
 python manage.py runserver
 ```
 
