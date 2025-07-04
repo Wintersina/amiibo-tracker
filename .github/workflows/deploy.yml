@@ -21,9 +21,27 @@ jobs:
           service_account_key: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
           export_default_credentials: true
 
+      - name: Verify Gcloud Authentication (Debugging)
+        run: |
+          echo "--- Gcloud active account ---"
+          gcloud auth list
+          echo "--- Gcloud configuration ---"
+          gcloud config list
+          echo "--- End Gcloud Debugging Info ---"
+
       - name: Configure Docker for Artifact Registry
         run: |
-          gcloud auth configure-docker us-central1-docker.pkg.dev
+          echo "--- Running gcloud auth configure-docker ---"
+          gcloud auth configure-docker us-central1-docker.pkg.dev || { echo "gcloud auth configure-docker failed!"; exit 1; }
+          echo "--- gcloud auth configure-docker completed ---"
+
+      - name: Verify Docker Config (Debugging)
+        run: |
+          echo "--- Docker config.json ---"
+          cat ~/.docker/config.json || { echo "Could not read ~/.docker/config.json"; exit 1; }
+          echo "--- Check Docker credential helper ---"
+          docker info | grep "Credential Helper" || { echo "Credential Helper not found in docker info"; exit 1; }
+          echo "--- End Docker Debugging Info ---"
 
       - name: Build and Push Docker Image to Artifact Registry
         run: |
