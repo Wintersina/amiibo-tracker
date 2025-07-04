@@ -1,7 +1,9 @@
 import json
 
-from django.http import JsonResponse
+import googleapiclient
+from django.http import JsonResponse, HttpResponseBadRequest
 from django.shortcuts import redirect, render
+from django.urls import reverse
 from django.views.decorators.csrf import csrf_exempt
 from google_auth_oauthlib.flow import Flow
 
@@ -9,6 +11,8 @@ from constants import OauthConstants
 from tracker.google_sheet_client_manager import GoogleSheetClientManager
 from tracker.service_domain import AmiiboService, GoogleSheetConfigManager
 from django.contrib.auth import logout as django_logout
+import requests
+from googleapiclient.discovery import build
 
 
 @csrf_exempt
@@ -47,48 +51,58 @@ def oauth_login(request):
         scopes=OauthConstants.SCOPES,
         redirect_uri=OauthConstants.REDIRECT_URI,
     )
-    auth_url, _ = flow.authorization_url(
+    auth_url, state = flow.authorization_url(
         access_type="offline",
         include_granted_scopes="true",
         prompt="consent",
     )
 
-    request.session["oauth_state"] = _
+    request.session["oauth_state"] = state
 
     return redirect(auth_url)
 
 
-import requests
-
-
 def oauth2callback(request):
-    state = request.session.get("oauth_state")
+    def credentials_to_dict(creds):
+        return {
+            "token": creds.token,
+            "refresh_token": creds.refresh_token,
+            "token_uri": creds.token_uri,
+            "client_id": creds.client_id,
+            "client_secret": creds.client_secret,
+            "scopes": creds.scopes,
+        }
 
     flow = Flow.from_client_secrets_file(
-        GoogleSheetClientManager.CLIENT_SECRETS,
-        scopes=OauthConstants.SCOPES,
-        redirect_uri=OauthConstants.REDIRECT_URI,
-        state=state,
+        "client_secret.json",
+        scopes=[
+            "https://www.googleapis.com/auth/userinfo.profile",
+            "https://www.googleapis.com/auth/userinfo.email",
+            "openid",
+            "https://www.googleapis.com/auth/spreadsheets",
+            "https://www.googleapis.com/auth/drive",
+        ],
+        redirect_uri=request.build_absolute_uri(reverse("oauth2callback")),
     )
+
+    state = request.session.pop("state", None)
+    # if state != request.GET.get('state'):
+    #     return HttpResponseBadRequest("Invalid state parameter")
+    print(state)
     flow.fetch_token(authorization_response=request.build_absolute_uri())
-    creds = flow.credentials
 
-    request.session["credentials"] = creds.to_json()
+    credentials = flow.credentials
 
-    user_info_response = requests.get(
-        "https://www.googleapis.com/oauth2/v2/userinfo",
-        headers={"Authorization": f"Bearer {creds.token}"},
+    request.session["credentials"] = credentials_to_dict(credentials)
+
+    user_service = googleapiclient.discovery.build(
+        "oauth2", "v2", credentials=credentials
     )
+    user_info = user_service.userinfo().get().execute()
 
-    if user_info_response.status_code == 200:
-        user_info = user_info_response.json()
-
-        request.session["user_name"] = user_info.get("name", "User")
-        request.session["email"] = user_info.get("email", "")
-        request.session["picture"] = user_info.get("picture", "")
-    else:
-        # fallback
-        request.session["user_name"] = "User"
+    # Store in session
+    request.session["user_name"] = user_info.get("name")
+    request.session["user_email"] = user_info.get("email")
 
     return redirect("amiibo_list")
 
