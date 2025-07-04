@@ -21,27 +21,21 @@ jobs:
           service_account_key: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
           export_default_credentials: true
 
-      - name: Debug Gcloud Credential Helper Path and Execution
-        run: |
-          echo "--- PATH environment variable ---"
-          echo $PATH
-          echo "--- Locate docker-credential-gcloud ---"
-          # This command will tell us if the helper is found in PATH
-          which docker-credential-gcloud || { echo "ERROR: docker-credential-gcloud not found in PATH! This is likely the issue."; exit 1; }
-
-          echo "--- Check permissions of docker-credential-gcloud ---"
-          # Check executable permissions
-          ls -l "$(which docker-credential-gcloud)" || true
-
-          echo "--- Test docker-credential-gcloud directly ---"
-          # Attempt to get a token directly using the helper.
-          # This should output a JSON object containing an "AccessToken" or "Secret".
-          # If it fails, it will give an error.
-          echo "{\"Hostname\":\"us-central1-docker.pkg.dev\"}" | docker-credential-gcloud get || { echo "ERROR: docker-credential-gcloud failed to get a token directly."; exit 1; }
-
-          echo "--- End Debugging Info for Credential Helper ---"
-
       - name: Configure Docker for Artifact Registry
         run: |
-          # ... (your existing gcloud auth configure-docker command)
           gcloud auth configure-docker us-central1-docker.pkg.dev
+
+      - name: Build and Push Docker Image to Artifact Registry
+        run: |
+          IMAGE=us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/amiibo-tracker
+          docker build -t $IMAGE .
+          docker push $IMAGE
+
+      - name: Deploy to Cloud Run
+        run: |
+          IMAGE=us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/amiibo-tracker
+          gcloud run deploy amiibo-tracker \
+            --image $IMAGE \
+            --platform managed \
+            --region us-central1 \
+            --allow-unauthenticated
