@@ -15,7 +15,7 @@ STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 
 SECRET_KEY = "your-secret-key"
 DEBUG = True
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["amiibo-tracker-106546309168.us-central1.run.app"]
 
 INSTALLED_APPS = [
     "django.contrib.admin",
