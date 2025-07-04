@@ -3,19 +3,28 @@ import os
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
 STATIC_URL = "/static/"
 
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, "static"),
 ]
 
+CLIENT_SECRET_SECRET_NAME = os.environ.get(
+    "CLIENT_SECRET_SECRET_NAME", "django-oauth-client-secret"
+)
+GCP_PROJECT_ID = os.environ.get("GCP_PROJECT_ID", None)
+
 # Add this line
 STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 
 SECRET_KEY = "your-secret-key"
 DEBUG = True
-ALLOWED_HOSTS = ["amiibo-tracker-106546309168.us-central1.run.app"]
+ALLOWED_HOSTS = [
+    "amiibo-tracker-106546309168.us-central1.run.app",
+    "http://127.0.0.1",
+    "127.0.0.1",
+    "localhost",
+]
 
 INSTALLED_APPS = [
     "django.contrib.admin",

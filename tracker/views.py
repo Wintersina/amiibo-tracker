@@ -2,18 +2,16 @@ import json
 from collections import defaultdict
 
 import googleapiclient
+from django.contrib.auth import logout as django_logout
 from django.http import JsonResponse, HttpResponseBadRequest
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.views.decorators.csrf import csrf_exempt
-from google_auth_oauthlib.flow import Flow
+from googleapiclient.discovery import build
 
 from constants import OauthConstants
 from tracker.google_sheet_client_manager import GoogleSheetClientManager
 from tracker.service_domain import AmiiboService, GoogleSheetConfigManager
-from django.contrib.auth import logout as django_logout
-import requests
-from googleapiclient.discovery import build
 
 
 @csrf_exempt
@@ -21,8 +19,12 @@ def toggle_collected(request):
     if request.method == "POST":
         creds_json = request.session.get("credentials")
         if not creds_json:
-            return redirect("oauth_login")
+            return JsonResponse(
+                {"status": "unauthenticated", "redirect_url": reverse("oauth_login")},
+                status=401,
+            )  # Return JSON for AJAX, then redirect on client-side
 
+        # No change needed here, as it still uses creds_json from session
         google_sheet_client_manager = GoogleSheetClientManager(creds_json=creds_json)
 
         try:
@@ -47,53 +49,60 @@ def toggle_collected(request):
 
 
 def oauth_login(request):
-    flow = Flow.from_client_secrets_file(
-        GoogleSheetClientManager.CLIENT_SECRETS,
-        scopes=OauthConstants.SCOPES,
-        redirect_uri=OauthConstants.REDIRECT_URI,
-    )
+    # Instantiate the manager to get the flow, which will fetch secrets
+    manager = GoogleSheetClientManager()  # No need for creds_json here
+    flow = manager.get_flow()  # Use the new method to get the Flow instance
+
     auth_url, state = flow.authorization_url(
         access_type="offline",
         include_granted_scopes="true",
         prompt="consent",
     )
 
-    request.session["oauth_state"] = state
-
+    request.session["oauth_state"] = state  # Store 'oauth_state'
     return redirect(auth_url)
 
 
 def oauth2callback(request):
     def credentials_to_dict(creds):
-        return {
+        creds_dict = {
             "token": creds.token,
             "refresh_token": creds.refresh_token,
             "token_uri": creds.token_uri,
             "client_id": creds.client_id,
-            "client_secret": creds.client_secret,
+            "client_secret": creds.client_secret,  # This can be sensitive; ensure it's handled securely
             "scopes": creds.scopes,
+            "expiry": creds.expiry.isoformat() if creds.expiry else None,  # Add expiry
         }
 
-    flow = Flow.from_client_secrets_file(
-        "client_secret.json",
-        scopes=[
-            "https://www.googleapis.com/auth/userinfo.profile",
-            "https://www.googleapis.com/auth/userinfo.email",
-            "openid",
-            "https://www.googleapis.com/auth/spreadsheets",
-            "https://www.googleapis.com/auth/drive",
-        ],
-        redirect_uri=request.build_absolute_uri(reverse("oauth2callback")),
-    )
+        if hasattr(creds, "client_secret") and creds.client_secret:
+            creds_dict["client_secret"] = creds.client_secret
+        return creds_dict
 
-    state = request.session.pop("state", None)
-    # if state != request.GET.get('state'):
-    #     return HttpResponseBadRequest("Invalid state parameter")
-    print(state)
-    flow.fetch_token(authorization_response=request.build_absolute_uri())
+    # Instantiate the manager to get the flow
+    manager = GoogleSheetClientManager()  # No need for creds_json here
+    flow = manager.get_flow()  # Use the new method to get the Flow instance
+
+    state = request.session.pop("oauth_state", None)  # Retrieve 'oauth_state'
+    if state != request.GET.get("state"):
+        # For security, strictly check the state parameter
+        print(
+            f"State mismatch: Session '{state}', Request '{request.GET.get('state')}'"
+        )
+        return HttpResponseBadRequest("Invalid state parameter")
+
+    try:
+        # Pass the original scopes from OauthConstants used for the flow
+        # This ensures the token fetching uses the correct scope set.
+        flow.fetch_token(
+            authorization_response=request.build_absolute_uri(),
+            scopes=OauthConstants.SCOPES,
+        )
+    except Exception as e:
+        print(f"Error fetching token: {e}")
+        return HttpResponseBadRequest(f"Error fetching token: {e}")
 
     credentials = flow.credentials
-
     request.session["credentials"] = credentials_to_dict(credentials)
 
     user_service = googleapiclient.discovery.build(
@@ -110,7 +119,7 @@ def oauth2callback(request):
 
 def logout_view(request):
     request.session.flush()
-    django_logout(request)  # Optional: Django logout if using auth system
+    django_logout(request)
     return redirect("index")
 
 
@@ -128,20 +137,15 @@ def amiibo_list(request):
     )
     dark_mode = config.is_dark_mode()
 
-    # Fetch all amiibos from external API
     amiibos = service.fetch_amiibos()
 
-    # Filter out types we don't want to track
     ignore_types = ["Yarn", "Card", "Band"]
     amiibos = [a for a in amiibos if a["type"] not in ignore_types]
 
-    # Ensure all new amiibos are seeded in the Sheet with default collected=0
     service.seed_new_amiibos(amiibos)
 
-    # Get collected status from Sheet
     collected_status = service.get_collected_status()
 
-    # Attach collected flag to each amiibo
     for amiibo in amiibos:
         amiibo_id = amiibo["head"] + amiibo["gameSeries"] + amiibo["tail"]
         amiibo["collected"] = collected_status.get(amiibo_id) == "1"
@@ -165,7 +169,6 @@ def amiibo_list(request):
             }
         )
     print(enriched_groups)
-    # Render the template
     return render(
         request,
         "tracker/amiibos.html",
@@ -180,17 +183,18 @@ def amiibo_list(request):
 
 @csrf_exempt
 def toggle_dark_mode(request):
-
     if request.method == "POST":
         creds_json = request.session.get("credentials")
         if not creds_json:
-            return redirect("oauth_login")
+            return JsonResponse(
+                {"status": "unauthenticated", "redirect_url": reverse("oauth_login")},
+                status=401,
+            )
 
         google_sheet_client_manager = GoogleSheetClientManager(creds_json=creds_json)
 
         try:
             data = json.loads(request.body)
-
             enable_dark = data.get("dark_mode", True)
 
             config = GoogleSheetConfigManager(
