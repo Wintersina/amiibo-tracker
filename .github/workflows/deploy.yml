@@ -27,17 +27,15 @@ jobs:
         with:
           terraform_version: 1.8.4
 
-
-
       - name: Create terraform.tfvars file
         run: |
           cat > terraform/terraform.tfvars <<EOF
-          project_id             = "${{ secrets.GCP_PROJECT_ID }}"
-          region                 = "${{ secrets.GCP_REGION }}"
-          django_secret_key      = "${{ secrets.DJANGO_SECRET_KEY }}"
-          google_client_id       = "${{ secrets.GOOGLE_CLIENT_ID }}"
-          google_client_secret   = "${{ secrets.GOOGLE_CLIENT_SECRET }}"
-          google_redirect_uri    = "${{ secrets.GOOGLE_REDIRECT_URI }}"
+          project_id          = "${{ secrets.GCP_PROJECT_ID }}"
+          region              = "${{ secrets.GCP_REGION }}"
+          django_secret_key   = "${{ secrets.DJANGO_SECRET_KEY }}"
+          google_client_id    = "${{ secrets.GOOGLE_CLIENT_ID }}"
+          google_client_secret = "${{ secrets.GOOGLE_CLIENT_SECRET }}"
+          image_url           = "us-central1-docker.pkg.dev/amiibo-tracker-458804/amiibo-tracker:latest"
           EOF
 
 
