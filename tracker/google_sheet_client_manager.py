@@ -29,14 +29,16 @@ class GoogleSheetClientManager(HelperMixin, LoggingMixin):
         self.credentials_file = (credentials_file or "credentials.json",)
         self.creds_json = creds_json
 
+    @cached_property
+    def spreadsheet(self):
         try:
-            self.spreadsheet = self.client.open(sheet_name)
+            return self.client.open(self.sheet_name)
 
         except gspread.exceptions.SpreadsheetNotFound:
             self.log_info(
-                f"Spreadsheet '{sheet_name}' not found. Creating a new spreadsheet."
+                f"Spreadsheet '{self.sheet_name}' not found. Creating a new spreadsheet."
             )
-            self.spreadsheet = self.client.create(sheet_name)
+            spreadsheet = self.client.create(self.sheet_name)
 
             self.log_info(
                 f"Creating worksheet '{self.work_sheet_amiibo_manager}' within the new spreadsheet."
@@ -60,6 +62,8 @@ class GoogleSheetClientManager(HelperMixin, LoggingMixin):
         self.log_info(
             f"Successfully initialized with spreadsheet '{self.spreadsheet.title}'"
         )
+
+        return spreadsheet
 
     def get_creds(self, creds_json) -> Credentials:
         creds = Credentials.from_authorized_user_info(creds_json, OauthConstants.SCOPES)

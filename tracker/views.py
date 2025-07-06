@@ -16,6 +16,7 @@ from google_auth_oauthlib.flow import Flow
 
 from constants import OauthConstants
 from tracker.google_sheet_client_manager import GoogleSheetClientManager
+from tracker.helpers import LoggingMixin
 from tracker.service_domain import AmiiboService, GoogleSheetConfigManager
 
 
@@ -104,16 +105,19 @@ class OAuthCallbackView(View):
         return redirect("amiibo_list")
 
 
-class LogoutView(View):
+class LogoutView(View, LoggingMixin):
     def get(self, request):
         creds = request.session.get("credentials")
         if creds:
             token = creds.get("token")
             try:
-                requests.post(
+                response = requests.post(
                     "https://oauth2.googleapis.com/revoke",
                     params={"token": token},
                     headers={"content-type": "application/x-www-form-urlencoded"},
+                )
+                self.log_info(
+                    "successfully logged out", {"status_code": response.status_code}
                 )
             except Exception as e:
                 print(f"Failed to revoke token: {e}")
