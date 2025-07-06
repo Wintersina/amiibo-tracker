@@ -1,11 +1,11 @@
+# .github/workflows/terraform.yml
 name: Terraform Provisioning
 
 on:
-  push:
-    branches:
-      - main
-      - oauth_flow
-      - terraform_step
+  workflow_run:
+    workflows: ["Build and Push Docker Image"]
+    types:
+      - completed
 
 jobs:
   terraform:
@@ -27,9 +27,6 @@ jobs:
         with:
           terraform_version: 1.8.4
 
-      - name: Write GCP credentials to file for Terraform
-        run: echo '${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}' > /tmp/account.json
-
       - name: Create terraform.tfvars file
         run: |
           cat > terraform/terraform.tfvars <<EOF
@@ -38,8 +35,12 @@ jobs:
           django_secret_key   = "${{ secrets.DJANGO_SECRET_KEY }}"
           google_client_id    = "${{ secrets.GOOGLE_CLIENT_ID }}"
           google_client_secret = "${{ secrets.GOOGLE_CLIENT_SECRET }}"
-          image_url           = "us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/amiibo-tracker:latest"
+          image_url           = "us-central1-docker.pkg.dev/amiibo-tracker-458804/amiibo-tracker:latest"
           EOF
+
+      - name: Write GCP credentials to file for Terraform
+        run: echo '${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}' > /tmp/account.json
+        shell: bash
 
       - name: Terraform Init
         run: terraform init
