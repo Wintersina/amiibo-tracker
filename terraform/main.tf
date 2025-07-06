@@ -27,11 +27,8 @@ resource "google_cloud_run_service" "amiibo_tracker" {
 
   template {
     spec {
-      service_account_name = google_service_account.app_sa.email
-
       containers {
-        # This can remain commented during initial provisioning
-        # image = var.image_url
+        image = var.image_url
 
         env {
           name  = "DJANGO_SECRET_KEY"
@@ -46,6 +43,7 @@ resource "google_cloud_run_service" "amiibo_tracker" {
           value = var.google_client_secret
         }
       }
+      service_account_name = google_service_account.app_sa.email
     }
   }
 
@@ -54,11 +52,11 @@ resource "google_cloud_run_service" "amiibo_tracker" {
     latest_revision = true
   }
 
+  autogenerate_revision_name = true
   lifecycle {
-    ignore_changes = [template]
+    ignore_changes = [template[0].spec[0].containers[0].image]
   }
 }
-
 
 resource "google_cloud_run_service_iam_member" "invoker" {
   service  = google_cloud_run_service.amiibo_tracker.name
@@ -72,3 +70,4 @@ resource "google_project_iam_member" "artifact_registry_writer" {
   role    = "roles/artifactregistry.writer"
   member  = "serviceAccount:${google_service_account.app_sa.email}"
 }
+
