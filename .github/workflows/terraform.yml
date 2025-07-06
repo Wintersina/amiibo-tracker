@@ -41,7 +41,7 @@ jobs:
           django_secret_key   = "${{ secrets.DJANGO_SECRET_KEY }}"
           google_client_id    = "${{ secrets.GOOGLE_CLIENT_ID }}"
           google_client_secret = "${{ secrets.GOOGLE_CLIENT_SECRET }}"
-          image_url           = "image_url = "us-central1-docker.pkg.dev/amiibo-tracker-458804/amiibo-tracker/amiibo-tracker:latest""
+          image_url           = "image_url = "us-central1-docker.pkg.dev/amiibo-tracker-458804/amiibo-tracker/amiibo-tracker:latest"
           EOF
 
       - name: Write GCP credentials to file for Terraform
