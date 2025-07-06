@@ -31,21 +31,33 @@ jobs:
         run: |
           cat > terraform/terraform.tfvars <<EOF
           project_id          = "${{ secrets.GCP_PROJECT_ID }}"
-          region              = "us-central1"
+          region              = "${{ secrets.GCP_REGION }}"
           django_secret_key   = "${{ secrets.DJANGO_SECRET_KEY }}"
-          google_client_id    = "${{ secrets.GOOGLE_CLIENT_ID }}"
-          google_client_secret = "${{ secrets.GOOGLE_CLIENT_SECRET }}"
-          image_url           = "us-central1-docker.pkg.dev/amiibo-tracker-458804/amiibo-tracker/amiibo-tracker:latest"
+          oauth_client_id     = "${{ secrets.GOOGLE_CLIENT_ID }}"
+          oauth_client_secret = "${{ secrets.GOOGLE_CLIENT_SECRET }}"
+          redirect_uri        = "${{ secrets.GOOGLE_REDIRECT_URI }}"
+          image_url           = "us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/amiibo-tracker"
           EOF
+
+      - name: Write GCP credentials to file for Terraform
+        run: |
+          echo '${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}' > /tmp/account.json
+        shell: bash
 
       - name: Terraform Init
         run: terraform init
         working-directory: terraform
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: /tmp/account.json
 
       - name: Terraform Plan
         run: terraform plan -var-file="terraform.tfvars"
         working-directory: terraform
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: /tmp/account.json
 
       - name: Terraform Apply
         run: terraform apply -auto-approve -var-file="terraform.tfvars"
         working-directory: terraform
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: /tmp/account.json
