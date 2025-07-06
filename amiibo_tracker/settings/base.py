@@ -1,7 +1,7 @@
 from pathlib import Path
 import os
 
-BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 
 STATIC_URL = "/static/"
@@ -64,7 +64,6 @@ DATABASES = {
     }
 }
 
-STATIC_URL = "/static/"
 
 CACHES = {
     "default": {
