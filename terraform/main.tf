@@ -4,6 +4,17 @@ provider "google" {
   region  = var.region
 }
 
+resource "google_service_account" "app_sa" {
+  account_id   = "amiibo-app-sa"
+  display_name = "Amiibo App Service Account"
+}
+
+resource "google_service_account" "cloud_run" {
+  account_id   = "cloud-run-sa"
+  display_name = "Cloud Run Service Account"
+}
+
+
 resource "google_artifact_registry_repository" "docker_repo" {
   location      = var.region
   repository_id = "amiibo-tracker"

@@ -1,6 +1,6 @@
 output "cloud_run_url" {
   description = "The URL of the deployed Cloud Run service"
-  value       = google_cloud_run_service.default.status[0].url
+  value = google_cloud_run_service.amiibo_tracker.status[0].url
 }
 
 output "service_account_email" {

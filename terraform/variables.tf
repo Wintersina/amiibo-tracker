@@ -26,3 +26,27 @@ variable "env_secrets" {
   type        = map(string)
   default     = {}
 }
+
+
+variable "image_url" {
+  description = "Docker image URL"
+  type        = string
+}
+
+variable "django_secret_key" {
+  description = "Django secret key"
+  type        = string
+  sensitive   = true
+}
+
+variable "google_client_id" {
+  description = "OAuth client ID"
+  type        = string
+  sensitive   = true
+}
+
+variable "google_client_secret" {
+  description = "OAuth client secret"
+  type        = string
+  sensitive   = true
+}

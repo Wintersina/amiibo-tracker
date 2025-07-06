@@ -33,8 +33,9 @@ jobs:
           project_id          = "${{ secrets.GCP_PROJECT_ID }}"
           region              = "us-central1"
           django_secret_key   = "${{ secrets.DJANGO_SECRET_KEY }}"
-          oauth_client_id     = "${{ secrets.OAUTH_CLIENT_ID }}"
-          oauth_client_secret = "${{ secrets.OAUTH_CLIENT_SECRET }}"
+          google_client_id    = "${{ secrets.GOOGLE_CLIENT_ID }}"
+          google_client_secret = "${{ secrets.GOOGLE_CLIENT_SECRET }}"
+          image_url           = "us-central1-docker.pkg.dev/amiibo-tracker-458804/amiibo-tracker/amiibo-tracker:latest"
           EOF
 
       - name: Terraform Init
