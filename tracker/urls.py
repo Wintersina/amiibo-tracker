@@ -1,12 +1,21 @@
 from django.urls import path
-from . import views
+
+from tracker.views import (
+    IndexView,
+    AmiiboListView,
+    ToggleDarkModeView,
+    OAuthView,
+    OAuthCallbackView,
+    LogoutView,
+    ToggleCollectedView,
+)
 
 urlpatterns = [
-    path("", views.index, name="index"),
-    path("tracker/", views.amiibo_list, name="amiibo_list"),
-    path("toggle/", views.toggle_collected, name="toggle_collected"),
-    path("toggle-dark-mode/", views.toggle_dark_mode, name="toggle_dark_mode"),
-    path("oauth-login/", views.oauth_login, name="oauth_login"),
-    path("oauth2callback/", views.oauth2callback, name="oauth2callback"),
-    path("logout/", views.logout_view, name="logout"),
+    path("", IndexView.as_view(), name="index"),
+    path("tracker/", AmiiboListView.as_view(), name="amiibo_list"),
+    path("toggle/", ToggleCollectedView.as_view(), name="toggle_collected"),
+    path("toggle-dark-mode/", ToggleDarkModeView.as_view(), name="toggle_dark_mode"),
+    path("oauth-login/", OAuthView.as_view(), name="oauth_login"),
+    path("oauth2callback/", OAuthCallbackView.as_view(), name="oauth2callback"),
+    path("logout/", LogoutView.as_view(), name="logout"),
 ]

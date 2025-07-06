@@ -40,7 +40,7 @@ class LoggingMixin(object):
         return self.__logger
 
     def log(self, msg, *args, **extra):
-        level = extra.pop("level")
+        level = extra.get("level", "info")
         log_fn = getattr(self.logger, level)
 
         for dct in args:
