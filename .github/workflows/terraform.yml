@@ -6,6 +6,12 @@ name: Terraform Provisioning
 #    workflows: ["Build and Push Docker Image"]
 #    types:
 #      - completed
+on:
+  push:
+    branches:
+      - main
+      - oauth_flow
+      - terraform_step
 
 jobs:
   terraform:
