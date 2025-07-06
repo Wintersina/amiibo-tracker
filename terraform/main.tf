@@ -14,7 +14,6 @@ resource "google_service_account" "cloud_run" {
   display_name = "Cloud Run Service Account"
 }
 
-
 resource "google_artifact_registry_repository" "docker_repo" {
   location      = var.region
   repository_id = "amiibo-tracker"
@@ -28,8 +27,11 @@ resource "google_cloud_run_service" "amiibo_tracker" {
 
   template {
     spec {
+      service_account_name = google_service_account.app_sa.email
+
       containers {
-        image = var.image_url
+        # This can remain commented during initial provisioning
+        # image = var.image_url
 
         env {
           name  = "DJANGO_SECRET_KEY"
@@ -44,7 +46,6 @@ resource "google_cloud_run_service" "amiibo_tracker" {
           value = var.google_client_secret
         }
       }
-      service_account_name = google_service_account.app_sa.email
     }
   }
 
@@ -53,8 +54,11 @@ resource "google_cloud_run_service" "amiibo_tracker" {
     latest_revision = true
   }
 
-  autogenerate_revision_name = true
+  lifecycle {
+    ignore_changes = [template]
+  }
 }
+
 
 resource "google_cloud_run_service_iam_member" "invoker" {
   service  = google_cloud_run_service.amiibo_tracker.name
@@ -62,7 +66,6 @@ resource "google_cloud_run_service_iam_member" "invoker" {
   role     = "roles/run.invoker"
   member   = "allUsers"
 }
-
 
 resource "google_project_iam_member" "artifact_registry_writer" {
   project = var.project_id
