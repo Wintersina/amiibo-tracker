@@ -7,3 +7,4 @@ client_secret.json
 db.sqlite3
 env/*
 manual_script.sh
+terraform/terraform.tfvars
