@@ -81,64 +81,16 @@ Example format of `credentials.json`:
 ### 5. Run the Django development server
 
 ```bash
-# for local run
-python manage.py migrate
-export OAUTHLIB_INSECURE_TRANSPORT=1 # for mac 
-# set OAUTHLIB_INSECURE_TRANSPORT=1 for windows 
-# $env:OAUTHLIB_INSECURE_TRANSPORT = "1"
-
-
-
-python manage.py runserver
+./scripts/mac_local_run.sh
+```
+for windows
+```bash
+./scripts/windows_local_run.sh
 ```
 
 Visit [http://localhost:8000](http://localhost:8000) in your browser.
 
----
 
-## 🧹 Code Formatting with Black
-
-We use [`black`](https://github.com/psf/black) to auto-format all Python code.
-
-### Format all Python files
-
-```bash
-black .
-```
-
-### Optional: Set up Black as a Git pre-commit hook
-
-Install `pre-commit`:
-
-```bash
-pip install pre-commit
-```
-
-Create a `.pre-commit-config.yaml` file in your project root:
-
-```yaml
-repos:
-  - repo: https://github.com/psf/black
-    rev: 24.4.2  # Use the latest stable version
-    hooks:
-      - id: black
-```
-
-Then initialize the pre-commit hook:
-
-```bash
-pre-commit install
-```
-
-Run it manually on all files:
-
-```bash
-pre-commit run --all-files
-```
-
-From now on, Black will automatically format your code every time you commit.
-
----
 
 ## 🖼️ Example Screenshots
 
