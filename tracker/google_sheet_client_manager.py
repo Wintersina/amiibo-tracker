@@ -1,4 +1,3 @@
-import json
 import os
 from functools import cached_property
 
@@ -7,13 +6,13 @@ from django.conf import settings
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import Flow
 
-# from googleapiclient.discovery import build
 from oauth2client.service_account import ServiceAccountCredentials
 
 from constants import OauthConstants
+from tracker.helpers import HelperMixin, LoggingMixin
 
 
-class GoogleSheetClientManager:
+class GoogleSheetClientManager(HelperMixin, LoggingMixin):
     CLIENT_SECRETS = os.path.join(settings.BASE_DIR, "client_secret.json")
 
     def __init__(
@@ -21,23 +20,25 @@ class GoogleSheetClientManager:
         sheet_name="AmiiboCollection",
         work_sheet_amiibo_manager="AmiiboCollection",
         work_sheet_config_manager="AmiiboCollectionConfigManager",
-        credentials_file="credentials.json",
+        credentials_file=None,
         creds_json=None,
     ):
         self.sheet_name = sheet_name
         self.work_sheet_amiibo_manager = work_sheet_amiibo_manager
         self.work_sheet_config_manager = work_sheet_config_manager
-        self.credentials_file = credentials_file
+        self.credentials_file = (credentials_file or "credentials.json",)
         self.creds_json = creds_json
 
         try:
             self.spreadsheet = self.client.open(sheet_name)
 
         except gspread.exceptions.SpreadsheetNotFound:
-            print(f"Spreadsheet '{sheet_name}' not found. Creating a new spreadsheet.")
+            self.log_info(
+                f"Spreadsheet '{sheet_name}' not found. Creating a new spreadsheet."
+            )
             self.spreadsheet = self.client.create(sheet_name)
 
-            print(
+            self.log_info(
                 f"Creating worksheet '{self.work_sheet_amiibo_manager}' within the new spreadsheet."
             )
             self.work_sheet_amiibo_manager_object = self.spreadsheet.add_worksheet(
@@ -56,7 +57,9 @@ class GoogleSheetClientManager:
             self.work_sheet_config_manager_object.append_row(["DarkMode"])
             self.work_sheet_config_manager_object.append_row(["0"])
 
-        print(f"Successfully initialized with spreadsheet '{self.spreadsheet.title}'")
+        self.log_info(
+            f"Successfully initialized with spreadsheet '{self.spreadsheet.title}'"
+        )
 
     def get_creds(self, creds_json) -> Credentials:
         creds = Credentials.from_authorized_user_info(creds_json, OauthConstants.SCOPES)
@@ -74,8 +77,10 @@ class GoogleSheetClientManager:
     @cached_property
     def client(self):
         if oauth_creds := self.get_creds(self.creds_json):
+            # this uses web
             return gspread.authorize(oauth_creds)
         else:
+            # this grabs using service account file
 
             creds = ServiceAccountCredentials.from_json_keyfile_name(
                 self.credentials_file, OauthConstants.SCOPES

@@ -3,9 +3,10 @@ from functools import cached_property
 import requests
 
 from tracker.google_sheet_client_manager import GoogleSheetClientManager
+from tracker.helpers import LoggingMixin
 
 
-class AmiiboService:
+class AmiiboService(LoggingMixin):
     def __init__(
         self,
         google_sheet_client_manager,
@@ -23,6 +24,7 @@ class AmiiboService:
         )
 
     def fetch_amiibos(self):
+        # no error handling for this at this time
         response = requests.get("https://amiiboapi.com/api/amiibo/")
         return response.json().get("amiibo", [])
 
@@ -43,6 +45,7 @@ class AmiiboService:
         return {row[0]: row[2] for row in rows}
 
     def toggle_collected(self, amiibo_id: str, action: str):
+        self.log_info(f"{action} toggled {amiibo_id}")
         current_ids = self.sheet.col_values(1)[1:]
         if amiibo_id not in current_ids:
             return False
@@ -52,10 +55,10 @@ class AmiiboService:
         return True
 
 
-class GoogleSheetConfigManager:
+class GoogleSheetConfigManager(LoggingMixin):
     def __init__(
         self,
-        google_sheet_client_manager,
+        google_sheet_client_manager: GoogleSheetClientManager,
         sheet_name="AmiiboCollection",
         work_sheet_title="AmiiboCollectionConfigManager",
     ):
@@ -71,7 +74,9 @@ class GoogleSheetConfigManager:
 
     def is_dark_mode(self) -> bool:
         val = self.sheet.cell(2, 1).value
+        self.log_info(f"is_dark_mode: {val}")
         return val == "1"
 
     def set_dark_mode(self, enable: bool):
+        self.log_info(f"set_dark_mode: {enable}")
         self.sheet.update_cell(2, 1, "1" if enable else "0")

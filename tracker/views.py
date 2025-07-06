@@ -12,7 +12,6 @@ from constants import OauthConstants
 from tracker.google_sheet_client_manager import GoogleSheetClientManager
 from tracker.service_domain import AmiiboService, GoogleSheetConfigManager
 from django.contrib.auth import logout as django_logout
-import requests
 from googleapiclient.discovery import build
 
 
@@ -76,13 +75,7 @@ def oauth2callback(request):
 
     flow = Flow.from_client_secrets_file(
         "client_secret.json",
-        scopes=[
-            "https://www.googleapis.com/auth/userinfo.profile",
-            "https://www.googleapis.com/auth/userinfo.email",
-            "openid",
-            "https://www.googleapis.com/auth/spreadsheets",
-            "https://www.googleapis.com/auth/drive",
-        ],
+        scopes=OauthConstants.SCOPES,
         redirect_uri=request.build_absolute_uri(reverse("oauth2callback")),
     )
 
@@ -164,7 +157,6 @@ def amiibo_list(request):
                 "total_count": total,
             }
         )
-    print(enriched_groups)
     # Render the template
     return render(
         request,
@@ -205,6 +197,7 @@ def toggle_dark_mode(request):
 
 
 def index(request):
+
     if request.user.is_authenticated:
         return redirect("amiibo_list")
     return render(request, "tracker/index.html")
