@@ -115,6 +115,30 @@ The repository includes Terraform configuration to provision the minimum Google 
    ```
    The secret name (`amiibo-tracker-oauth-client` above) is passed to Terraform via `-var="oauth_client_secret_secret=..."`.
 
+### 🔧 Windows helper scripts
+
+Google Cloud projects and regions are specific to your own account—use `gcloud config get-value project` to see the currently
+configured project and choose any supported [regional location](https://cloud.google.com/run/docs/locations) for deployments.
+
+Two Windows scripts in `scripts/` automate building the image and uploading the OAuth client secret:
+
+- **PowerShell**: `scripts\windows_deploy.ps1 -Region "REGION" -ProjectId "PROJECT_ID" -SecretFile "path/to/client_secret.json"`
+- **Batch wrapper**: `scripts\windows_deploy.bat REGION PROJECT_ID path/to/client_secret.json`
+
+Both scripts will:
+
+1. Set the active gcloud project.
+2. Submit the Cloud Build with the tag format `${REGION}-docker.pkg.dev/${PROJECT_ID}/amiibo-tracker/amiibo-tracker:latest`.
+3. Create (or reuse) the `amiibo-tracker-oauth-client` secret with automatic replication.
+4. Upload a new secret version from your local client secret JSON.
+
+To initialize and apply the Terraform stack from Windows, use the new helpers:
+
+- **PowerShell**: `scripts\windows_terraform.ps1 -ProjectId "PROJECT_ID" -Region "REGION" -DjangoSecretKey "SECRET" -OAuthRedirectUri "https://your.app/oauth/callback" [-AllowedHosts "example.com,localhost"] [-AutoApprove]`
+- **Batch wrapper**: `scripts\windows_terraform.bat PROJECT_ID REGION SECRET https://your.app/oauth/callback [example.com,localhost] [AUTO]`
+
+These scripts will set the gcloud project, run `terraform init`, and then `terraform apply` with the provided values. `-AllowedHosts` accepts a comma-separated list, and `-AutoApprove` skips interactive confirmation.
+
 4. **Bootstrap Terraform**
    ```bash
    cd terraform
