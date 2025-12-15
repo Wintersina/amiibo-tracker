@@ -1,24 +1,58 @@
 name: Deploy to Google Cloud with Terraform
 
 on:
-  push:
-    branches:
-      - main
+  workflow_run:
+    workflows: ["Build and Push Docker Image"]
+    types: [completed]
   workflow_dispatch:
-
-env:
-  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
-  REGION: ${{ secrets.GCP_REGION }}
-  SERVICE_NAME: amiibo-tracker
-  IMAGE_URL: ${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/amiibo-tracker/amiibo-tracker:latest
 
 jobs:
   terraform:
     runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'workflow_run' &&
+       github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push' &&
+       github.event.workflow_run.branch == 'main')
+
+    env:
+      PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+      REGION: ${{ secrets.GCP_REGION }}
+      SERVICE_NAME: amiibo-tracker
 
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+
+      - name: Validate required secrets
+        env:
+          REQUIRED_GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          REQUIRED_GCP_REGION: ${{ secrets.GCP_REGION }}
+          REQUIRED_GCP_SERVICE_ACCOUNT_KEY: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
+          REQUIRED_DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
+          REQUIRED_OAUTH_REDIRECT_URI: ${{ secrets.OAUTH_REDIRECT_URI }}
+          REQUIRED_OAUTH_CLIENT_SECRET_SECRET: ${{ secrets.OAUTH_CLIENT_SECRET_SECRET }}
+          REQUIRED_TF_STATE_BUCKET: ${{ secrets.TF_STATE_BUCKET }}
+        run: |
+          missing=()
+          for var in \
+            REQUIRED_GCP_PROJECT_ID \
+            REQUIRED_GCP_REGION \
+            REQUIRED_GCP_SERVICE_ACCOUNT_KEY \
+            REQUIRED_DJANGO_SECRET_KEY \
+            REQUIRED_OAUTH_REDIRECT_URI \
+            REQUIRED_OAUTH_CLIENT_SECRET_SECRET \
+            REQUIRED_TF_STATE_BUCKET; do
+            if [ -z "${!var}" ]; then
+              missing+=("${var#REQUIRED_}")
+            fi
+          done
+
+          if [ "${#missing[@]}" -gt 0 ]; then
+            printf '::error ::Missing required secrets: %s\n' "$(IFS=', '; echo "${missing[*]}")"
+            exit 1
+          fi
 
       - name: Authenticate to Google Cloud
         id: auth
@@ -34,19 +68,46 @@ jobs:
         with:
           terraform_version: 1.8.4
 
+      - name: Determine image URL
+        id: vars
+        run: |
+          IMAGE_TAG="${{ github.event.workflow_run.head_sha || github.sha }}"
+          IMAGE_URL="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.SERVICE_NAME }}/${{ env.SERVICE_NAME }}:${IMAGE_TAG}"
+          echo "image_url=$IMAGE_URL" >> "$GITHUB_OUTPUT"
+
+      - name: Resolve allowed hosts
+        id: allowed_hosts
+        run: |
+          ALLOWED_HOSTS_INPUT=${ALLOWED_HOSTS_JSON:-}
+
+          if [ -z "$ALLOWED_HOSTS_INPUT" ]; then
+            EXISTING_URL=$(gcloud run services describe "${SERVICE_NAME}" --region "${REGION}" --format="value(status.url)" 2>/dev/null || true)
+
+            if [ -n "$EXISTING_URL" ]; then
+              HOST=${EXISTING_URL#https://}
+              HOST=${HOST%%/}
+              ALLOWED_HOSTS_INPUT="[\"${HOST}\"]"
+            else
+              ALLOWED_HOSTS_INPUT="[]"
+            fi
+          fi
+
+          echo "allowed_hosts_json=$ALLOWED_HOSTS_INPUT" >> "$GITHUB_OUTPUT"
+        env:
+          ALLOWED_HOSTS_JSON: ${{ secrets.ALLOWED_HOSTS_JSON }}
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.auth.outputs.credentials_file_path }}
+
       - name: Create terraform.tfvars file
         run: |
           cat > terraform/terraform.tfvars <<EOF
           project_id        = "$PROJECT_ID"
           region            = "$REGION"
-          image_url         = "$IMAGE_URL"
+          image_url         = "${{ steps.vars.outputs.image_url }}"
           django_secret_key = "${{ secrets.DJANGO_SECRET_KEY }}"
           oauth_redirect_uri = "${{ secrets.OAUTH_REDIRECT_URI }}"
           oauth_client_secret_secret = "${{ secrets.OAUTH_CLIENT_SECRET_SECRET }}"
-          allowed_hosts = ${ALLOWED_HOSTS_JSON:-[]}
+          allowed_hosts = ${{ steps.allowed_hosts.outputs.allowed_hosts_json }}
           EOF
-        env:
-          ALLOWED_HOSTS_JSON: ${{ secrets.ALLOWED_HOSTS_JSON }}
 
       - name: Terraform Init
         run: terraform init -backend-config="bucket=${{ secrets.TF_STATE_BUCKET }}" -backend-config="prefix=terraform/state"
