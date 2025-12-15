@@ -6,6 +6,15 @@ on:
     types: [completed]
   workflow_dispatch:
 
+env:
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  REGION: ${{ secrets.GCP_REGION }}
+  SERVICE_NAME: amiibo-tracker
+
+concurrency:
+  group: deploy-${{ github.workflow }}-${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_branch || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   terraform:
     runs-on: ubuntu-latest
@@ -19,12 +28,6 @@ jobs:
           (github.event.workflow_run.event == 'pull_request' &&
            contains(['main', 'terraform_step'], github.event.workflow_run.head_branch))
         ))
-
-
-    env:
-      PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
-      REGION: ${{ secrets.GCP_REGION }}
-      SERVICE_NAME: amiibo-tracker
 
     steps:
       - name: Checkout Repository
