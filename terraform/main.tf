@@ -37,12 +37,15 @@ resource "google_cloud_run_service" "amiibo_tracker" {
   name     = var.service_name
   location = var.region
 
-  depends_on = [
-    google_project_service.enabled,
-    google_artifact_registry_repository.docker_repo,
-    google_project_iam_member.artifact_registry_reader,
-    google_project_iam_member.artifact_registry_reader_app_sa,
-  ]
+  depends_on = concat(
+    [
+      google_project_service.enabled,
+      google_artifact_registry_repository.docker_repo,
+      google_project_iam_member.artifact_registry_reader,
+      google_project_iam_member.artifact_registry_reader_app_sa,
+    ],
+    var.oauth_client_secret_secret != "" ? [google_secret_manager_secret_iam_member.oauth_client_secret_accessor[0]] : [],
+  )
 
 
   template {
@@ -99,6 +102,8 @@ resource "google_cloud_run_service_iam_member" "public" {
 
 
 resource "google_secret_manager_secret_iam_member" "oauth_client_secret_accessor" {
+  count = var.oauth_client_secret_secret != "" ? 1 : 0
+
   project   = var.project_id
   secret_id = var.oauth_client_secret_secret
   role      = "roles/secretmanager.secretAccessor"
