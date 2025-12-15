@@ -2,12 +2,10 @@ import json
 from collections import defaultdict
 
 import googleapiclient.discovery
-import googleapiclient.discovery
 import requests
 from django.contrib.auth import logout as django_logout
 from django.http import JsonResponse
-from django.shortcuts import redirect
-from django.shortcuts import render
+from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils.decorators import method_decorator
 from django.views import View
@@ -54,7 +52,7 @@ class ToggleCollectedView(View):
 class OAuthView(View):
     def get(self, request):
         flow = Flow.from_client_secrets_file(
-            GoogleSheetClientManager.CLIENT_SECRETS,
+            GoogleSheetClientManager.client_secret_path(),
             scopes=OauthConstants.SCOPES,
             redirect_uri=OauthConstants.REDIRECT_URI,
         )
@@ -82,7 +80,7 @@ class OAuthCallbackView(View):
             }
 
         flow = Flow.from_client_secrets_file(
-            "client_secret.json",
+            GoogleSheetClientManager.client_secret_path(),
             scopes=OauthConstants.SCOPES,
             redirect_uri=request.build_absolute_uri(reverse("oauth2callback")),
         )
