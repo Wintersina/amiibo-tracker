@@ -1,5 +1,6 @@
 locals {
   formatted_allowed_hosts = length(var.allowed_hosts) > 0 ? var.allowed_hosts : ["*"]
+  csrf_trusted_origins    = [for host in local.formatted_allowed_hosts : "https://${host}" if host != "*"]
 
   container_env = [
     {
@@ -21,6 +22,10 @@ locals {
     {
       name  = "GOOGLE_OAUTH_CLIENT_SECRETS"
       value = var.client_secret_path
+    },
+    {
+      name  = "CSRF_TRUSTED_ORIGINS"
+      value = join(",", local.csrf_trusted_origins)
     }
   ]
 }
