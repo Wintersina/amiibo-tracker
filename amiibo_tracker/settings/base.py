@@ -73,6 +73,10 @@ CACHES = {
     }
 }
 
+# Use the in-memory cache for session storage to avoid relying on a database
+# table in ephemeral environments (e.g., Cloud Run containers).
+SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+
 logging.basicConfig(level=logging.INFO)
 
 LOGGING = {
