@@ -90,6 +90,64 @@ for windows
 
 Visit [http://localhost:8000](http://localhost:8000) in your browser.
 
+---
+
+## ☁️ Deploying to Google Cloud Run with Terraform
+
+The repository includes Terraform configuration to provision the minimum Google Cloud resources for Cloud Run and Artifact Registry. You still need to supply your OAuth client JSON via Secret Manager and provide the Docker image URL to deploy.
+
+1. **Prerequisites**
+   - [gcloud CLI](https://cloud.google.com/sdk/docs/install)
+   - [Terraform](https://developer.hashicorp.com/terraform/downloads)
+   - Google Cloud project with billing enabled
+   - OAuth client secret stored in Secret Manager (latest version will be injected into the service)
+
+2. **Build and push the container image**
+   ```bash
+   gcloud builds submit --tag "${REGION}-docker.pkg.dev/${PROJECT_ID}/amiibo-tracker/amiibo-tracker:latest"
+   ```
+
+3. **Store your OAuth client secret in Secret Manager**
+   ```bash
+   # Save your OAuth client JSON locally first, then upload it
+   gcloud secrets create amiibo-tracker-oauth-client --replication-policy="automatic"
+   gcloud secrets versions add amiibo-tracker-oauth-client --data-file="path/to/client_secret.json"
+   ```
+   The secret name (`amiibo-tracker-oauth-client` above) is passed to Terraform via `-var="oauth_client_secret_secret=..."`.
+
+4. **Bootstrap Terraform**
+   ```bash
+   cd terraform
+   terraform init
+   ```
+
+5. **Apply infrastructure**
+   ```bash
+   terraform apply \
+     -var="project_id=${PROJECT_ID}" \
+     -var="region=${REGION}" \
+     -var="image_url=${REGION}-docker.pkg.dev/${PROJECT_ID}/amiibo-tracker/amiibo-tracker:latest" \
+     -var="django_secret_key=${DJANGO_SECRET_KEY}" \
+     -var="allowed_hosts=${ALLOWED_HOSTS_AS_JSON_LIST}" \
+     -var="oauth_redirect_uri=${OAUTH_REDIRECT_URI}" \
+     -var="oauth_client_secret_secret=${SECRET_MANAGER_NAME}" \
+     -var="client_secret_path=/secrets/client_secret.json"
+   ```
+
+6. **Review outputs**
+   Terraform will print the Cloud Run URL after a successful apply. Use it to update your OAuth redirect URI and to access the deployed app.
+
+### Environment variables used at runtime
+
+| Variable | Purpose |
+| --- | --- |
+| `ENV_NAME` | Automatically set to `production` in Terraform deployments. |
+| `DJANGO_SECRET_KEY` | Secret key for Django. **Required.** |
+| `ALLOWED_HOSTS` | Comma-separated list of allowed hosts for Django. |
+| `OAUTH_REDIRECT_URI` | OAuth redirect URI registered in Google Cloud Console. |
+| `GOOGLE_OAUTH_CLIENT_SECRETS` | Optional filesystem path to the OAuth client JSON; defaults to `client_secret.json` at the project root. |
+| `GOOGLE_OAUTH_CLIENT_SECRETS_DATA` | Optional inline OAuth client JSON (injected from Secret Manager via Terraform). If set, the JSON is written to `GOOGLE_OAUTH_CLIENT_SECRETS` and used by the app. |
+
 
 
 ## 🖼️ Example Screenshots

@@ -1,3 +1,6 @@
+import os
+
+
 class OauthConstants:
     SCOPES = [
         "https://www.googleapis.com/auth/userinfo.profile",
@@ -6,4 +9,4 @@ class OauthConstants:
         "https://www.googleapis.com/auth/spreadsheets",
         "https://www.googleapis.com/auth/drive",
     ]
-    REDIRECT_URI = "http://localhost:8000/oauth2callback/"
+    REDIRECT_URI = os.getenv("OAUTH_REDIRECT_URI", "http://localhost:8000/oauth2callback/")

@@ -4,19 +4,20 @@ import logging
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
-
 STATIC_URL = "/static/"
-
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, "static"),
 ]
-
-# Add this line
 STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 
-SECRET_KEY = "your-secret-key"
-DEBUG = True
-ALLOWED_HOSTS = []
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "unsafe-default-key")
+DEBUG = os.environ.get("DEBUG", "True").lower() == "true"
+ALLOWED_HOSTS = [h for h in os.environ.get("ALLOWED_HOSTS", "").split(",") if h]
+CSRF_TRUSTED_ORIGINS = [
+    origin
+    for origin in os.environ.get("CSRF_TRUSTED_ORIGINS", "").split(",")
+    if origin
+]
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -65,14 +66,12 @@ DATABASES = {
     }
 }
 
-
 CACHES = {
     "default": {
         "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
         "LOCATION": "unique-sheets-api-cache",
     }
 }
-
 
 logging.basicConfig(level=logging.INFO)
 

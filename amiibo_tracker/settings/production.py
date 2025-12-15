@@ -1,25 +1,26 @@
-from .base import *
 import os
+
+import dj_database_url
+
+from .base import *  # noqa: F401,F403
 
 os.environ["ENV_NAME"] = "production"
 DEBUG = False
 
-ALLOWED_HOSTS = ["yourproductiondomain.com", "www.yourproductiondomain.com"]
+ALLOWED_HOSTS = ALLOWED_HOSTS or [
+    "localhost",
+]
 
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql_psycopg2",
-        "NAME": "your_prod_db_name",
-        "USER": "your_prod_db_user",
-        "PASSWORD": "your_prod_db_password",
-        "HOST": "your_prod_db_host",
-        "PORT": "",
-    }
+    "default": dj_database_url.config(
+        default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}", conn_max_age=600
+    )
 }
 
 STATIC_ROOT = BASE_DIR / "staticfiles"
 MEDIA_ROOT = BASE_DIR / "mediafiles"
 
+CSRF_TRUSTED_ORIGINS = CSRF_TRUSTED_ORIGINS or []
 
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
