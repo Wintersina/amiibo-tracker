@@ -7,13 +7,13 @@ from .base import *  # noqa: F401,F403
 os.environ["ENV_NAME"] = "production"
 DEBUG = False
 
-ALLOWED_HOSTS = ALLOWED_HOSTS or [
-    "localhost",
-]
+ALLOWED_HOSTS = ALLOWED_HOSTS or ["localhost"]
+
+default_db_path = os.environ.get("DJANGO_SQLITE_PATH", "/tmp/db.sqlite3")
 
 DATABASES = {
     "default": dj_database_url.config(
-        default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}", conn_max_age=600
+        default=f"sqlite:///{default_db_path}", conn_max_age=600
     )
 }
 
