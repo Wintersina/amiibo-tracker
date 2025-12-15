@@ -20,7 +20,11 @@ DATABASES = {
 STATIC_ROOT = BASE_DIR / "staticfiles"
 MEDIA_ROOT = BASE_DIR / "mediafiles"
 
-CSRF_TRUSTED_ORIGINS = CSRF_TRUSTED_ORIGINS or []
+CSRF_TRUSTED_ORIGINS = CSRF_TRUSTED_ORIGINS or [
+    f"https://{host}"
+    for host in ALLOWED_HOSTS
+    if host not in {"*", "localhost"}
+]
 
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
