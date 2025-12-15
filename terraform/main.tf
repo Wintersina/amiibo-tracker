@@ -41,7 +41,9 @@ resource "google_cloud_run_service" "amiibo_tracker" {
     google_project_service.enabled,
     google_artifact_registry_repository.docker_repo,
     google_project_iam_member.artifact_registry_reader,
+    google_project_iam_member.artifact_registry_reader_app_sa,
   ]
+
 
   template {
     spec {
@@ -62,9 +64,11 @@ resource "google_cloud_run_service" "amiibo_tracker" {
             name = "GOOGLE_OAUTH_CLIENT_SECRETS_DATA"
             value_from {
               secret_key_ref {
-                name    = var.oauth_client_secret_secret
-                version = "latest"
+                name = var.oauth_client_secret_secret
+                key  = "latest"
               }
+
+
             }
           }
         }
@@ -92,3 +96,18 @@ resource "google_cloud_run_service_iam_member" "public" {
   role     = "roles/run.invoker"
   member   = "allUsers"
 }
+
+
+resource "google_secret_manager_secret_iam_member" "oauth_client_secret_accessor" {
+  project   = var.project_id
+  secret_id = var.oauth_client_secret_secret
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${google_service_account.app_sa.email}"
+}
+
+resource "google_project_iam_member" "artifact_registry_reader_app_sa" {
+  project = var.project_id
+  role    = "roles/artifactregistry.reader"
+  member  = "serviceAccount:${google_service_account.app_sa.email}"
+}
+
