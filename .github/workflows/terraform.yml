@@ -1,20 +1,25 @@
 name: Deploy to Google Cloud with Terraform
 
 on:
-  push:
-    branches:
-      - main
+  workflow_run:
+    workflows: ["Build and Push Docker Image"]
+    types: [completed]
   workflow_dispatch:
-
-env:
-  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
-  REGION: ${{ secrets.GCP_REGION }}
-  SERVICE_NAME: amiibo-tracker
-  IMAGE_URL: ${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/amiibo-tracker/amiibo-tracker:latest
 
 jobs:
   terraform:
     runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'workflow_run' &&
+       github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push' &&
+       github.event.workflow_run.branch == 'main')
+
+    env:
+      PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+      REGION: ${{ secrets.GCP_REGION }}
+      SERVICE_NAME: amiibo-tracker
 
     steps:
       - name: Checkout Repository
@@ -34,12 +39,19 @@ jobs:
         with:
           terraform_version: 1.8.4
 
+      - name: Determine image URL
+        id: vars
+        run: |
+          IMAGE_TAG="${{ github.event.workflow_run.head_sha || github.sha }}"
+          IMAGE_URL="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.SERVICE_NAME }}/${{ env.SERVICE_NAME }}:${IMAGE_TAG}"
+          echo "image_url=$IMAGE_URL" >> "$GITHUB_OUTPUT"
+
       - name: Create terraform.tfvars file
         run: |
           cat > terraform/terraform.tfvars <<EOF
           project_id        = "$PROJECT_ID"
           region            = "$REGION"
-          image_url         = "$IMAGE_URL"
+          image_url         = "${{ steps.vars.outputs.image_url }}"
           django_secret_key = "${{ secrets.DJANGO_SECRET_KEY }}"
           oauth_redirect_uri = "${{ secrets.OAUTH_REDIRECT_URI }}"
           oauth_client_secret_secret = "${{ secrets.OAUTH_CLIENT_SECRET_SECRET }}"
