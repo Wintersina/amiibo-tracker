@@ -167,6 +167,12 @@ gh secret set ALLOWED_HOSTS_JSON --body '["your.app","localhost"]'
 gh secret set GCP_SERVICE_ACCOUNT_KEY < path/to/service-account-key.json
 ```
 
+Notes on `ALLOWED_HOSTS_JSON`:
+
+- Cloud Run URLs are created automatically and look like `https://SERVICE-HASH-REGION.a.run.app`. After your first deploy, you can fetch the exact host with either `terraform output -raw cloud_run_url` (from the `terraform` directory) or `gcloud run services describe amiibo-tracker --region "$GCP_REGION" --format="value(status.url)"` and strip the `https://` prefix.
+- You can update the GitHub secret with the discovered host, for example: `HOST=$(terraform output -raw cloud_run_url | sed 's#https://##') && gh secret set ALLOWED_HOSTS_JSON --body "[\"$HOST\",\"localhost\"]"`.
+- If you leave `ALLOWED_HOSTS_JSON` unset, the workflow will try to reuse the existing Cloud Run host automatically; if no service exists yet, Terraform falls back to a permissive wildcard so the first deploy can succeed. You can tighten it later by setting the secret.
+
 If you use GitHub environments (e.g., `production`), create the secrets at the environment level and restrict deployments to those environments.
 
 4. **Bootstrap Terraform**
