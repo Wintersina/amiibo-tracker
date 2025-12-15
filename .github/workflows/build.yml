@@ -18,6 +18,10 @@ env:
   REGION: ${{ secrets.GCP_REGION }}
   SERVICE_NAME: amiibo-tracker
 
+concurrency:
+  group: build-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
