@@ -197,6 +197,13 @@ If you use GitHub environments (e.g., `production`), create the secrets at the e
 6. **Review outputs**
    Terraform will print the Cloud Run URL after a successful apply. Use it to update your OAuth redirect URI and to access the deployed app.
 
+7. **Validate the deployment**
+   To confirm that GitHub-managed Terraform state produced a healthy Cloud Run service, use the helper script:
+   ```bash
+   ./scripts/check_cloud_run.sh [SERVICE_NAME] [REGION]
+   ```
+   It will read your active `gcloud` project, retrieve the service URL, and perform a simple HTTP health check (treating 200/302 as success). Ensure your local environment is authenticated with `gcloud auth application-default login` or `gcloud auth login` and has permission to read the service.
+
 ### Environment variables used at runtime
 
 | Variable | Purpose |
