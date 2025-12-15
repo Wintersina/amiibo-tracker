@@ -5,7 +5,6 @@ import gspread
 from django.conf import settings
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import Flow
-
 from oauth2client.service_account import ServiceAccountCredentials
 
 from constants import OauthConstants
@@ -13,7 +12,26 @@ from tracker.helpers import HelperMixin, LoggingMixin
 
 
 class GoogleSheetClientManager(HelperMixin, LoggingMixin):
-    CLIENT_SECRETS = os.path.join(settings.BASE_DIR, "client_secret.json")
+    _secret_path_cache = None
+
+    @classmethod
+    def client_secret_path(cls) -> str:
+        inline_secret = os.environ.get("GOOGLE_OAUTH_CLIENT_SECRETS_DATA")
+        target_path = os.environ.get(
+            "GOOGLE_OAUTH_CLIENT_SECRETS",
+            os.path.join(settings.BASE_DIR, "client_secret.json"),
+        )
+
+        if inline_secret:
+            if cls._secret_path_cache:
+                return cls._secret_path_cache
+
+            os.makedirs(os.path.dirname(target_path), exist_ok=True)
+            with open(target_path, "w", encoding="utf-8") as secret_file:
+                secret_file.write(inline_secret)
+            cls._secret_path_cache = target_path
+
+        return target_path
 
     def __init__(
         self,
@@ -26,7 +44,7 @@ class GoogleSheetClientManager(HelperMixin, LoggingMixin):
         self.sheet_name = sheet_name
         self.work_sheet_amiibo_manager = work_sheet_amiibo_manager
         self.work_sheet_config_manager = work_sheet_config_manager
-        self.credentials_file = (credentials_file or "credentials.json",)
+        self.credentials_file = credentials_file or "credentials.json"
         self.creds_json = creds_json
 
     @cached_property
@@ -50,12 +68,10 @@ class GoogleSheetClientManager(HelperMixin, LoggingMixin):
                 title=self.work_sheet_config_manager, rows=500, cols=3
             )
 
-            # create header for sheet1
             self.work_sheet_amiibo_manager_object.append_row(
                 ["Amiibo ID", "Amiibo Name", "Collected Status"]
             )
 
-            # create header and default value for sheet 2
             self.work_sheet_config_manager_object.append_row(["DarkMode"])
             self.work_sheet_config_manager_object.append_row(["0"])
 
@@ -72,7 +88,7 @@ class GoogleSheetClientManager(HelperMixin, LoggingMixin):
     @staticmethod
     def get_flow() -> Flow:
         flow = Flow.from_client_secrets_file(
-            GoogleSheetClientManager.CLIENT_SECRETS,
+            GoogleSheetClientManager.client_secret_path(),
             scopes=OauthConstants.SCOPES,
             redirect_uri=OauthConstants.REDIRECT_URI,
         )
@@ -81,28 +97,21 @@ class GoogleSheetClientManager(HelperMixin, LoggingMixin):
     @cached_property
     def client(self):
         if oauth_creds := self.get_creds(self.creds_json):
-            # this uses web
             return gspread.authorize(oauth_creds)
-        else:
-            # this grabs using service account file
-
-            creds = ServiceAccountCredentials.from_json_keyfile_name(
-                self.credentials_file, OauthConstants.SCOPES
-            )
-            client = gspread.authorize(creds)
-            return client
+        creds = ServiceAccountCredentials.from_json_keyfile_name(
+            self.credentials_file, OauthConstants.SCOPES
+        )
+        client = gspread.authorize(creds)
+        return client
 
     def get_or_create_worksheet_by_name(self, worksheet_name):
-
         try:
             sheet = self.spreadsheet.worksheet(worksheet_name)
         except gspread.exceptions.WorksheetNotFound:
-
             sheet = self.spreadsheet.add_worksheet(
                 title=worksheet_name, rows=500, cols=3
             )
 
-            # todo make this a better constant and fetch
             if worksheet_name == "AmiiboCollection":
                 sheet.append_row(["Amiibo ID", "Amiibo Name", "Collected Status"])
 

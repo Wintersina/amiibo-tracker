@@ -1,46 +1,72 @@
 // main.tf
-provider "google" {
+resource "google_project_service" "enabled" {
+  for_each = toset([
+    "run.googleapis.com",
+    "artifactregistry.googleapis.com",
+    "cloudbuild.googleapis.com",
+    "secretmanager.googleapis.com",
+  ])
   project = var.project_id
-  region  = var.region
+  service = each.key
 }
 
 resource "google_service_account" "app_sa" {
-  account_id   = "amiibo-app-sa"
-  display_name = "Amiibo App Service Account"
+  account_id   = "${var.service_name}-sa"
+  display_name = "${var.service_name} service account"
 }
 
 resource "google_service_account" "cloud_run" {
-  account_id   = "cloud-run-sa"
-  display_name = "Cloud Run Service Account"
+  account_id   = "${var.service_name}-runner"
+  display_name = "${var.service_name} Cloud Run runtime"
+}
+
+resource "google_project_iam_member" "artifact_registry_reader" {
+  project = var.project_id
+  role    = "roles/artifactregistry.reader"
+  member  = "serviceAccount:${google_service_account.cloud_run.email}"
 }
 
 resource "google_artifact_registry_repository" "docker_repo" {
   location      = var.region
-  repository_id = "amiibo-tracker"
+  repository_id = var.service_name
   description   = "Docker repo for Amiibo Tracker app"
   format        = "DOCKER"
 }
 
 resource "google_cloud_run_service" "amiibo_tracker" {
-  name     = "amiibo-tracker"
+  name     = var.service_name
   location = var.region
+
+  depends_on = [
+    google_project_service.enabled,
+    google_artifact_registry_repository.docker_repo,
+    google_project_iam_member.artifact_registry_reader,
+  ]
 
   template {
     spec {
       containers {
         image = var.image_url
 
-        env {
-          name  = "DJANGO_SECRET_KEY"
-          value = var.django_secret_key
+        dynamic "env" {
+          for_each = local.container_env
+          content {
+            name  = env.value.name
+            value = env.value.value
+          }
         }
-        env {
-          name  = "GOOGLE_CLIENT_ID"
-          value = var.google_client_id
-        }
-        env {
-          name  = "GOOGLE_CLIENT_SECRET"
-          value = var.google_client_secret
+
+        dynamic "env" {
+          for_each = var.oauth_client_secret_secret != "" ? [1] : []
+          content {
+            name = "GOOGLE_OAUTH_CLIENT_SECRETS_DATA"
+            value_from {
+              secret_key_ref {
+                name    = var.oauth_client_secret_secret
+                version = "latest"
+              }
+            }
+          }
         }
       }
       service_account_name = google_service_account.app_sa.email
@@ -58,16 +84,11 @@ resource "google_cloud_run_service" "amiibo_tracker" {
   }
 }
 
-resource "google_cloud_run_service_iam_member" "invoker" {
-  service  = google_cloud_run_service.amiibo_tracker.name
+resource "google_cloud_run_service_iam_member" "public" {
+  count    = var.allow_unauthenticated ? 1 : 0
   location = google_cloud_run_service.amiibo_tracker.location
+  project  = var.project_id
+  service  = google_cloud_run_service.amiibo_tracker.name
   role     = "roles/run.invoker"
   member   = "allUsers"
 }
-
-resource "google_project_iam_member" "artifact_registry_writer" {
-  project = var.project_id
-  role    = "roles/artifactregistry.writer"
-  member  = "serviceAccount:${google_service_account.app_sa.email}"
-}
-

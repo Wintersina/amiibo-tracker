@@ -9,44 +9,49 @@ variable "region" {
   default     = "us-central1"
 }
 
-variable "app_name" {
-  description = "The name of your Cloud Run app and related resources"
+variable "service_name" {
+  description = "Name for the Cloud Run service"
   type        = string
   default     = "amiibo-tracker"
 }
 
-variable "image_tag" {
-  description = "Docker image tag to deploy"
-  type        = string
-  default     = "latest"
-}
-
-variable "env_secrets" {
-  description = "A map of environment variables to be injected as secrets"
-  type        = map(string)
-  default     = {}
-}
-
-
 variable "image_url" {
-  description = "Docker image URL"
+  description = "The URL of the Docker image to deploy"
   type        = string
 }
 
 variable "django_secret_key" {
-  description = "Django secret key"
+  description = "Secret key for Django"
   type        = string
   sensitive   = true
 }
 
-variable "google_client_id" {
-  description = "OAuth client ID"
-  type        = string
-  sensitive   = true
+variable "allowed_hosts" {
+  description = "List of allowed hosts for Django"
+  type        = list(string)
+  default     = []
 }
 
-variable "google_client_secret" {
-  description = "OAuth client secret"
+variable "oauth_redirect_uri" {
+  description = "Redirect URI used for OAuth callbacks"
   type        = string
-  sensitive   = true
+  default     = ""
+}
+
+variable "client_secret_path" {
+  description = "Filesystem path where the OAuth client secret JSON is available inside the container"
+  type        = string
+  default     = "/secrets/client_secret.json"
+}
+
+variable "oauth_client_secret_secret" {
+  description = "Optional existing Secret Manager secret that stores the OAuth client JSON (latest version is injected as an env var)"
+  type        = string
+  default     = ""
+}
+
+variable "allow_unauthenticated" {
+  description = "Whether to allow unauthenticated access to Cloud Run"
+  type        = bool
+  default     = true
 }
