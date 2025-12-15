@@ -55,3 +55,12 @@ variable "allow_unauthenticated" {
   type        = bool
   default     = true
 }
+variable "app_name" {
+  type    = string
+  default = null
+}
+
+variable "env_secrets" {
+  type    = map(string)
+  default = {}
+}
