@@ -22,8 +22,9 @@ COPY . .
 
 RUN python manage.py collectstatic --noinput
 
+RUN chmod +x scripts/entrypoint.sh
 
 EXPOSE 8080
 
 
-CMD ["gunicorn", "amiibo_tracker.wsgi:application", "--bind", "0.0.0.0:8080"]
+ENTRYPOINT ["./scripts/entrypoint.sh"]
