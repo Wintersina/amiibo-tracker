@@ -1,17 +1,16 @@
-# .github/workflows/terraform.yml
-name: Terraform Provisioning
+name: Deploy to Google Cloud with Terraform
 
-#on:
-#  workflow_run:
-#    workflows: ["Build and Push Docker Image"]
-#    types:
-#      - completed
 on:
   push:
     branches:
       - main
-      - oauth_flow
-      - terraform_step
+  workflow_dispatch:
+
+env:
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  REGION: ${{ secrets.GCP_REGION }}
+  SERVICE_NAME: amiibo-tracker
+  IMAGE_URL: ${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/amiibo-tracker/amiibo-tracker:latest
 
 jobs:
   terraform:
@@ -19,14 +18,16 @@ jobs:
 
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
 
       - name: Set up Google Cloud SDK
-        uses: google-github-actions/setup-gcloud@v1
-        with:
-          project_id: "${{ secrets.GCP_PROJECT_ID }}"
-          service_account_key: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
-          export_default_credentials: true
+        uses: google-github-actions/setup-gcloud@v2
 
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v3
@@ -36,32 +37,31 @@ jobs:
       - name: Create terraform.tfvars file
         run: |
           cat > terraform/terraform.tfvars <<EOF
-          project_id          = "${{ secrets.GCP_PROJECT_ID }}"
-          region              = "${{ secrets.GCP_REGION }}"
-          django_secret_key   = "${{ secrets.DJANGO_SECRET_KEY }}"
-          google_client_id    = "${{ secrets.GOOGLE_CLIENT_ID }}"
-          google_client_secret = "${{ secrets.GOOGLE_CLIENT_SECRET }}"
-          image_url = "us-central1-docker.pkg.dev/amiibo-tracker-458804/amiibo-tracker/amiibo-tracker:latest"
+          project_id        = "$PROJECT_ID"
+          region            = "$REGION"
+          image_url         = "$IMAGE_URL"
+          django_secret_key = "${{ secrets.DJANGO_SECRET_KEY }}"
+          oauth_redirect_uri = "${{ secrets.OAUTH_REDIRECT_URI }}"
+          oauth_client_secret_secret = "${{ secrets.OAUTH_CLIENT_SECRET_SECRET }}"
+          allowed_hosts = ${ALLOWED_HOSTS_JSON:-[]}
           EOF
-
-      - name: Write GCP credentials to file for Terraform
-        run: echo '${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}' > /tmp/account.json
-        shell: bash
+        env:
+          ALLOWED_HOSTS_JSON: ${{ secrets.ALLOWED_HOSTS_JSON }}
 
       - name: Terraform Init
-        run: terraform init
+        run: terraform init -backend-config="bucket=${{ secrets.TF_STATE_BUCKET }}" -backend-config="prefix=terraform/state"
         working-directory: terraform
         env:
-          GOOGLE_APPLICATION_CREDENTIALS: /tmp/account.json
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.auth.outputs.credentials_file_path }}
 
       - name: Terraform Plan
         run: terraform plan -var-file="terraform.tfvars"
         working-directory: terraform
         env:
-          GOOGLE_APPLICATION_CREDENTIALS: /tmp/account.json
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.auth.outputs.credentials_file_path }}
 
       - name: Terraform Apply
         run: terraform apply -auto-approve -var-file="terraform.tfvars"
         working-directory: terraform
         env:
-          GOOGLE_APPLICATION_CREDENTIALS: /tmp/account.json
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.auth.outputs.credentials_file_path }}
