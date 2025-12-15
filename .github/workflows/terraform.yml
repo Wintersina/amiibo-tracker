@@ -25,6 +25,35 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      - name: Validate required secrets
+        env:
+          REQUIRED_GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          REQUIRED_GCP_REGION: ${{ secrets.GCP_REGION }}
+          REQUIRED_GCP_SERVICE_ACCOUNT_KEY: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
+          REQUIRED_DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
+          REQUIRED_OAUTH_REDIRECT_URI: ${{ secrets.OAUTH_REDIRECT_URI }}
+          REQUIRED_OAUTH_CLIENT_SECRET_SECRET: ${{ secrets.OAUTH_CLIENT_SECRET_SECRET }}
+          REQUIRED_TF_STATE_BUCKET: ${{ secrets.TF_STATE_BUCKET }}
+        run: |
+          missing=()
+          for var in \
+            REQUIRED_GCP_PROJECT_ID \
+            REQUIRED_GCP_REGION \
+            REQUIRED_GCP_SERVICE_ACCOUNT_KEY \
+            REQUIRED_DJANGO_SECRET_KEY \
+            REQUIRED_OAUTH_REDIRECT_URI \
+            REQUIRED_OAUTH_CLIENT_SECRET_SECRET \
+            REQUIRED_TF_STATE_BUCKET; do
+            if [ -z "${!var}" ]; then
+              missing+=("${var#REQUIRED_}")
+            fi
+          done
+
+          if [ "${#missing[@]}" -gt 0 ]; then
+            printf '::error ::Missing required secrets: %s\n' "$(IFS=', '; echo "${missing[*]}")"
+            exit 1
+          fi
+
       - name: Authenticate to Google Cloud
         id: auth
         uses: google-github-actions/auth@v2
