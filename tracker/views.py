@@ -6,7 +6,6 @@ import requests
 from django.contrib.auth import logout as django_logout
 from django.http import JsonResponse
 from django.shortcuts import redirect, render
-from django.urls import reverse
 from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.decorators.csrf import csrf_exempt
@@ -79,13 +78,17 @@ class OAuthCallbackView(View):
                 "scopes": creds.scopes,
             }
 
+        oauth_state = request.session.pop("oauth_state", None)
+        if not oauth_state:
+            return redirect("oauth_login")
+
         flow = Flow.from_client_secrets_file(
             GoogleSheetClientManager.client_secret_path(),
             scopes=OauthConstants.SCOPES,
-            redirect_uri=request.build_absolute_uri(reverse("oauth2callback")),
+            redirect_uri=OauthConstants.REDIRECT_URI,
+            state=oauth_state,
         )
 
-        state = request.session.pop("state", None)
         flow.fetch_token(authorization_response=request.build_absolute_uri())
 
         credentials = flow.credentials

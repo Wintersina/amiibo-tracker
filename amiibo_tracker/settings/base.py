@@ -73,8 +73,10 @@ CACHES = {
     }
 }
 
-# Use the in-memory cache for session storage to avoid relying on a database
-# table in ephemeral environments (e.g., Cloud Run containers).
+# By default Django stores session data in the database (the `django_session`
+# table). In environments where the database may not be writable or may be
+# reset between deploys (e.g., Cloud Run), store sessions in the cache instead
+# to avoid that dependency.
 SESSION_ENGINE = "django.contrib.sessions.backends.cache"
 
 logging.basicConfig(level=logging.INFO)
