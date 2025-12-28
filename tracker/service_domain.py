@@ -1,4 +1,5 @@
 from functools import cached_property
+from datetime import datetime
 
 import requests
 
@@ -7,6 +8,16 @@ from tracker.helpers import LoggingMixin
 
 
 class AmiiboService(LoggingMixin):
+    HEADER = [
+        "Amiibo ID",
+        "Amiibo Name",
+        "Game Series",
+        "Release Date",
+        "Type",
+        "Collected Status",
+    ]
+    COLLECTED_STATUS_COL = 6
+
     def __init__(
         self,
         google_sheet_client_manager,
@@ -19,9 +30,11 @@ class AmiiboService(LoggingMixin):
 
     @cached_property
     def sheet(self):
-        return self.google_sheet_client.get_or_create_worksheet_by_name(
+        sheet = self.google_sheet_client.get_or_create_worksheet_by_name(
             self.work_sheet_title
         )
+        self._ensure_sheet_structure(sheet)
+        return sheet
 
     def fetch_amiibos(self):
         # no error handling for this at this time
@@ -35,14 +48,28 @@ class AmiiboService(LoggingMixin):
         for amiibo in amiibos:
             amiibo_id = amiibo["head"] + amiibo["gameSeries"] + amiibo["tail"]
             if amiibo_id not in existing_ids:
-                new_rows.append([amiibo_id, amiibo["name"], "0"])
+                new_rows.append(
+                    [
+                        amiibo_id,
+                        amiibo["name"],
+                        amiibo.get("gameSeries", ""),
+                        self._format_release_date(amiibo.get("release")),
+                        amiibo.get("type", ""),
+                        "0",
+                    ]
+                )
 
         if new_rows:
             self.sheet.append_rows(new_rows, value_input_option="USER_ENTERED")
 
     def get_collected_status(self):
         rows = self.sheet.get_all_values()[1:]
-        return {row[0]: row[2] for row in rows}
+        return {
+            row[0]: row[self.COLLECTED_STATUS_COL - 1]
+            if len(row) >= self.COLLECTED_STATUS_COL
+            else "0"
+            for row in rows
+        }
 
     def toggle_collected(self, amiibo_id: str, action: str):
         self.log_info(f"{action} toggled {amiibo_id}")
@@ -51,11 +78,34 @@ class AmiiboService(LoggingMixin):
             return False
 
         cell = self.sheet.find(amiibo_id)
-        self.sheet.update_cell(cell.row, 3, "1" if action == "collect" else "0")
+        self.sheet.update_cell(
+            cell.row, self.COLLECTED_STATUS_COL, "1" if action == "collect" else "0"
+        )
         return True
+
+    def _ensure_sheet_structure(self, sheet):
+        header = sheet.row_values(1)
+        if header != self.HEADER:
+            sheet.update("A1:F1", [self.HEADER])
+
+    @staticmethod
+    def _format_release_date(release_info: dict | None):
+        release_info = release_info or {}
+        for region in ["na", "eu", "jp", "au"]:
+            date_str = release_info.get(region)
+            if date_str:
+                try:
+                    parsed_date = datetime.strptime(date_str, "%Y-%m-%d")
+                    return parsed_date.strftime("%m/%d/%Y")
+                except ValueError:
+                    return date_str
+        return None
 
 
 class GoogleSheetConfigManager(LoggingMixin):
+    CONFIG_HEADER = ["Config name", "Config value"]
+    DEFAULT_IGNORE_TYPES = {"Band": "1", "Card": "1", "Yarn": "1"}
+
     def __init__(
         self,
         google_sheet_client_manager: GoogleSheetClientManager,
@@ -68,15 +118,106 @@ class GoogleSheetConfigManager(LoggingMixin):
 
     @cached_property
     def sheet(self):
-        return self.google_sheet_client.get_or_create_worksheet_by_name(
+        sheet = self.google_sheet_client.get_or_create_worksheet_by_name(
             self.work_sheet_title
         )
+        self._ensure_structure(sheet)
+        return sheet
 
     def is_dark_mode(self) -> bool:
-        val = self.sheet.cell(2, 1).value
+        val = self.get_config_value("DarkMode", default="0")
         self.log_info(f"is_dark_mode: {val}")
         return val == "1"
 
     def set_dark_mode(self, enable: bool):
         self.log_info(f"set_dark_mode: {enable}")
-        self.sheet.update_cell(2, 1, "1" if enable else "0")
+        self.set_config_value("DarkMode", "1" if enable else "0")
+
+    def get_ignored_types(self, available_types: list[str]) -> list[str]:
+        ignored_types = []
+        for amiibo_type in available_types:
+            key = self._type_config_key(amiibo_type)
+            self._ensure_type_row(amiibo_type)
+            if (
+                self.get_config_value(
+                    key, default=self._default_type_value(amiibo_type)
+                )
+                == "1"
+            ):
+                ignored_types.append(amiibo_type)
+        return ignored_types
+
+    def set_ignore_type(self, amiibo_type: str, ignore: bool):
+        self._ensure_type_row(amiibo_type)
+        self.set_config_value(
+            self._type_config_key(amiibo_type), "1" if ignore else "0"
+        )
+
+    def get_config_value(self, key: str, default: str = "") -> str:
+        config_map = self._get_config_map()
+        if key in config_map:
+            return config_map[key][1]
+        return default
+
+    def set_config_value(self, key: str, value: str):
+        config_map = self._get_config_map()
+        if key in config_map:
+            row_index = config_map[key][0]
+            self.sheet.update_cell(row_index, 2, value)
+        else:
+            self.sheet.append_row([key, value], value_input_option="USER_ENTERED")
+
+    def _get_config_map(self) -> dict[str, tuple[int, str]]:
+        self._ensure_structure(self.sheet)
+        values = self.sheet.get_all_values()
+        config_map: dict[str, tuple[int, str]] = {}
+        for idx, row in enumerate(values[1:], start=2):
+            if not row or not row[0]:
+                continue
+            name = row[0]
+            value = row[1] if len(row) > 1 else ""
+            config_map[name] = (idx, value)
+        return config_map
+
+    def _ensure_structure(self, sheet):
+        values = sheet.get_all_values()
+        if not values or values[0][:2] != self.CONFIG_HEADER:
+            existing_dark_mode = None
+            if values and values[0] and values[0][0].lower() == "darkmode":
+                existing_dark_mode = values[1][0] if len(values) > 1 else None
+
+            sheet.clear()
+            sheet.append_row(self.CONFIG_HEADER)
+            dark_mode_value = existing_dark_mode or "0"
+            defaults = [["DarkMode", dark_mode_value]]
+            for amiibo_type, default_val in self.DEFAULT_IGNORE_TYPES.items():
+                defaults.append([self._type_config_key(amiibo_type), default_val])
+            sheet.append_rows(defaults, value_input_option="USER_ENTERED")
+        else:
+            # Ensure default rows exist
+            config_map = {
+                row[0]: idx for idx, row in enumerate(values[1:], start=2) if row
+            }
+            if "DarkMode" not in config_map:
+                sheet.append_row(["DarkMode", "0"], value_input_option="USER_ENTERED")
+
+            for amiibo_type, default_val in self.DEFAULT_IGNORE_TYPES.items():
+                key = self._type_config_key(amiibo_type)
+                if key not in config_map:
+                    sheet.append_row(
+                        [key, default_val], value_input_option="USER_ENTERED"
+                    )
+
+    def _type_config_key(self, amiibo_type: str) -> str:
+        return f"IgnoreType:{amiibo_type}"
+
+    def _ensure_type_row(self, amiibo_type: str):
+        key = self._type_config_key(amiibo_type)
+        default_value = self._default_type_value(amiibo_type)
+        if key not in self._get_config_map():
+            self.sheet.append_row(
+                [key, default_value], value_input_option="USER_ENTERED"
+            )
+
+    def _default_type_value(self, amiibo_type: str) -> str:
+        return self.DEFAULT_IGNORE_TYPES.get(amiibo_type, "0")

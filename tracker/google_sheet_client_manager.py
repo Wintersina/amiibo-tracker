@@ -105,16 +105,28 @@ class GoogleSheetClientManager(HelperMixin, LoggingMixin):
             sheet = spreadsheet.worksheet(worksheet_name)
             created = False
         except gspread.exceptions.WorksheetNotFound:
-            sheet = spreadsheet.add_worksheet(title=worksheet_name, rows=500, cols=3)
+            sheet = spreadsheet.add_worksheet(title=worksheet_name, rows=500, cols=6)
             created = True
 
         if created:
             if worksheet_name == self.work_sheet_amiibo_manager:
-                sheet.append_row(["Amiibo ID", "Amiibo Name", "Collected Status"])
+                sheet.append_row(
+                    [
+                        "Amiibo ID",
+                        "Amiibo Name",
+                        "Game Series",
+                        "Release Date",
+                        "Type",
+                        "Collected Status",
+                    ]
+                )
 
             if worksheet_name == self.work_sheet_config_manager:
-                sheet.append_row(["DarkMode"])
-                sheet.append_row(["0"])
+                sheet.append_row(["Config name", "Config value"])
+                sheet.append_row(["DarkMode", "0"])
+                sheet.append_row(["IgnoreType:Band", "1"])
+                sheet.append_row(["IgnoreType:Card", "1"])
+                sheet.append_row(["IgnoreType:Yarn", "1"])
 
         return sheet
 

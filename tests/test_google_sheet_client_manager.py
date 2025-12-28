@@ -62,8 +62,23 @@ def test_get_or_create_worksheet_by_name_creates_defaults():
         "AmiiboCollectionConfigManager"
     )
 
-    assert amiibo_sheet.rows == [["Amiibo ID", "Amiibo Name", "Collected Status"]]
-    assert config_sheet.rows == [["DarkMode"], ["0"]]
+    assert amiibo_sheet.rows == [
+        [
+            "Amiibo ID",
+            "Amiibo Name",
+            "Game Series",
+            "Release Date",
+            "Type",
+            "Collected Status",
+        ]
+    ]
+    assert config_sheet.rows == [
+        ["Config name", "Config value"],
+        ["DarkMode", "0"],
+        ["IgnoreType:Band", "1"],
+        ["IgnoreType:Card", "1"],
+        ["IgnoreType:Yarn", "1"],
+    ]
     assert manager.get_or_create_worksheet_by_name("AmiiboCollection") is amiibo_sheet
 
 
@@ -142,8 +157,23 @@ def test_initialize_default_worksheets_populates_missing():
     amiibo_sheet = spreadsheet.worksheet(manager.work_sheet_amiibo_manager)
     config_sheet = spreadsheet.worksheet(manager.work_sheet_config_manager)
 
-    assert amiibo_sheet.rows == [["Amiibo ID", "Amiibo Name", "Collected Status"]]
-    assert config_sheet.rows == [["DarkMode"], ["0"]]
+    assert amiibo_sheet.rows == [
+        [
+            "Amiibo ID",
+            "Amiibo Name",
+            "Game Series",
+            "Release Date",
+            "Type",
+            "Collected Status",
+        ]
+    ]
+    assert config_sheet.rows == [
+        ["Config name", "Config value"],
+        ["DarkMode", "0"],
+        ["IgnoreType:Band", "1"],
+        ["IgnoreType:Card", "1"],
+        ["IgnoreType:Yarn", "1"],
+    ]
 
 
 def test_initialize_default_worksheets_respects_existing_data():

@@ -115,6 +115,35 @@
             align-items: center;
         }
 
+        .type-filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .type-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.35rem 0.75rem;
+            background: rgba(15, 118, 110, 0.08);
+            border-radius: 999px;
+            border: 1px solid var(--card-border);
+            color: var(--text);
+            font-weight: 600;
+        }
+
+        body.dark .type-chip {
+            background: rgba(34, 197, 94, 0.08);
+        }
+
+        .type-chip input {
+            accent-color: var(--button-bg);
+            width: 16px;
+            height: 16px;
+        }
+
         .filter-select,
         .search-input {
             padding: 0.55em 1.1em;
@@ -200,6 +229,12 @@
             margin: 0 0 0.8em;
             color: var(--muted);
             font-size: 0.95em;
+        }
+
+        .amiibo-meta {
+            margin: 0.2em 0 0.6em;
+            color: var(--muted);
+            font-size: 0.9em;
         }
 
         .collected {
@@ -322,6 +357,15 @@
             <option value="collected">Collected Only</option>
             <option value="uncollected">Uncollected Only</option>
         </select>
+        <div class="type-filters" aria-label="Filter by Amiibo type">
+            <span style="font-weight: 700;">Types:</span>
+            {% for type in amiibo_types %}
+                <label class="type-chip">
+                    <input type="checkbox" data-type="{{ type.name }}" {% if not type.ignored %}checked{% endif %}>
+                    {{ type.name }}
+                </label>
+            {% endfor %}
+        </div>
         <button id="darkModeToggle" class="dark-toggle" aria-label="Toggle Dark Mode">🌙</button>
         <a href="{% url 'logout' %}" class="logout-btn" aria-label="Logout">⏻ Logout</a>
     </div>
@@ -339,9 +383,12 @@
                 <div class="amiibo-grid">
                     {% for amiibo in group.list %}
                         <div class="amiibo-card {% if amiibo.collected %}collected{% endif %}"
-                             data-id="{{ amiibo.head }}{{ amiibo.gameSeries }}{{ amiibo.tail }}">
+                             data-id="{{ amiibo.head }}{{ amiibo.gameSeries }}{{ amiibo.tail }}"
+                             data-type="{{ amiibo.type|default:'Unknown' }}"
+                             data-series="{{ amiibo.amiiboSeries }}">
                             <img src="{{ amiibo.image }}" alt="{{ amiibo.name }}">
                             <p class="amiibo-name">{{ amiibo.name }}</p>
+                            <p class="amiibo-meta">{{ amiibo.gameSeries|default:"Unknown Series" }} • {{ amiibo.type|default:"Unknown" }}</p>
                             <p class="release-date">
                                 {{ amiibo.display_release|default:"N/A" }}
                             </p>
@@ -411,6 +458,24 @@
     document.getElementById('filterSelect').addEventListener('change', filterAndSearch);
     document.getElementById('searchInput').addEventListener('input', filterAndSearch);
 
+    document.querySelectorAll('.type-filters input[type="checkbox"]').forEach(checkbox => {
+        checkbox.addEventListener('change', async (event) => {
+            const type = event.target.dataset.type;
+            const ignore = !event.target.checked;
+
+            await fetch('/toggle-type-filter/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({ type, ignore })
+            });
+
+            window.location.reload();
+        });
+    });
+
     function filterAndSearch() {
         const value = document.getElementById('filterSelect').value;
         const searchTerm = document.getElementById('searchInput').value.toLowerCase();
@@ -424,7 +489,9 @@
                 const isCollected = card.classList.contains('collected');
                 const name = card.querySelector('.amiibo-name').textContent.toLowerCase();
                 const release = card.querySelector('.release-date').textContent.toLowerCase();
-                const matchesSearch = name.includes(searchTerm) || release.includes(searchTerm);
+                const type = (card.dataset.type || '').toLowerCase();
+                const series = (card.dataset.series || '').toLowerCase();
+                const matchesSearch = name.includes(searchTerm) || release.includes(searchTerm) || type.includes(searchTerm) || series.includes(searchTerm);
                 const matchesFilter =
                     value === 'all' ||
                     (value === 'collected' && isCollected) ||
