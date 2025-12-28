@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -23,7 +24,7 @@
             padding: 0;
             font-family: 'Vazirmatn', system-ui, sans-serif;
             background: linear-gradient(180deg, rgba(6, 10, 14, 0.95), rgba(12, 18, 24, 0.9)),
-                        url('/static/images/amiibo_bg.png') center/420px repeat;
+                        url('{% static "images/amiibo_bg.png" %}') center/420px repeat;
             background-attachment: fixed;
             min-height: 100vh;
             display: flex;
@@ -134,6 +135,26 @@
             box-shadow: 0 18px 32px rgba(0, 0, 0, 0.35);
         }
 
+        .google-btn {
+            background: #ffffff;
+            color: #3c4043;
+            border: 1px solid #dadce0;
+            box-shadow: none;
+            font-weight: 600;
+            gap: 0.75rem;
+            padding: 0.85rem 1.3rem;
+        }
+
+        .google-btn:hover {
+            box-shadow: 0 10px 22px rgba(0, 0, 0, 0.18);
+        }
+
+        .google-btn img {
+            width: 20px;
+            height: 20px;
+            margin: -1px 0;
+        }
+
         .footer-link {
             margin-top: 1.5rem;
             display: inline-flex;
@@ -172,7 +193,10 @@
                 </p>
 
                 <div class="actions">
-                    <a href="{% url 'oauth_login' %}" class="action-btn primary">Sign in with Google</a>
+                    <a href="{% url 'oauth_login' %}" class="action-btn google-btn">
+                        <img src="{% static 'images/google-logo.svg' %}" alt="Google logo">
+                        Login with Google
+                    </a>
                     <a href="{% url 'privacy' %}" class="action-btn secondary">Privacy details</a>
                 </div>
             </div>

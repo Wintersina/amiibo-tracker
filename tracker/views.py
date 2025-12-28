@@ -262,12 +262,12 @@ class PrivacyPolicyView(View):
                         "purpose": "Used to identify your account, keep your session tied to your data, and let you know which Google account is connected.",
                     },
                     {
-                        "item": "Basic profile (name, avatar)",
+                        "item": "Basic profile (name)",
                         "purpose": "Displayed in the app header so you can quickly see which account is active.",
                     },
                     {
                         "item": "Google Sheets access",
-                        "purpose": "Lets Amiibo Tracker read and update the sheet you authorize so we can store your collection status and dark mode preference without touching any other documents.",
+                        "purpose": "Lets Amiibo Tracker create and update your AmiiboCollection sheet so we can store your collection status and dark mode preference without touching any other documents.",
                     },
                 ]
             },
