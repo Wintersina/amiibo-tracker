@@ -63,10 +63,19 @@ class DummySheet:
         self.rows[row - 1][col - 1] = value
 
 
-def build_service():
+class DummySheetWithBatch(DummySheet):
+    def __init__(self):
+        super().__init__()
+        self.batch_update_calls = []
+
+    def batch_update(self, update_requests, value_input_option=None):
+        self.batch_update_calls.append((update_requests, value_input_option))
+
+
+def build_service(sheet_cls=DummySheet):
     class DummyClient:
         def __init__(self):
-            self.sheet = DummySheet()
+            self.sheet = sheet_cls()
 
         def get_or_create_worksheet_by_name(self, name):
             return self.sheet
@@ -177,3 +186,39 @@ def test_seed_new_amiibos_formats_release_date():
         "Figure",
         "0",
     ] in service.sheet.rows
+
+
+def test_batched_update_prefers_batch_update_when_available():
+    service = build_service(sheet_cls=DummySheetWithBatch)
+
+    update_requests = [
+        {"range": "A2:F2", "values": [["id-1", "Name 1", "", "", "", "0"]]},
+        {"range": "A3:F3", "values": [["id-2", "Name 2", "", "", "", "0"]]},
+    ]
+
+    service._batched_update(update_requests, batch_size=50)
+
+    assert service.sheet.batch_update_calls == [
+        (update_requests, "USER_ENTERED"),
+    ]
+    assert service.sheet.update_calls == []
+
+
+def test_batched_update_falls_back_to_update_when_missing_batch():
+    service = build_service()
+
+    update_requests = [
+        {"range": "A2:F2", "values": [["fallback", "Name", "", "", "", "0"]]},
+        {"range": "A3:F3", "values": [["fallback2", "Name", "", "", "", "0"]]},
+    ]
+
+    service._batched_update(update_requests, batch_size=1)
+
+    assert (
+        ("A2:F2", [["fallback", "Name", "", "", "", "0"]])
+        in service.sheet.update_calls
+    )
+    assert (
+        ("A3:F3", [["fallback2", "Name", "", "", "", "0"]])
+        in service.sheet.update_calls
+    )

@@ -124,9 +124,15 @@ class AmiiboService(LoggingMixin):
             sheet.update("A1:F1", [self.HEADER])
 
     def _batched_update(self, update_requests: list[dict], batch_size: int = 50):
+        batch_updater = getattr(self.sheet, "batch_update", None)
+
         for start in range(0, len(update_requests), batch_size):
             batch = update_requests[start : start + batch_size]
-            self.sheet.batch_update(batch, value_input_option="USER_ENTERED")
+            if batch_updater:
+                batch_updater(batch, value_input_option="USER_ENTERED")
+            else:
+                for request in batch:
+                    self.sheet.update(request["range"], request["values"])
 
     @staticmethod
     def _format_release_date(release_info: dict | None):

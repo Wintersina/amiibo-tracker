@@ -417,6 +417,34 @@
         button.textContent = isCollected ? 'Collected' : 'Collect';
     }
 
+    function startDebouncedAction(element, minDelay = 300, maxDelay = 800) {
+        if (!element) {
+            return null;
+        }
+
+        if (element.dataset.debouncing === 'true') {
+            return null;
+        }
+
+        element.dataset.debouncing = 'true';
+        element.disabled = true;
+        const start = Date.now();
+        const maxTimer = setTimeout(() => {
+            element.dataset.debouncing = 'false';
+            element.disabled = false;
+        }, maxDelay);
+
+        return () => {
+            const elapsed = Date.now() - start;
+            const remaining = Math.max(minDelay - elapsed, 0);
+            clearTimeout(maxTimer);
+            setTimeout(() => {
+                element.dataset.debouncing = 'false';
+                element.disabled = false;
+            }, remaining);
+        };
+    }
+
     function handleButtonHover(event) {
         const button = event.currentTarget;
 
@@ -469,6 +497,11 @@
             const type = event.target.dataset.type;
             const ignore = !event.target.checked;
 
+            const release = startDebouncedAction(event.target);
+            if (!release) {
+                return;
+            }
+
             await fetch('/toggle-type-filter/', {
                 method: 'POST',
                 headers: {
@@ -477,6 +510,8 @@
                 },
                 body: JSON.stringify({ type, ignore })
             });
+
+            release();
 
             window.location.reload();
         });
@@ -519,19 +554,28 @@
         document.getElementById('collectionTotal').textContent = `Collected: ${collected.length}`;
     }
 
-    document.getElementById('darkModeToggle').addEventListener('click', async () => {
+    document.getElementById('darkModeToggle').addEventListener('click', async (event) => {
+        const release = startDebouncedAction(event.currentTarget);
+        if (!release) {
+            return;
+        }
+
         const body = document.body;
         const isDark = body.classList.toggle('dark');
         document.getElementById('darkModeToggle').textContent = isDark ? '☀️' : '🌙';
 
-        await fetch('/toggle-dark-mode/', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': '{{ csrf_token }}'
-            },
-            body: JSON.stringify({ dark_mode: isDark })
-        });
+        try {
+            await fetch('/toggle-dark-mode/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({ dark_mode: isDark })
+            });
+        } finally {
+            release();
+        }
     });
 
     function initializeButtons() {
