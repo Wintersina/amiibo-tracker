@@ -88,8 +88,11 @@ class AmiiboService(LoggingMixin):
                 updates[row_index] = updated_row[: len(self.HEADER)]
 
         if updates:
-            for row_index, row_values in updates.items():
-                self.sheet.update(f"A{row_index}:F{row_index}", [row_values])
+            update_requests = [
+                {"range": f"A{row_index}:F{row_index}", "values": [row_values]}
+                for row_index, row_values in updates.items()
+            ]
+            self._batched_update(update_requests)
 
         if new_rows:
             self.sheet.append_rows(new_rows, value_input_option="USER_ENTERED")
@@ -119,6 +122,11 @@ class AmiiboService(LoggingMixin):
         header = sheet.row_values(1)
         if header != self.HEADER:
             sheet.update("A1:F1", [self.HEADER])
+
+    def _batched_update(self, update_requests: list[dict], batch_size: int = 50):
+        for start in range(0, len(update_requests), batch_size):
+            batch = update_requests[start : start + batch_size]
+            self.sheet.batch_update(batch, value_input_option="USER_ENTERED")
 
     @staticmethod
     def _format_release_date(release_info: dict | None):
