@@ -43,8 +43,13 @@
             transition: background-color 0.3s ease, color 0.3s ease;
         }
 
+        body.dark {
+            background: linear-gradient(160deg, rgba(6, 10, 14, 0.9), rgba(12, 18, 24, 0.88)),
+                        url('/static/images/amiibo_bg.png') center/520px repeat;
+        }
+
         main {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
         }
 
@@ -63,15 +68,19 @@
 
         .top-controls {
             position: sticky;
-            top: 0;
+            top: 0.75rem;
             display: flex;
             align-items: center;
             gap: 1rem;
-            padding: 1rem 0;
+            padding: 1rem 1.25rem;
+            margin: 0 auto 1.5rem;
             z-index: 100;
+            max-width: 1400px;
+            border-radius: 18px;
             backdrop-filter: blur(12px);
-            background: linear-gradient(135deg, rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.65));
-            border-bottom: 1px solid var(--card-border);
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.88), rgba(255, 255, 255, 0.72));
+            border: 1px solid var(--card-border);
+            box-shadow: 0 16px 36px rgba(0, 0, 0, 0.12);
         }
 
         body.dark .top-controls {
@@ -81,13 +90,6 @@
         .welcome {
             margin-right: auto;
             font-weight: 700;
-        }
-
-        .eyebrow {
-            font-size: 0.9rem;
-            color: var(--muted);
-            letter-spacing: 0.1em;
-            text-transform: uppercase;
         }
 
         .collection-pill {
@@ -160,14 +162,14 @@
         .amiibo-card {
             border: 1px solid var(--card-border);
             border-radius: 14px;
-            padding: 1em;
-            margin: 1em;
+            padding: 1.1em 1.1em 1.2em;
+            margin: 0.75em;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: space-between;
-            width: 160px;
-            height: 260px;
+            width: 200px;
+            min-height: 310px;
             text-align: center;
             box-shadow: 0 14px 32px rgba(0, 0, 0, 0.12);
             background: var(--card-bg);
@@ -180,9 +182,20 @@
         }
 
         .amiibo-card img {
-            max-height: 110px;
+            max-height: 140px;
             object-fit: contain;
             margin-bottom: 0.75em;
+        }
+
+        .amiibo-name {
+            font-weight: 700;
+            margin: 0 0 0.25em;
+        }
+
+        .release-date {
+            margin: 0 0 0.8em;
+            color: var(--muted);
+            font-size: 0.95em;
         }
 
         .collected {
@@ -237,6 +250,12 @@
             background: linear-gradient(135deg, rgba(31, 41, 55, 0.8), rgba(17, 24, 39, 0.9));
         }
 
+        .amiibo-grid {
+            display: flex;
+            flex-wrap: wrap;
+            margin: 0 -0.75em;
+        }
+
         .game-series-header {
             display: flex;
             align-items: center;
@@ -271,6 +290,7 @@
 
             .amiibo-card {
                 width: 46%;
+                min-height: 0;
                 margin: 0.5em;
             }
         }
@@ -280,7 +300,6 @@
 <body class="{% if dark_mode %}dark{% endif %}">
 <div class="top-controls">
     <div class="welcome">
-        <div class="eyebrow">Amiibo Tracker</div>
         <div>Welcome, {{ user_name }}.</div>
         <div id="collectionTotal" class="collection-pill">Collected: 0</div>
     </div>
@@ -297,10 +316,6 @@
 </div>
 
 <main>
-<h1>Curate your Amiibo gallery</h1>
-<p class="intro">Filter, search, and celebrate every figure. The refreshed controls echo Persian geometric patterns while keeping your
-collection crisp and modern.</p>
-
 <div id="amiibo-list">
     {% for group in grouped_amiibos %}
         <div class="game-series-group">
@@ -309,12 +324,17 @@ collection crisp and modern.</p>
                 {{ group.series }} <span class="group-count">({{ group.collected_count }} / {{ group.total_count }})</span>
             </div>
             <div class="amiibo-container">
-                <div style="display: flex; flex-wrap: wrap;">
+                <div class="amiibo-grid">
                     {% for amiibo in group.list %}
                         <div class="amiibo-card {% if amiibo.collected %}collected{% endif %}"
-                             data-id="{{ amiibo.head }}{{ amiibo.gameSeries }}{{ amiibo.tail }}">
+                             data-id="{{ amiibo.head }}{{ amiibo.gameSeries }}{{ amiibo.tail }}"
+                             data-name="{{ amiibo.name|lower }}"
+                             data-release="{{ amiibo.display_release|default:''|lower }}">
                             <img src="{{ amiibo.image }}" alt="{{ amiibo.name }}">
-                            <p>{{ amiibo.name }}</p>
+                            <p class="amiibo-name">{{ amiibo.name }}</p>
+                            <p class="release-date">
+                                {{ amiibo.display_release|default:"N/A" }}
+                            </p>
                             <button onclick="toggleCollected(this)">
                                 {% if amiibo.collected %}Unmark{% else %}Collect{% endif %}
                             </button>
@@ -373,8 +393,9 @@ collection crisp and modern.</p>
 
             cards.forEach(card => {
                 const isCollected = card.classList.contains('collected');
-                const name = card.querySelector('p').textContent.toLowerCase();
-                const matchesSearch = name.includes(searchTerm);
+                const name = card.dataset.name || '';
+                const release = card.dataset.release || '';
+                const matchesSearch = name.includes(searchTerm) || release.includes(searchTerm);
                 const matchesFilter =
                     value === 'all' ||
                     (value === 'collected' && isCollected) ||

@@ -1,5 +1,6 @@
 import json
 from collections import defaultdict
+from datetime import datetime
 
 import googleapiclient.discovery
 import requests
@@ -170,6 +171,20 @@ class AmiiboListView(View):
         for amiibo in amiibos:
             amiibo_id = amiibo["head"] + amiibo["gameSeries"] + amiibo["tail"]
             amiibo["collected"] = collected_status.get(amiibo_id) == "1"
+            release_info = amiibo.get("release") or {}
+            release_date = None
+
+            for region in ["na", "eu", "jp", "au"]:
+                date_str = release_info.get(region)
+                if date_str:
+                    try:
+                        parsed_date = datetime.strptime(date_str, "%Y-%m-%d")
+                        release_date = parsed_date.strftime("%m/%d/%Y")
+                    except ValueError:
+                        release_date = date_str
+                    break
+
+            amiibo["display_release"] = release_date or "N/A"
 
         sorted_amiibos = sorted(amiibos, key=lambda x: (x["amiiboSeries"], x["name"]))
 
