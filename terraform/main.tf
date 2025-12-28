@@ -1,4 +1,3 @@
-// main.tf
 resource "google_project_service" "enabled" {
   for_each = toset([
     "run.googleapis.com",
@@ -6,6 +5,7 @@ resource "google_project_service" "enabled" {
     "cloudbuild.googleapis.com",
     "secretmanager.googleapis.com",
   ])
+
   project = var.project_id
   service = each.key
 }
@@ -44,9 +44,10 @@ resource "google_cloud_run_service" "amiibo_tracker" {
       google_project_iam_member.artifact_registry_reader,
       google_project_iam_member.artifact_registry_reader_app_sa,
     ],
-    var.oauth_client_secret_secret != "" ? [google_secret_manager_secret_iam_member.oauth_client_secret_accessor[0]] : [],
+    var.oauth_client_secret_secret != ""
+    ? [google_secret_manager_secret_iam_member.oauth_client_secret_accessor[0]]
+    : [],
   )
-
 
   template {
     spec {
@@ -55,6 +56,7 @@ resource "google_cloud_run_service" "amiibo_tracker" {
 
         dynamic "env" {
           for_each = local.container_env
+
           content {
             name  = env.value.name
             value = env.value.value
@@ -63,19 +65,20 @@ resource "google_cloud_run_service" "amiibo_tracker" {
 
         dynamic "env" {
           for_each = var.oauth_client_secret_secret != "" ? [1] : []
+
           content {
             name = "GOOGLE_OAUTH_CLIENT_SECRETS_DATA"
+
             value_from {
               secret_key_ref {
                 name = var.oauth_client_secret_secret
                 key  = "latest"
               }
-
-
             }
           }
         }
       }
+
       service_account_name = google_service_account.app_sa.email
     }
   }
@@ -96,7 +99,6 @@ resource "google_cloud_run_service_iam_member" "public" {
   role     = "roles/run.invoker"
   member   = "allUsers"
 }
-
 
 resource "google_secret_manager_secret_iam_member" "oauth_client_secret_accessor" {
   count = var.oauth_client_secret_secret != "" ? 1 : 0
