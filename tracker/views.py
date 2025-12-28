@@ -84,9 +84,20 @@ class OAuthCallbackView(View):
         if request.session.get("credentials"):
             return redirect("amiibo_list")
 
-        oauth_state = request.session.pop("oauth_state", None)
-        if not oauth_state:
+        request_state = request.GET.get("state")
+        oauth_state = request.session.get("oauth_state")
+
+        # If the state is missing from the session (e.g., a new browser session) try to
+        # recover using the callback payload before forcing users through a second
+        # authorization prompt. Still require the provided state to match what we last
+        # issued when available to avoid unnecessary re-auth redirects.
+        if oauth_state and request_state and request_state != oauth_state:
             return redirect("oauth_login")
+
+        if not oauth_state:
+            if not request_state:
+                return redirect("oauth_login")
+            oauth_state = request_state
 
         flow = Flow.from_client_secrets_file(
             GoogleSheetClientManager.client_secret_path(),
@@ -99,6 +110,7 @@ class OAuthCallbackView(View):
 
         credentials = flow.credentials
 
+        request.session.pop("oauth_state", None)
         request.session["credentials"] = credentials_to_dict(credentials)
 
         user_service = googleapiclient.discovery.build(
