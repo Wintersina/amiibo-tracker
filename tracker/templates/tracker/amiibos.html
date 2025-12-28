@@ -534,13 +534,16 @@
         rateLimitCountdown.textContent = `${Math.max(rateLimitState.remaining, 0)}s`;
     }
 
-    function hideRateLimitModal() {
+    function hideRateLimitModal(shouldReload = false) {
         rateLimitState.active = false;
         rateLimitModal.classList.remove('active');
         rateLimitModal.setAttribute('aria-hidden', 'true');
         clearInterval(rateLimitState.timerId);
         rateLimitState.timerId = null;
         toggleSheetActionState(false);
+        if (shouldReload) {
+            window.location.reload();
+        }
     }
 
     function showRateLimitModal(seconds = 30) {
@@ -558,7 +561,7 @@
         rateLimitState.timerId = setInterval(() => {
             rateLimitState.remaining -= 1;
             if (rateLimitState.remaining <= 0) {
-                hideRateLimitModal();
+                hideRateLimitModal(true);
                 return;
             }
             updateRateLimitCountdown();
