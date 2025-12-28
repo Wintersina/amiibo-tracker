@@ -42,22 +42,54 @@ class AmiiboService(LoggingMixin):
         return response.json().get("amiibo", [])
 
     def seed_new_amiibos(self, amiibos: list[dict]):
-        existing_ids = self.sheet.col_values(1)[1:]
+        existing_values = self.sheet.get_all_values()
+        existing_map: dict[str, tuple[int, list[str]]] = {}
+        for idx, row in enumerate(existing_values[1:], start=2):
+            if row:
+                existing_map[row[0]] = (idx, row)
+
         new_rows = []
+        updates: dict[int, list[str]] = {}
 
         for amiibo in amiibos:
             amiibo_id = amiibo["head"] + amiibo["gameSeries"] + amiibo["tail"]
-            if amiibo_id not in existing_ids:
+            release_date = self._format_release_date(amiibo.get("release"))
+
+            if amiibo_id not in existing_map:
                 new_rows.append(
                     [
                         amiibo_id,
                         amiibo["name"],
                         amiibo.get("gameSeries", ""),
-                        self._format_release_date(amiibo.get("release")),
+                        release_date,
                         amiibo.get("type", ""),
                         "0",
                     ]
                 )
+                continue
+
+            row_index, row = existing_map[amiibo_id]
+            updated_row = list(row)
+            if len(updated_row) < len(self.HEADER):
+                updated_row.extend([""] * (len(self.HEADER) - len(updated_row)))
+
+            changed = False
+            if not updated_row[2] and amiibo.get("gameSeries"):
+                updated_row[2] = amiibo.get("gameSeries", "")
+                changed = True
+            if not updated_row[3] and release_date:
+                updated_row[3] = release_date
+                changed = True
+            if not updated_row[4] and amiibo.get("type"):
+                updated_row[4] = amiibo.get("type", "")
+                changed = True
+
+            if changed:
+                updates[row_index] = updated_row[: len(self.HEADER)]
+
+        if updates:
+            for row_index, row_values in updates.items():
+                self.sheet.update(f"A{row_index}:F{row_index}", [row_values])
 
         if new_rows:
             self.sheet.append_rows(new_rows, value_input_option="USER_ENTERED")
@@ -115,6 +147,9 @@ class GoogleSheetConfigManager(LoggingMixin):
         self.sheet_name = sheet_name
         self.work_sheet_title = work_sheet_title
         self.google_sheet_client: GoogleSheetClientManager = google_sheet_client_manager
+        self._config_cache: dict[str, tuple[int, str]] | None = None
+        self._config_cache_timestamp: datetime | None = None
+        self._config_cache_ttl_seconds = 5
 
     @cached_property
     def sheet(self):
@@ -164,10 +199,20 @@ class GoogleSheetConfigManager(LoggingMixin):
         if key in config_map:
             row_index = config_map[key][0]
             self.sheet.update_cell(row_index, 2, value)
+            config_map[key] = (row_index, value)
         else:
             self.sheet.append_row([key, value], value_input_option="USER_ENTERED")
+            # next row is len(config_map) + 2 (account for header row)
+            config_map[key] = (len(config_map) + 2, value)
+        self._config_cache = config_map
+        self._config_cache_timestamp = datetime.utcnow()
 
     def _get_config_map(self) -> dict[str, tuple[int, str]]:
+        if self._config_cache and self._config_cache_timestamp:
+            age = (datetime.utcnow() - self._config_cache_timestamp).total_seconds()
+            if age < self._config_cache_ttl_seconds:
+                return self._config_cache
+
         self._ensure_structure(self.sheet)
         values = self.sheet.get_all_values()
         config_map: dict[str, tuple[int, str]] = {}
@@ -177,6 +222,9 @@ class GoogleSheetConfigManager(LoggingMixin):
             name = row[0]
             value = row[1] if len(row) > 1 else ""
             config_map[name] = (idx, value)
+
+        self._config_cache = config_map
+        self._config_cache_timestamp = datetime.utcnow()
         return config_map
 
     def _ensure_structure(self, sheet):
@@ -207,6 +255,8 @@ class GoogleSheetConfigManager(LoggingMixin):
                     sheet.append_row(
                         [key, default_val], value_input_option="USER_ENTERED"
                     )
+        self._config_cache = None
+        self._config_cache_timestamp = None
 
     def _type_config_key(self, amiibo_type: str) -> str:
         return f"IgnoreType:{amiibo_type}"
@@ -214,10 +264,15 @@ class GoogleSheetConfigManager(LoggingMixin):
     def _ensure_type_row(self, amiibo_type: str):
         key = self._type_config_key(amiibo_type)
         default_value = self._default_type_value(amiibo_type)
-        if key not in self._get_config_map():
+        config_map = self._get_config_map()
+        if key not in config_map:
+            new_row_index = len(config_map) + 2
             self.sheet.append_row(
                 [key, default_value], value_input_option="USER_ENTERED"
             )
+            config_map[key] = (new_row_index, default_value)
+            self._config_cache = config_map
+            self._config_cache_timestamp = datetime.utcnow()
 
     def _default_type_value(self, amiibo_type: str) -> str:
         return self.DEFAULT_IGNORE_TYPES.get(amiibo_type, "0")
