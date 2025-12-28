@@ -6,7 +6,7 @@ locals {
   sanitized_allowed_hosts = [
     for host in var.allowed_hosts :
     trimsuffix(
-      regexreplace(host, "^https?://", ""),
+      replace(replace(host, "https://", ""), "http://", ""),
       "/",
     )
   ]
