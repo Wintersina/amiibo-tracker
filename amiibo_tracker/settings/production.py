@@ -7,7 +7,11 @@ from .base import *  # noqa: F401,F403
 os.environ["ENV_NAME"] = "production"
 DEBUG = False
 
-ALLOWED_HOSTS = ALLOWED_HOSTS or ["localhost"]
+ALLOWED_HOSTS = ALLOWED_HOSTS or [
+    "goozamiibo.com",
+    "www.goozamiibo.com",
+    "amiibo-tracker-juiposodeq-ue.a.run.app",
+]
 
 default_db_path = os.environ.get("DJANGO_SQLITE_PATH", "/tmp/db.sqlite3")
 
@@ -20,6 +24,9 @@ DATABASES = {
 STATIC_ROOT = BASE_DIR / "staticfiles"
 MEDIA_ROOT = BASE_DIR / "mediafiles"
 
+# Accept HTTPS POSTs from the production hosts so Django's CSRF middleware
+# works when the app is served on custom domains (required for OAuth callbacks
+# and authenticated form submissions).
 CSRF_TRUSTED_ORIGINS = CSRF_TRUSTED_ORIGINS or [
     f"https://{host}"
     for host in ALLOWED_HOSTS
