@@ -50,6 +50,9 @@ class ToggleCollectedView(View):
 
 class OAuthView(View):
     def get(self, request):
+        if request.session.get("credentials"):
+            return redirect("amiibo_list")
+
         flow = Flow.from_client_secrets_file(
             GoogleSheetClientManager.client_secret_path(),
             scopes=OauthConstants.SCOPES,
@@ -77,6 +80,9 @@ class OAuthCallbackView(View):
                 "client_secret": creds.client_secret,
                 "scopes": creds.scopes,
             }
+
+        if request.session.get("credentials"):
+            return redirect("amiibo_list")
 
         oauth_state = request.session.pop("oauth_state", None)
         if not oauth_state:
