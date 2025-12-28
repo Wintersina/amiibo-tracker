@@ -327,11 +327,13 @@
                 <div class="amiibo-grid">
                     {% for amiibo in group.list %}
                         <div class="amiibo-card {% if amiibo.collected %}collected{% endif %}"
-                             data-id="{{ amiibo.head }}{{ amiibo.gameSeries }}{{ amiibo.tail }}">
+                             data-id="{{ amiibo.head }}{{ amiibo.gameSeries }}{{ amiibo.tail }}"
+                             data-name="{{ amiibo.name|lower }}"
+                             data-release="{{ amiibo.display_release|default:''|lower }}">
                             <img src="{{ amiibo.image }}" alt="{{ amiibo.name }}">
                             <p class="amiibo-name">{{ amiibo.name }}</p>
                             <p class="release-date">
-                                rd: {{ amiibo.display_release|default:"N/A" }}
+                                {{ amiibo.display_release|default:"N/A" }}
                             </p>
                             <button onclick="toggleCollected(this)">
                                 {% if amiibo.collected %}Unmark{% else %}Collect{% endif %}
@@ -391,8 +393,9 @@
 
             cards.forEach(card => {
                 const isCollected = card.classList.contains('collected');
-                const name = card.querySelector('p').textContent.toLowerCase();
-                const matchesSearch = name.includes(searchTerm);
+                const name = card.dataset.name || '';
+                const release = card.dataset.release || '';
+                const matchesSearch = name.includes(searchTerm) || release.includes(searchTerm);
                 const matchesFilter =
                     value === 'all' ||
                     (value === 'collected' && isCollected) ||
