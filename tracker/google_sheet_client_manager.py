@@ -49,6 +49,11 @@ class GoogleSheetClientManager(HelperMixin, LoggingMixin):
 
     @cached_property
     def spreadsheet(self):
+        spreadsheet = self._open_or_create_spreadsheet()
+        self._initialize_default_worksheets(spreadsheet)
+        return spreadsheet
+
+    def _open_or_create_spreadsheet(self):
         try:
             return self.client.open(self.sheet_name)
 
@@ -67,6 +72,10 @@ class GoogleSheetClientManager(HelperMixin, LoggingMixin):
                 )
                 self.log_error("%s Error: %s", message, error)
                 raise ValueError(message) from error
+
+    def _initialize_default_worksheets(self, spreadsheet):
+        self._get_or_create_worksheet(spreadsheet, self.work_sheet_amiibo_manager)
+        self._get_or_create_worksheet(spreadsheet, self.work_sheet_config_manager)
 
     def get_creds(self, creds_json) -> Credentials:
         creds = Credentials.from_authorized_user_info(creds_json, OauthConstants.SCOPES)
@@ -91,19 +100,23 @@ class GoogleSheetClientManager(HelperMixin, LoggingMixin):
         client = gspread.authorize(creds)
         return client
 
-    def get_or_create_worksheet_by_name(self, worksheet_name):
+    def _get_or_create_worksheet(self, spreadsheet, worksheet_name):
         try:
-            sheet = self.spreadsheet.worksheet(worksheet_name)
+            sheet = spreadsheet.worksheet(worksheet_name)
+            created = False
         except gspread.exceptions.WorksheetNotFound:
-            sheet = self.spreadsheet.add_worksheet(
-                title=worksheet_name, rows=500, cols=3
-            )
+            sheet = spreadsheet.add_worksheet(title=worksheet_name, rows=500, cols=3)
+            created = True
 
-            if worksheet_name == "AmiiboCollection":
+        if created:
+            if worksheet_name == self.work_sheet_amiibo_manager:
                 sheet.append_row(["Amiibo ID", "Amiibo Name", "Collected Status"])
 
-            if worksheet_name == "AmiiboCollectionConfigManager":
+            if worksheet_name == self.work_sheet_config_manager:
                 sheet.append_row(["DarkMode"])
                 sheet.append_row(["0"])
 
         return sheet
+
+    def get_or_create_worksheet_by_name(self, worksheet_name):
+        return self._get_or_create_worksheet(self.spreadsheet, worksheet_name)
