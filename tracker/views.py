@@ -81,9 +81,6 @@ class OAuthCallbackView(View):
                 "scopes": creds.scopes,
             }
 
-        if request.session.get("credentials"):
-            return redirect("amiibo_list")
-
         request_state = request.GET.get("state")
         oauth_state = request.session.get("oauth_state")
 
@@ -109,6 +106,11 @@ class OAuthCallbackView(View):
         flow.fetch_token(authorization_response=request.build_absolute_uri())
 
         credentials = flow.credentials
+
+        # Clear any stale session data before persisting new account details
+        request.session.pop("credentials", None)
+        request.session.pop("user_name", None)
+        request.session.pop("user_email", None)
 
         request.session.pop("oauth_state", None)
         request.session["credentials"] = credentials_to_dict(credentials)

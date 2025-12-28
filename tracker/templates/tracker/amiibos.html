@@ -530,16 +530,18 @@
                 return;
             }
 
-            await fetch('/toggle-type-filter/', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': '{{ csrf_token }}'
-                },
-                body: JSON.stringify({ type, ignore })
-            });
-
-            release();
+            try {
+                await fetch('/toggle-type-filter/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify({ type, ignore })
+                });
+            } finally {
+                release();
+            }
 
             window.location.reload();
         });
