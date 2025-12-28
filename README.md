@@ -31,3 +31,5 @@ Amiibo Tracker is a Django web app that keeps your personal Amiibo collection in
 ## Deployment
 For production, the repository includes Terraform and GitHub Actions templates that deploy the app to Google Cloud Run. Provide your own Google Cloud project, OAuth client, and allowed hostnames (including custom domains like `goozamiibo.com`) when running the workflow or Terraform modules.
 
+> **Note on CSRF settings:** Django requires `CSRF_TRUSTED_ORIGINS` to include the fully-qualified HTTPS origins for the domains you serve. The production settings derive this list from `ALLOWED_HOSTS`, and Terraform passes the same list as an environment variable. Keep these values aligned with your custom domain (and the Cloud Run URL, if used) so OAuth callbacks and authenticated form submissions are accepted without 403 errors.
+
