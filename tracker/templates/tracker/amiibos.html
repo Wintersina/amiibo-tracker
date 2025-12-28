@@ -304,7 +304,7 @@
         <div id="collectionTotal" class="collection-pill">Collected: 0</div>
     </div>
     <div class="control-row">
-        <input id="searchInput" class="search-input" type="text" placeholder="Search Amiibo...">
+        <input id="searchInput" class="search-input" type="text" placeholder="Search Amiibo or date...">
         <select id="filterSelect" class="filter-select">
             <option value="all">Show All</option>
             <option value="collected">Collected Only</option>
@@ -327,9 +327,7 @@
                 <div class="amiibo-grid">
                     {% for amiibo in group.list %}
                         <div class="amiibo-card {% if amiibo.collected %}collected{% endif %}"
-                             data-id="{{ amiibo.head }}{{ amiibo.gameSeries }}{{ amiibo.tail }}"
-                             data-name="{{ amiibo.name|lower }}"
-                             data-release="{{ amiibo.display_release|default:''|lower }}">
+                             data-id="{{ amiibo.head }}{{ amiibo.gameSeries }}{{ amiibo.tail }}">
                             <img src="{{ amiibo.image }}" alt="{{ amiibo.name }}">
                             <p class="amiibo-name">{{ amiibo.name }}</p>
                             <p class="release-date">
@@ -393,8 +391,8 @@
 
             cards.forEach(card => {
                 const isCollected = card.classList.contains('collected');
-                const name = card.dataset.name || '';
-                const release = card.dataset.release || '';
+                const name = card.querySelector('.amiibo-name').textContent.toLowerCase();
+                const release = card.querySelector('.release-date').textContent.toLowerCase();
                 const matchesSearch = name.includes(searchTerm) || release.includes(searchTerm);
                 const matchesFilter =
                     value === 'all' ||

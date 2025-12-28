@@ -184,7 +184,7 @@ class AmiiboListView(View):
                         release_date = date_str
                     break
 
-            amiibo["display_release"] = release_date or "N/A"
+            amiibo["display_release"] = release_date
 
         sorted_amiibos = sorted(amiibos, key=lambda x: (x["amiiboSeries"], x["name"]))
 

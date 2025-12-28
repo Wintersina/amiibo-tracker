@@ -22,8 +22,8 @@
             margin: 0;
             padding: 0;
             font-family: 'Vazirmatn', system-ui, sans-serif;
-            background: linear-gradient(165deg, rgba(6, 12, 20, 0.9), rgba(15, 23, 42, 0.82)),
-                        url('/static/images/amiibo_bg.png') center/520px repeat;
+            background: linear-gradient(180deg, rgba(6, 10, 14, 0.95), rgba(12, 18, 24, 0.9)),
+                        url('/static/images/amiibo_bg.png') center/420px repeat;
             background-attachment: fixed;
             min-height: 100vh;
             display: flex;
@@ -69,10 +69,9 @@
             position: relative;
             z-index: 1;
             display: grid;
-            grid-template-columns: minmax(320px, 1fr);
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
             gap: 1.5rem;
             align-items: center;
-            justify-items: center;
         }
 
         .hero-copy {
