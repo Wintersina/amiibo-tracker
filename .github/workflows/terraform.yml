@@ -107,7 +107,21 @@ jobs:
             fi
           fi
 
-          echo "allowed_hosts_json=$ALLOWED_HOSTS_INPUT" >> "$GITHUB_OUTPUT"
+          RESOLVED=$(python - <<'PY'
+import json
+import os
+
+hosts = json.loads(os.environ.get("ALLOWED_HOSTS_INPUT") or "[]")
+
+for domain in ("goozamiibo.com", "www.goozamiibo.com"):
+    if domain not in hosts:
+        hosts.append(domain)
+
+print(json.dumps(hosts))
+PY
+)
+
+          echo "allowed_hosts_json=$RESOLVED" >> "$GITHUB_OUTPUT"
         env:
           ALLOWED_HOSTS_JSON: ${{ secrets.ALLOWED_HOSTS_JSON }}
           GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.auth.outputs.credentials_file_path }}
