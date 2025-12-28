@@ -40,18 +40,23 @@ class LoggingMixin(object):
         return self.__logger
 
     def log(self, msg, *args, **extra):
-        level = extra.get("level", "info")
+        level = extra.pop("level", "info")
         log_fn = getattr(self.logger, level)
 
-        for dct in args:
-            extra.update(dct)
+        log_extra = {**extra, "proc_ref": self.proc_ref}
 
-        extra["proc_ref"] = self.proc_ref
-        for key, value in extra.items():
+        if args and all(isinstance(arg, dict) for arg in args):
+            for dct in args:
+                log_extra.update(dct)
+            log_args = ()
+        else:
+            log_args = args
+
+        for key, value in log_extra.items():
             if isinstance(value, uuid.UUID):
-                extra[key] = str(value)
+                log_extra[key] = str(value)
 
-        return log_fn(msg, extra=extra)
+        return log_fn(msg, *log_args, extra=log_extra)
 
     # An alternative to log_info that can be used for temporary logs.
     # Allows us to easily differentiate between logs that should be cleaned
