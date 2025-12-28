@@ -1,6 +1,3 @@
-import os
-
-
 class OauthConstants:
     SCOPES = [
         "https://www.googleapis.com/auth/userinfo.profile",
@@ -9,4 +6,7 @@ class OauthConstants:
         "https://www.googleapis.com/auth/spreadsheets",
         "https://www.googleapis.com/auth/drive",
     ]
-    REDIRECT_URI = os.getenv("OAUTH_REDIRECT_URI", "http://localhost:8000/oauth2callback/")
+    # Google must receive the exact redirect_uri registered in the OAuth
+    # client configuration. Hardcode the production callback so the login flow
+    # never falls back to an outdated path.
+    REDIRECT_URI = "https://goozamiibo.com/oauth2callback/"
