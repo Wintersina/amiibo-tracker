@@ -134,6 +134,26 @@
             box-shadow: 0 18px 32px rgba(0, 0, 0, 0.35);
         }
 
+        .google-btn {
+            background: #ffffff;
+            color: #3c4043;
+            border: 1px solid #dadce0;
+            box-shadow: none;
+            font-weight: 600;
+            gap: 0.75rem;
+            padding: 0.85rem 1.3rem;
+        }
+
+        .google-btn:hover {
+            box-shadow: 0 10px 22px rgba(0, 0, 0, 0.18);
+        }
+
+        .google-btn img {
+            width: 20px;
+            height: 20px;
+            margin: -1px 0;
+        }
+
         .footer-link {
             margin-top: 1.5rem;
             display: inline-flex;
@@ -172,7 +192,10 @@
                 </p>
 
                 <div class="actions">
-                    <a href="{% url 'oauth_login' %}" class="action-btn primary">Sign in with Google</a>
+                    <a href="{% url 'oauth_login' %}" class="action-btn google-btn">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/53/Google_%22G%22_Logo.svg/512px-Google_%22G%22_Logo.svg.png" alt="Google logo">
+                        Login with Google
+                    </a>
                     <a href="{% url 'privacy' %}" class="action-btn secondary">Privacy details</a>
                 </div>
             </div>
