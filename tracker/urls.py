@@ -4,6 +4,7 @@ from tracker.views import (
     IndexView,
     AmiiboListView,
     ToggleDarkModeView,
+    ToggleTypeFilterView,
     OAuthView,
     OAuthCallbackView,
     LogoutView,
@@ -16,6 +17,11 @@ urlpatterns = [
     path("tracker/", AmiiboListView.as_view(), name="amiibo_list"),
     path("toggle/", ToggleCollectedView.as_view(), name="toggle_collected"),
     path("toggle-dark-mode/", ToggleDarkModeView.as_view(), name="toggle_dark_mode"),
+    path(
+        "toggle-type-filter/",
+        ToggleTypeFilterView.as_view(),
+        name="toggle_type_filter",
+    ),
     path("oauth-login/", OAuthView.as_view(), name="oauth_login"),
     path("oauth2callback/", OAuthCallbackView.as_view(), name="oauth2callback"),
     # Support legacy/allauth-style callback URIs that may still be configured in Google OAuth

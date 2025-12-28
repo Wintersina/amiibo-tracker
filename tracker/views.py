@@ -1,6 +1,5 @@
 import json
 from collections import defaultdict
-from datetime import datetime
 
 import googleapiclient.discovery
 import requests
@@ -163,30 +162,25 @@ class AmiiboListView(View):
         dark_mode = config.is_dark_mode()
 
         amiibos = service.fetch_amiibos()
-        ignore_types = ["Yarn", "Card", "Band"]
-        amiibos = [a for a in amiibos if a["type"] not in ignore_types]
-        service.seed_new_amiibos(amiibos)
+        available_types = sorted(
+            {amiibo.get("type", "") for amiibo in amiibos if amiibo.get("type")}
+        )
+        ignored_types = config.get_ignored_types(available_types)
+        filtered_amiibos = [a for a in amiibos if a.get("type") not in ignored_types]
+
+        service.seed_new_amiibos(filtered_amiibos)
         collected_status = service.get_collected_status()
 
-        for amiibo in amiibos:
+        for amiibo in filtered_amiibos:
             amiibo_id = amiibo["head"] + amiibo["gameSeries"] + amiibo["tail"]
             amiibo["collected"] = collected_status.get(amiibo_id) == "1"
-            release_info = amiibo.get("release") or {}
-            release_date = None
+            amiibo["display_release"] = AmiiboService._format_release_date(
+                amiibo.get("release")
+            )
 
-            for region in ["na", "eu", "jp", "au"]:
-                date_str = release_info.get(region)
-                if date_str:
-                    try:
-                        parsed_date = datetime.strptime(date_str, "%Y-%m-%d")
-                        release_date = parsed_date.strftime("%m/%d/%Y")
-                    except ValueError:
-                        release_date = date_str
-                    break
-
-            amiibo["display_release"] = release_date
-
-        sorted_amiibos = sorted(amiibos, key=lambda x: (x["amiiboSeries"], x["name"]))
+        sorted_amiibos = sorted(
+            filtered_amiibos, key=lambda x: (x["amiiboSeries"], x["name"])
+        )
 
         grouped_amiibos = defaultdict(list)
         for amiibo in sorted_amiibos:
@@ -213,6 +207,10 @@ class AmiiboListView(View):
                 "dark_mode": dark_mode,
                 "user_name": user_name,
                 "grouped_amiibos": enriched_groups,
+                "amiibo_types": [
+                    {"name": amiibo_type, "ignored": amiibo_type in ignored_types}
+                    for amiibo_type in available_types
+                ],
             },
         )
 
@@ -234,6 +232,35 @@ class ToggleDarkModeView(View):
                 google_sheet_client_manager=google_sheet_client_manager
             )
             config.set_dark_mode(enable_dark)
+
+            return JsonResponse({"status": "success"})
+        except Exception as e:
+            return JsonResponse({"status": "error", "message": str(e)}, status=500)
+
+
+@method_decorator(csrf_exempt, name="dispatch")
+class ToggleTypeFilterView(View):
+    def post(self, request):
+        creds_json = request.session.get("credentials")
+        if not creds_json:
+            return redirect("oauth_login")
+
+        google_sheet_client_manager = GoogleSheetClientManager(creds_json=creds_json)
+
+        try:
+            data = json.loads(request.body)
+            amiibo_type = data.get("type")
+            ignore = data.get("ignore", True)
+
+            if not amiibo_type:
+                return JsonResponse(
+                    {"status": "error", "message": "Missing type"}, status=400
+                )
+
+            config = GoogleSheetConfigManager(
+                google_sheet_client_manager=google_sheet_client_manager
+            )
+            config.set_ignore_type(amiibo_type, ignore)
 
             return JsonResponse({"status": "success"})
         except Exception as e:
