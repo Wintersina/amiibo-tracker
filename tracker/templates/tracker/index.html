@@ -22,8 +22,8 @@
             margin: 0;
             padding: 0;
             font-family: 'Vazirmatn', system-ui, sans-serif;
-            background: linear-gradient(135deg, rgba(15, 23, 42, 0.75), rgba(15, 118, 110, 0.85)),
-                        url('/static/images/amiibo_bg.png') center/cover no-repeat fixed;
+            background: url('/static/images/amiibo_bg.png') center/cover no-repeat fixed;
+            background-color: #0f172a;
             min-height: 100vh;
             display: flex;
             align-items: center;
@@ -62,32 +62,6 @@
             border-radius: 28px;
             background: radial-gradient(circle at 25% 20%, rgba(243, 201, 105, 0.08), transparent 30%),
                         radial-gradient(circle at 80% 60%, rgba(15, 118, 110, 0.08), transparent 35%);
-        }
-
-        .top-actions {
-            display: flex;
-            justify-content: flex-end;
-            gap: 1rem;
-            margin-bottom: 2rem;
-            position: relative;
-            z-index: 1;
-        }
-
-        .link-chip {
-            text-decoration: none;
-            color: var(--ink);
-            background: linear-gradient(135deg, var(--saffron), #ffe6a7);
-            padding: 0.65rem 1.1rem;
-            border-radius: 999px;
-            font-weight: 700;
-            letter-spacing: 0.02em;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }
-
-        .link-chip:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 16px 30px rgba(0, 0, 0, 0.35);
         }
 
         .hero {
@@ -204,18 +178,11 @@
             .actions {
                 justify-content: center;
             }
-            .top-actions {
-                justify-content: center;
-            }
         }
     </style>
 </head>
 <body>
     <div class="canvas">
-        <div class="top-actions">
-            <a class="link-chip" href="{% url 'privacy' %}">Privacy</a>
-        </div>
-
         <div class="hero">
             <div class="hero-copy">
                 <h1>Track your Amiibo collection with elegance</h1>
