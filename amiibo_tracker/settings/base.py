@@ -61,8 +61,15 @@ WSGI_APPLICATION = "amiibo_tracker.wsgi.application"
 
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+        # Default to Django's dummy backend so the app does not try to create or
+        # write to a local SQLite file in environments where persistence is
+        # ephemeral (e.g., Cloud Run). If a database is needed for local
+        # development or future features, set DJANGO_DB_ENGINE to a real backend
+        # such as "django.db.backends.sqlite3".
+        "ENGINE": os.environ.get(
+            "DJANGO_DB_ENGINE", "django.db.backends.dummy"
+        ),
+        "NAME": os.environ.get("DJANGO_DB_NAME", "dummy"),
     }
 }
 
