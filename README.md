@@ -1,141 +1,35 @@
 # Amiibo Tracker
 
-This Django app allows you to track your personal Amiibo collection using a Google Sheet as a backend database. It
-fetches the latest Amiibo list from the [Amiibo API](https://amiiboapi.com/) and lets you mark which ones you've
-collected.
+Amiibo Tracker is a Django web app that keeps your personal Amiibo collection in sync with the public [Amiibo API](https://amiiboapi.com/). It reads and updates a Google Sheet so you can mark figures as collected and browse the catalog with search, filters, and dark mode.
 
----
+## Features
+- Pulls the latest Amiibo catalog and images from the Amiibo API
+- Uses a Google Sheet as your private collection database
+- Toggle collected status with one click
+- Filters by game series and Amiibo type (cards and plushes are hidden by default)
+- Dark mode, search, and collapsible sections for quick browsing
 
-## ✨ Features
+## Quick start
+1. Install Python 3.11+ and create a virtual environment:
+   ```bash
+   python -m venv .venv
+   source .venv/bin/activate  # On Windows: .venv\\Scripts\\activate
+   pip install -r requirements.txt
+   ```
+2. Create a Google Service Account with access to Google Sheets and Google Drive. Download the `credentials.json` for that account and place it in the project root.
+3. Make a Google Sheet named `AmiiboCollection` with headers `Amiibo ID | Amiibo Name | Collected Status`, then share it with the service account email.
+4. Start the app locally:
+   ```bash
+   ./scripts/mac_local_run.sh
+   ```
+   On Windows use:
+   ```bash
+   ./scripts/windows_local_run.sh
+   ```
+5. Open [http://localhost:8000](http://localhost:8000) to browse and update your collection.
 
-- Real-time sync with [Amiibo API](https://amiiboapi.com/)
-- Google Sheet as a personal backend database
-- Mark Amiibos as collected/uncollected with one click
-- Amiibo images included
-- Filters out cards, plushes, and other non-standard Amiibos
-- Dark mode, filters, search, and collapsible game series sections
-- Code formatting enforced using `black` and optional Git pre-commit hook
+## Deployment
+For production, the repository includes Terraform and GitHub Actions templates that deploy the app to Google Cloud Run. Provide your own Google Cloud project, OAuth client, and allowed hostnames (including custom domains like `goozamiibo.com`) when running the workflow or Terraform modules.
 
----
+> **Note on CSRF settings:** Django requires `CSRF_TRUSTED_ORIGINS` to include the fully-qualified HTTPS origins for the domains you serve. The production settings derive this list from `ALLOWED_HOSTS`, and Terraform passes the same list as an environment variable. Keep these values aligned with your custom domain (and the Cloud Run URL, if used) so OAuth callbacks and authenticated form submissions are accepted without 403 errors.
 
-## 🚀 Setup Instructions
-
-### 1. Clone the repo
-
-```bash
-git clone https://github.com/YOUR_USERNAME/amiibo-tracker.git
-cd amiibo-tracker
-```
-
-### 2. Create a virtual environment and install dependencies
-
-```bash
-python -m venv env
-source env/bin/activate  # or `env\Scripts\activate` on Windows
-pip install -r requirements.txt  # or install manually:
-pip install django gspread oauth2client requests black pre-commit
-```
-
----
-
-### 3. Create a Google Service Account
-
-1. Go to [Google Cloud Console](https://console.cloud.google.com/)
-2. Create a project and enable the following APIs:
-   - **Google Sheets API**
-   - **Google Drive API**
-3. Create a **Service Account**
-4. Download the `credentials.json` file and place it in your project root
-5. Share your Google Sheet with the service account's email
-
-Example format of `credentials.json`:
-
-```json
-{
-  "type": "service_account",
-  "project_id": "your-project-id",
-  "private_key_id": "...",
-  "private_key": "-----BEGIN PRIVATE KEY-----\n...",
-  "client_email": "your-service-account@your-project.iam.gserviceaccount.com",
-  "client_id": "...",
-  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-  "token_uri": "https://oauth2.googleapis.com/token",
-  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/your-service-account@your-project.iam.gserviceaccount.com"
-}
-```
-
----
-
-### 4. Create your Google Sheet
-
-- Name it **`AmiiboCollection`**
-- Add the following headers in row 1:
-  ```
-  Amiibo ID | Amiibo Name | Collected Status
-  ```
-- Share the sheet with your service account's email (`...@...iam.gserviceaccount.com`)
-
----
-
-### 5. Run the Django development server
-
-```bash
-python manage.py runserver
-```
-
-Visit [http://localhost:8000](http://localhost:8000) in your browser.
-
----
-
-## 🧹 Code Formatting with Black
-
-We use [`black`](https://github.com/psf/black) to auto-format all Python code.
-
-### Format all Python files
-
-```bash
-black .
-```
-
-### Optional: Set up Black as a Git pre-commit hook
-
-Install `pre-commit`:
-
-```bash
-pip install pre-commit
-```
-
-Create a `.pre-commit-config.yaml` file in your project root:
-
-```yaml
-repos:
-  - repo: https://github.com/psf/black
-    rev: 24.4.2  # Use the latest stable version
-    hooks:
-      - id: black
-```
-
-Then initialize the pre-commit hook:
-
-```bash
-pre-commit install
-```
-
-Run it manually on all files:
-
-```bash
-pre-commit run --all-files
-```
-
-From now on, Black will automatically format your code every time you commit.
-
----
-
-## 🖼️ Example Screenshots
-
-![img_2.png](img_2.png)  
-![img_3.png](img_3.png)  
-![img.png](img.png)
-
----
