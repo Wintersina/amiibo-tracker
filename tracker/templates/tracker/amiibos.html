@@ -3,69 +3,220 @@
 <head>
     <title>Amiibo Tracker</title>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600;700&display=swap');
+
+        :root {
+            --bg: #f7f2e7;
+            --text: #0f172a;
+            --card-bg: rgba(255, 255, 255, 0.9);
+            --card-border: #e5ddd0;
+            --collected-bg: #e6f4ea;
+            --button-bg: #0f766e;
+            --button-hover: #0c5f56;
+            --accent: #f3c969;
+            --muted: #6b7280;
+        }
+
+        body.dark {
+            --bg: #0e141b;
+            --text: #e5e7eb;
+            --card-bg: rgba(24, 34, 45, 0.92);
+            --card-border: #1f2937;
+            --collected-bg: #14302b;
+            --button-bg: #22c55e;
+            --button-hover: #16a34a;
+            --accent: #f3c969;
+            --muted: #9ca3af;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: system-ui, sans-serif;
-            background-color: #f9f9f9;
+            font-family: 'Vazirmatn', system-ui, sans-serif;
             margin: 0;
-            padding: 2em;
+            padding: 0 1.2rem 3rem;
+            background: linear-gradient(135deg, rgba(15, 118, 110, 0.12), rgba(243, 201, 105, 0.12)),
+                        url('/static/images/amiibo_bg.png') center/600px repeat;
+            color: var(--text);
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        main {
+            max-width: 1200px;
+            margin: 0 auto;
         }
 
         h1 {
             text-align: center;
+            margin-top: 1.5rem;
+            margin-bottom: 0.6rem;
+            letter-spacing: 0.01em;
+        }
+
+        .intro {
+            text-align: center;
+            color: var(--muted);
+            margin-bottom: 1.8rem;
+        }
+
+        .top-controls {
+            position: sticky;
+            top: 0;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem 0;
+            z-index: 100;
+            backdrop-filter: blur(12px);
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.65));
+            border-bottom: 1px solid var(--card-border);
+        }
+
+        body.dark .top-controls {
+            background: linear-gradient(135deg, rgba(14, 20, 27, 0.92), rgba(14, 20, 27, 0.82));
+        }
+
+        .welcome {
+            margin-right: auto;
+            font-weight: 700;
+        }
+
+        .eyebrow {
+            font-size: 0.9rem;
+            color: var(--muted);
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+        }
+
+        .collection-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            margin-top: 0.3rem;
+            padding: 0.35rem 0.75rem;
+            border-radius: 999px;
+            background: linear-gradient(135deg, rgba(243, 201, 105, 0.3), rgba(15, 118, 110, 0.25));
+            color: var(--text);
+            font-weight: 600;
+        }
+
+        .control-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.6rem;
+            align-items: center;
+        }
+
+        .filter-select,
+        .search-input {
+            padding: 0.55em 1.1em;
+            font-size: 1em;
+            border-radius: 12px;
+            background-color: var(--card-bg);
+            color: var(--text);
+            border: 1px solid var(--card-border);
+            cursor: pointer;
+            outline: none;
+            min-width: 180px;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+        }
+
+        .search-input {
+            min-width: 240px;
+        }
+
+        .dark-toggle,
+        .logout-btn {
+            border: none;
+            border-radius: 999px;
+            padding: 0.6rem 1rem;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            text-decoration: none;
+            color: var(--text);
+            background: rgba(255, 255, 255, 0.7);
+            box-shadow: 0 10px 18px rgba(0, 0, 0, 0.12);
+            transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+        }
+
+        .dark-toggle:hover,
+        .logout-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 14px 22px rgba(0, 0, 0, 0.18);
+        }
+
+        .logout-btn {
+            background: linear-gradient(135deg, var(--button-bg), var(--button-hover));
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.18);
         }
 
         .amiibo-card {
-            border: 1px solid #ddd;
-            border-radius: 12px;
+            border: 1px solid var(--card-border);
+            border-radius: 14px;
             padding: 1em;
             margin: 1em;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: space-between;
-            width: 150px;
-            height: 250px;
+            width: 160px;
+            height: 260px;
             text-align: center;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-            background-color: white;
-            transition: transform 0.2s ease;
+            box-shadow: 0 14px 32px rgba(0, 0, 0, 0.12);
+            background: var(--card-bg);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
 
         .amiibo-card:hover {
-            transform: scale(1.03);
+            transform: translateY(-4px);
+            box-shadow: 0 18px 36px rgba(0, 0, 0, 0.16);
         }
 
         .amiibo-card img {
-            max-height: 100px;
+            max-height: 110px;
             object-fit: contain;
-            margin-bottom: 0.5em;
+            margin-bottom: 0.75em;
         }
 
         .collected {
-            background-color: #e0ffe0;
-            border-color: #9f9;
+            background: linear-gradient(135deg, rgba(15, 118, 110, 0.12), rgba(243, 201, 105, 0.18));
+            border-color: rgba(15, 118, 110, 0.35);
         }
 
         button {
-            padding: 0.5em 1em;
-            font-size: 0.9em;
-            background-color: #007bff;
+            padding: 0.6em 1.1em;
+            font-size: 0.95em;
+            background-color: var(--button-bg);
             border: none;
             color: white;
-            border-radius: 8px;
+            border-radius: 10px;
             cursor: pointer;
-            transition: background-color 0.3s ease;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            font-weight: 700;
+            letter-spacing: 0.01em;
         }
 
         button:hover {
-            background-color: #0056b3;
+            background-color: var(--button-hover);
+            transform: translateY(-1px);
         }
 
         .toggle-btn {
             font-size: 1.2em;
             border: none;
-            margin-right: 0.5em;
+            margin-right: 0.6em;
             vertical-align: middle;
+            background: linear-gradient(135deg, rgba(243, 201, 105, 0.4), rgba(243, 201, 105, 0.2));
+            color: var(--text);
+            padding: 0.35em 0.65em;
+            border-radius: 10px;
         }
 
         .toggle-btn.rotate {
@@ -74,11 +225,16 @@
 
         .game-series-group {
             border: 2px solid var(--card-border);
-            border-radius: 10px;
+            border-radius: 14px;
             margin-bottom: 2em;
             padding: 1em;
-            background-color: var(--card-bg);
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.85));
             transition: background-color 0.3s ease, border-color 0.3s ease;
+            box-shadow: 0 16px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        body.dark .game-series-group {
+            background: linear-gradient(135deg, rgba(31, 41, 55, 0.8), rgba(17, 24, 39, 0.9));
         }
 
         .game-series-header {
@@ -88,122 +244,62 @@
             font-size: 1.2em;
             font-weight: bold;
             margin-bottom: 1em;
-        }
-
-        :root {
-            --bg: #f9f9f9;
-            --text: #000;
-            --card-bg: #fff;
-            --card-border: #ccc;
-            --collected-bg: #e0ffe0;
-            --button-bg: #007bff;
-            --button-hover: #0056b3;
-        }
-
-        body.dark {
-            --bg: #121212;
-            --text: #f0f0f0;
-            --card-bg: #1e1e1e;
-            --card-border: #333;
-            --collected-bg: #274e27;
-            --button-bg: #4e8cff;
-            --button-hover: #3466cc;
-        }
-
-        body {
-            background-color: var(--bg);
-            color: var(--text);
-            transition: background-color 0.3s ease, color 0.3s ease;
-        }
-
-        .amiibo-card {
-            background-color: var(--card-bg);
-            border-color: var(--card-border);
-        }
-
-        .collected {
-            background-color: var(--collected-bg);
-        }
-
-        button {
-            background-color: var(--button-bg);
-        }
-
-        button:hover {
-            background-color: var(--button-hover);
-        }
-
-        .top-controls {
-            position: sticky;
-            top: 0;
-            background-color: var(--bg);
-            display: flex;
-            justify-content: flex-end;
-            align-items: center;
-            padding: 1em;
-            gap: 1em;
-            z-index: 100;
-            border-bottom: 1px solid var(--card-border);
-        }
-
-
-        .filter-select {
-            padding: 0.4em 1em;
-            font-size: 1em;
-            border-radius: 8px;
-            background-color: var(--card-bg);
-            color: var(--text);
-            border: 1px solid var(--card-border);
-            cursor: pointer;
-            z-index: 1;
-        }
-
-        .dark-toggle {
-            font-size: 1.5em;
-            background: transparent;
-            border: none;
-            cursor: pointer;
-            z-index: 2;
             color: var(--text);
         }
-        .search-input {
-            padding: 0.4em 1em;
-            font-size: 1em;
-            border-radius: 8px;
-            background-color: var(--card-bg);
-            color: var(--text);
-            border: 1px solid var(--card-border);
-            outline: none;
-        }
+
         .group-count {
             font-size: 0.9em;
-            color: var(--text);
+            color: var(--muted);
             margin-left: 0.5em;
             font-weight: normal;
+        }
+
+        @media (max-width: 720px) {
+            .top-controls {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .control-row {
+                width: 100%;
+            }
+
+            .search-input {
+                flex: 1;
+                min-width: 100%;
+            }
+
+            .amiibo-card {
+                width: 46%;
+                margin: 0.5em;
+            }
         }
 
     </style>
 </head>
 <body class="{% if dark_mode %}dark{% endif %}">
 <div class="top-controls">
-    <div style="margin-right: auto; font-weight: bold;">
-        Welcome, {{ user_name }}.
-        <br>
-        <span id="collectionTotal"></span>
+    <div class="welcome">
+        <div class="eyebrow">Amiibo Tracker</div>
+        <div>Welcome, {{ user_name }}.</div>
+        <div id="collectionTotal" class="collection-pill">Collected: 0</div>
     </div>
-    <input id="searchInput" class="search-input" type="text" placeholder="Search Amiibo...">
-    <select id="filterSelect" class="filter-select">
-        <option value="all">Show All</option>
-        <option value="collected">Collected Only</option>
-        <option value="uncollected">Uncollected Only</option>
-    </select>
-    <button id="darkModeToggle" class="dark-toggle" aria-label="Toggle Dark Mode">🌙</button>
-    <a href="{% url 'logout' %}" style="text-decoration: none;">
-        <button class="dark-toggle" aria-label="Logout"> Logout</button>
-    </a>
+    <div class="control-row">
+        <input id="searchInput" class="search-input" type="text" placeholder="Search Amiibo...">
+        <select id="filterSelect" class="filter-select">
+            <option value="all">Show All</option>
+            <option value="collected">Collected Only</option>
+            <option value="uncollected">Uncollected Only</option>
+        </select>
+        <button id="darkModeToggle" class="dark-toggle" aria-label="Toggle Dark Mode">🌙</button>
+        <a href="{% url 'logout' %}" class="logout-btn" aria-label="Logout">⏻ Logout</a>
+    </div>
 </div>
 
-<h1>Amiibo Collection</h1>
+<main>
+<h1>Curate your Amiibo gallery</h1>
+<p class="intro">Filter, search, and celebrate every figure. The refreshed controls echo Persian geometric patterns while keeping your
+collection crisp and modern.</p>
 
 <div id="amiibo-list">
     {% for group in grouped_amiibos %}
@@ -229,6 +325,8 @@
         </div>
     {% endfor %}
 </div>
+
+</main>
 
 <script>
     async function toggleCollected(button) {
