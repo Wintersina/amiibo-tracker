@@ -49,37 +49,33 @@ class GoogleSheetClientManager(HelperMixin, LoggingMixin):
 
     @cached_property
     def spreadsheet(self):
+        spreadsheet = self._open_or_create_spreadsheet()
+        self._initialize_default_worksheets(spreadsheet)
+        return spreadsheet
+
+    def _open_or_create_spreadsheet(self):
         try:
             return self.client.open(self.sheet_name)
 
         except gspread.exceptions.SpreadsheetNotFound:
             self.log_info(
-                f"Spreadsheet '{self.sheet_name}' not found. Creating a new spreadsheet."
-            )
-            spreadsheet = self.client.create(self.sheet_name)
-
-            self.log_info(
-                f"Creating worksheet '{self.work_sheet_amiibo_manager}' within the new spreadsheet."
-            )
-            self.work_sheet_amiibo_manager_object = self.spreadsheet.add_worksheet(
-                title=self.work_sheet_amiibo_manager, rows=500, cols=3
-            )
-            self.work_sheet_config_manager_object = self.spreadsheet.add_worksheet(
-                title=self.work_sheet_config_manager, rows=500, cols=3
+                "Spreadsheet '%s' not found; attempting to create it with Drive file access.",
+                self.sheet_name,
             )
 
-            self.work_sheet_amiibo_manager_object.append_row(
-                ["Amiibo ID", "Amiibo Name", "Collected Status"]
-            )
+            try:
+                return self.client.create(self.sheet_name)
+            except gspread.exceptions.APIError as error:
+                message = (
+                    f"Spreadsheet '{self.sheet_name}' was not found and could not be created. "
+                    "Please ensure the app has the 'Google Drive file' permission so it can create files it owns."
+                )
+                self.log_error("%s Error: %s", message, error)
+                raise ValueError(message) from error
 
-            self.work_sheet_config_manager_object.append_row(["DarkMode"])
-            self.work_sheet_config_manager_object.append_row(["0"])
-
-        self.log_info(
-            f"Successfully initialized with spreadsheet '{self.spreadsheet.title}'"
-        )
-
-        return spreadsheet
+    def _initialize_default_worksheets(self, spreadsheet):
+        self._get_or_create_worksheet(spreadsheet, self.work_sheet_amiibo_manager)
+        self._get_or_create_worksheet(spreadsheet, self.work_sheet_config_manager)
 
     def get_creds(self, creds_json) -> Credentials:
         creds = Credentials.from_authorized_user_info(creds_json, OauthConstants.SCOPES)
@@ -104,19 +100,23 @@ class GoogleSheetClientManager(HelperMixin, LoggingMixin):
         client = gspread.authorize(creds)
         return client
 
-    def get_or_create_worksheet_by_name(self, worksheet_name):
+    def _get_or_create_worksheet(self, spreadsheet, worksheet_name):
         try:
-            sheet = self.spreadsheet.worksheet(worksheet_name)
+            sheet = spreadsheet.worksheet(worksheet_name)
+            created = False
         except gspread.exceptions.WorksheetNotFound:
-            sheet = self.spreadsheet.add_worksheet(
-                title=worksheet_name, rows=500, cols=3
-            )
+            sheet = spreadsheet.add_worksheet(title=worksheet_name, rows=500, cols=3)
+            created = True
 
-            if worksheet_name == "AmiiboCollection":
+        if created:
+            if worksheet_name == self.work_sheet_amiibo_manager:
                 sheet.append_row(["Amiibo ID", "Amiibo Name", "Collected Status"])
 
-            if worksheet_name == "AmiiboCollectionConfigManager":
+            if worksheet_name == self.work_sheet_config_manager:
                 sheet.append_row(["DarkMode"])
                 sheet.append_row(["0"])
 
         return sheet
+
+    def get_or_create_worksheet_by_name(self, worksheet_name):
+        return self._get_or_create_worksheet(self.spreadsheet, worksheet_name)

@@ -7,6 +7,6 @@ class OauthConstants:
         "https://www.googleapis.com/auth/userinfo.email",
         "openid",
         "https://www.googleapis.com/auth/spreadsheets",
-        "https://www.googleapis.com/auth/drive",
+        "https://www.googleapis.com/auth/drive.file",
     ]
     REDIRECT_URI = os.getenv("OAUTH_REDIRECT_URI", "http://localhost:8000/oauth2callback/")
