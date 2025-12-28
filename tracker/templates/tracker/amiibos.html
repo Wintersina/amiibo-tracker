@@ -367,12 +367,12 @@
             <span style="font-weight: 700;">Types:</span>
             {% for type in amiibo_types %}
                 <label class="type-chip">
-                    <input type="checkbox" data-type="{{ type.name }}" {% if not type.ignored %}checked{% endif %}>
+                    <input type="checkbox" data-type="{{ type.name }}" data-sheet-action {% if not type.ignored %}checked{% endif %}>
                     {{ type.name }}
                 </label>
             {% endfor %}
         </div>
-        <button id="darkModeToggle" class="dark-toggle" aria-label="Toggle Dark Mode">🌙</button>
+        <button id="darkModeToggle" class="dark-toggle" aria-label="Toggle Dark Mode" data-sheet-action>🌙</button>
         <a href="{% url 'logout' %}" class="logout-btn" aria-label="Logout">⏻ Logout</a>
     </div>
 </div>
@@ -398,7 +398,7 @@
                             <p class="release-date">
                                 {{ amiibo.display_release|default:"N/A" }}
                             </p>
-                            <button onclick="toggleCollected(this)">
+                            <button onclick="toggleCollected(this)" data-sheet-action>
                                 {% if amiibo.collected %}Collected{% else %}Collect{% endif %}
                             </button>
                         </div>
@@ -417,31 +417,48 @@
         button.textContent = isCollected ? 'Collected' : 'Collect';
     }
 
-    function startDebouncedAction(element, minDelay = 300, maxDelay = 800) {
-        if (!element) {
+    const sheetActionDebounce = {
+        active: false,
+        start: 0,
+        elements: [],
+    };
+
+    function getSheetActionElements() {
+        return Array.from(document.querySelectorAll('[data-sheet-action]'));
+    }
+
+    function toggleSheetActionState(disabled) {
+        sheetActionDebounce.elements.forEach((element) => {
+            element.dataset.debouncing = disabled ? 'true' : 'false';
+            if ('disabled' in element) {
+                element.disabled = disabled;
+            }
+        });
+    }
+
+    function startDebouncedAction(minDelay = 2000, maxDelay = 5000) {
+        if (sheetActionDebounce.active) {
             return null;
         }
 
-        if (element.dataset.debouncing === 'true') {
-            return null;
-        }
+        sheetActionDebounce.active = true;
+        sheetActionDebounce.start = Date.now();
+        sheetActionDebounce.elements = getSheetActionElements();
+        toggleSheetActionState(true);
 
-        element.dataset.debouncing = 'true';
-        element.disabled = true;
-        const start = Date.now();
-        const maxTimer = setTimeout(() => {
-            element.dataset.debouncing = 'false';
-            element.disabled = false;
-        }, maxDelay);
+        const releaseAll = () => {
+            sheetActionDebounce.active = false;
+            toggleSheetActionState(false);
+            sheetActionDebounce.elements = [];
+        };
+
+        const maxTimer = setTimeout(releaseAll, maxDelay);
 
         return () => {
-            const elapsed = Date.now() - start;
+            const elapsed = Date.now() - sheetActionDebounce.start;
             const remaining = Math.max(minDelay - elapsed, 0);
             clearTimeout(maxTimer);
-            setTimeout(() => {
-                element.dataset.debouncing = 'false';
-                element.disabled = false;
-            }, remaining);
+            setTimeout(releaseAll, remaining);
         };
     }
 
@@ -459,24 +476,33 @@
     }
 
     async function toggleCollected(button) {
+        const release = startDebouncedAction();
+        if (!release) {
+            return;
+        }
+
         const card = button.parentElement;
         const amiiboId = card.dataset.id;
         const action = card.classList.contains('collected') ? 'uncollect' : 'collect';
 
-        const response = await fetch('/toggle/', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': '{{ csrf_token }}'
-            },
-            body: JSON.stringify({amiibo_id: amiiboId, action: action})
-        });
+        try {
+            const response = await fetch('/toggle/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({amiibo_id: amiiboId, action: action})
+            });
 
-        if (response.ok) {
-            card.classList.toggle('collected');
-            const isCollected = card.classList.contains('collected');
-            setButtonState(button, isCollected);
-            updateCollectedCount();
+            if (response.ok) {
+                card.classList.toggle('collected');
+                const isCollected = card.classList.contains('collected');
+                setButtonState(button, isCollected);
+                updateCollectedCount();
+            }
+        } finally {
+            release();
         }
     }
 
@@ -497,7 +523,7 @@
             const type = event.target.dataset.type;
             const ignore = !event.target.checked;
 
-            const release = startDebouncedAction(event.target);
+            const release = startDebouncedAction();
             if (!release) {
                 return;
             }
@@ -555,7 +581,7 @@
     }
 
     document.getElementById('darkModeToggle').addEventListener('click', async (event) => {
-        const release = startDebouncedAction(event.currentTarget);
+        const release = startDebouncedAction();
         if (!release) {
             return;
         }
