@@ -350,6 +350,49 @@
             }
         }
 
+        .rate-limit-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.45);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            padding: 1.5rem;
+        }
+
+        .rate-limit-modal.active {
+            display: flex;
+        }
+
+        .rate-limit-card {
+            background: var(--card-bg);
+            color: var(--text);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 1.25rem 1.5rem;
+            max-width: 520px;
+            width: 100%;
+            box-shadow: 0 18px 42px rgba(0, 0, 0, 0.22);
+            text-align: center;
+        }
+
+        .rate-limit-card h2 {
+            margin-top: 0;
+            margin-bottom: 0.4rem;
+        }
+
+        .rate-limit-card p {
+            margin: 0.35rem 0;
+            color: var(--muted);
+        }
+
+        .rate-limit-card .countdown {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: var(--text);
+        }
+
     </style>
 </head>
 <body class="{% if dark_mode %}dark{% endif %}">
@@ -376,6 +419,15 @@
         </div>
         <button id="darkModeToggle" class="dark-toggle" aria-label="Toggle Dark Mode" data-sheet-action>🌙</button>
         <a href="{% url 'logout' %}" class="logout-btn" aria-label="Logout">⏻ Logout</a>
+    </div>
+</div>
+
+<div id="rateLimitModal" class="rate-limit-modal" role="alertdialog" aria-modal="true" aria-labelledby="rateLimitTitle" aria-describedby="rateLimitDescription">
+    <div class="rate-limit-card">
+        <h2 id="rateLimitTitle">We hit a speed bump</h2>
+        <p id="rateLimitDescription">Google Sheets asked us to slow down. Please wait a few seconds before trying again.</p>
+        <p class="countdown" id="rateLimitCountdown">30s</p>
+        <p>Controls will unlock automatically when the timer ends.</p>
     </div>
 </div>
 
@@ -414,6 +466,19 @@
 </main>
 
 <script>
+    const rateLimitConfig = {
+        active: {{ rate_limited|yesno:"true,false" }},
+        waitSeconds: {{ rate_limit_wait_seconds|default:0 }},
+    };
+
+    const rateLimitModal = document.getElementById('rateLimitModal');
+    const rateLimitCountdown = document.getElementById('rateLimitCountdown');
+    const rateLimitState = {
+        active: false,
+        timerId: null,
+        remaining: 0,
+    };
+
     function setButtonState(button, isCollected) {
         button.dataset.collected = isCollected ? 'true' : 'false';
         button.textContent = isCollected ? 'Collected' : 'Collect';
@@ -430,16 +495,17 @@
     }
 
     function toggleSheetActionState(disabled) {
+        const shouldDisable = disabled || rateLimitState.active;
         sheetActionDebounce.elements.forEach((element) => {
-            element.dataset.debouncing = disabled ? 'true' : 'false';
+            element.dataset.debouncing = shouldDisable ? 'true' : 'false';
             if ('disabled' in element) {
-                element.disabled = disabled;
+                element.disabled = shouldDisable;
             }
         });
     }
 
     function startDebouncedAction(minDelay = 2000, maxDelay = 5000) {
-        if (sheetActionDebounce.active) {
+        if (rateLimitState.active || sheetActionDebounce.active) {
             return null;
         }
 
@@ -462,6 +528,60 @@
             clearTimeout(maxTimer);
             setTimeout(releaseAll, remaining);
         };
+    }
+
+    function updateRateLimitCountdown() {
+        rateLimitCountdown.textContent = `${Math.max(rateLimitState.remaining, 0)}s`;
+    }
+
+    function hideRateLimitModal() {
+        rateLimitState.active = false;
+        rateLimitModal.classList.remove('active');
+        rateLimitModal.setAttribute('aria-hidden', 'true');
+        clearInterval(rateLimitState.timerId);
+        rateLimitState.timerId = null;
+        toggleSheetActionState(false);
+    }
+
+    function showRateLimitModal(seconds = 30) {
+        const waitSeconds = Math.max(parseInt(seconds, 10) || 0, 1);
+        rateLimitState.remaining = waitSeconds;
+        rateLimitState.active = true;
+        if (!sheetActionDebounce.elements.length) {
+            sheetActionDebounce.elements = getSheetActionElements();
+        }
+        toggleSheetActionState(true);
+        rateLimitModal.classList.add('active');
+        rateLimitModal.setAttribute('aria-hidden', 'false');
+        updateRateLimitCountdown();
+        clearInterval(rateLimitState.timerId);
+        rateLimitState.timerId = setInterval(() => {
+            rateLimitState.remaining -= 1;
+            if (rateLimitState.remaining <= 0) {
+                hideRateLimitModal();
+                return;
+            }
+            updateRateLimitCountdown();
+        }, 1000);
+    }
+
+    async function handleRateLimitResponse(response, fallbackSeconds = 30) {
+        if (response.status !== 429) {
+            return false;
+        }
+
+        let waitSeconds = fallbackSeconds;
+        try {
+            const data = await response.clone().json();
+            if (data && data.retry_after) {
+                waitSeconds = Number(data.retry_after);
+            }
+        } catch (error) {
+            // Ignore JSON parsing issues and fall back to defaults.
+        }
+
+        showRateLimitModal(waitSeconds);
+        return true;
     }
 
     function handleButtonHover(event) {
@@ -497,6 +617,10 @@
                 body: JSON.stringify({amiibo_id: amiiboId, action: action})
             });
 
+            if (await handleRateLimitResponse(response)) {
+                return;
+            }
+
             if (response.ok) {
                 card.classList.toggle('collected');
                 const isCollected = card.classList.contains('collected');
@@ -531,7 +655,7 @@
             }
 
             try {
-                await fetch('/toggle-type-filter/', {
+                const response = await fetch('/toggle-type-filter/', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -539,6 +663,10 @@
                     },
                     body: JSON.stringify({ type, ignore })
                 });
+
+                if (await handleRateLimitResponse(response)) {
+                    return;
+                }
             } finally {
                 release();
             }
@@ -595,7 +723,7 @@
         document.getElementById('darkModeToggle').textContent = isDark ? '☀️' : '🌙';
 
         try {
-            await fetch('/toggle-dark-mode/', {
+            const response = await fetch('/toggle-dark-mode/', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -603,6 +731,10 @@
                 },
                 body: JSON.stringify({ dark_mode: isDark })
             });
+
+            if (await handleRateLimitResponse(response)) {
+                return;
+            }
         } finally {
             release();
         }
@@ -620,6 +752,9 @@
     window.addEventListener('DOMContentLoaded', () => {
         updateCollectedCount();
         initializeButtons();
+        if (rateLimitConfig.active) {
+            showRateLimitModal(rateLimitConfig.waitSeconds || 30);
+        }
     });
 </script>
 
