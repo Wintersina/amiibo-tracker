@@ -31,6 +31,9 @@ SECURE_CONTENT_TYPE_NOSNIFF = True
 CSRF_COOKIE_SECURE = True
 SESSION_COOKIE_SECURE = True
 X_FRAME_OPTIONS = "DENY"
-SECURE_SSL_REDIRECT = True
+# Cloud Run terminates TLS before forwarding requests to the container. Rely on
+# the platform to handle HTTPS enforcement unless explicitly overridden so the
+# app can return a 200 on custom domains without triggering an extra redirect.
+SECURE_SSL_REDIRECT = os.environ.get("SECURE_SSL_REDIRECT", "false").lower() == "true"
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 USE_X_FORWARDED_HOST = True
