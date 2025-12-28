@@ -31,6 +31,12 @@ class DummySpreadsheet:
         self.worksheets[title] = worksheet
         return worksheet
 
+    def del_worksheet(self, worksheet):
+        self.worksheets.pop(worksheet.title, None)
+
+    def worksheets_list(self):
+        return list(self.worksheets.values())
+
 
 @pytest.fixture(autouse=True)
 def reset_secret_cache():
@@ -196,3 +202,17 @@ def test_initialize_default_worksheets_respects_existing_data():
 
     assert spreadsheet.worksheet(manager.work_sheet_amiibo_manager).rows == [["custom"]]
     assert spreadsheet.worksheet(manager.work_sheet_config_manager).rows == [["config"]]
+
+
+def test_default_sheet_is_removed_after_initialization():
+    manager = GoogleSheetClientManager()
+    spreadsheet = DummySpreadsheet()
+    spreadsheet.worksheets["Sheet1"] = DummyWorksheet("Sheet1")
+
+    manager._initialize_default_worksheets(spreadsheet)
+
+    assert "Sheet1" not in spreadsheet.worksheets
+    assert set(spreadsheet.worksheets.keys()) == {
+        manager.work_sheet_amiibo_manager,
+        manager.work_sheet_config_manager,
+    }

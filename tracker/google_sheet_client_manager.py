@@ -76,6 +76,7 @@ class GoogleSheetClientManager(HelperMixin, LoggingMixin):
     def _initialize_default_worksheets(self, spreadsheet):
         self._get_or_create_worksheet(spreadsheet, self.work_sheet_amiibo_manager)
         self._get_or_create_worksheet(spreadsheet, self.work_sheet_config_manager)
+        self._remove_default_sheet_if_present(spreadsheet)
 
     def get_creds(self, creds_json) -> Credentials:
         creds = Credentials.from_authorized_user_info(creds_json, OauthConstants.SCOPES)
@@ -132,3 +133,20 @@ class GoogleSheetClientManager(HelperMixin, LoggingMixin):
 
     def get_or_create_worksheet_by_name(self, worksheet_name):
         return self._get_or_create_worksheet(self.spreadsheet, worksheet_name)
+
+    def _remove_default_sheet_if_present(self, spreadsheet):
+        try:
+            default_sheet = spreadsheet.worksheet("Sheet1")
+        except gspread.exceptions.WorksheetNotFound:
+            return
+
+        managed_titles = {
+            self.work_sheet_amiibo_manager,
+            self.work_sheet_config_manager,
+        }
+
+        if default_sheet.title in managed_titles:
+            return
+
+        if hasattr(spreadsheet, "del_worksheet"):
+            spreadsheet.del_worksheet(default_sheet)
