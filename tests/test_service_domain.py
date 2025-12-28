@@ -1,3 +1,5 @@
+import re
+
 from tracker.service_domain import AmiiboService
 
 
@@ -36,9 +38,15 @@ class DummySheet:
 
     def update(self, cell_range, rows):
         self.update_calls.append((cell_range, rows))
-        for idx, row in enumerate(rows, start=1):
-            if idx - 1 < len(self.rows):
-                self.rows[idx - 1] = row
+        start_row = 1
+        match = re.search(r"(\d+)", cell_range)
+        if match:
+            start_row = int(match.group(1))
+
+        for idx, row in enumerate(rows, start=start_row):
+            row_pos = idx - 1
+            if row_pos < len(self.rows):
+                self.rows[row_pos] = row
             else:
                 self.rows.append(row)
 
@@ -93,6 +101,35 @@ def test_seed_new_amiibos_appends_missing_rows():
     assert service.sheet.rows.count(
         ["existingseriesexistingtail", "Existing Amiibo", "series", "", "Figure", "0"]
     ) == 1
+
+
+def test_seed_new_amiibos_backfills_missing_columns():
+    service = build_service()
+    # Existing row missing game series, release date, and type
+    service.sheet.rows[1] = ["existingseriesexistingtail", "Existing Amiibo", "", "", "", "1"]
+
+    amiibos = [
+        {
+            "head": "existing",
+            "gameSeries": "series",
+            "tail": "existingtail",
+            "name": "Existing Amiibo",
+            "type": "Figure",
+            "release": {"na": "2024-05-10"},
+        }
+    ]
+
+    service.seed_new_amiibos(amiibos)
+
+    assert service.sheet.rows[1] == [
+        "existingseriesexistingtail",
+        "Existing Amiibo",
+        "series",
+        "05/10/2024",
+        "Figure",
+        "1",
+    ]
+    assert ("A2:F2", [service.sheet.rows[1]]) in service.sheet.update_calls
 
 
 def test_toggle_collected_updates_known_id():

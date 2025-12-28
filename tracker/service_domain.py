@@ -42,22 +42,54 @@ class AmiiboService(LoggingMixin):
         return response.json().get("amiibo", [])
 
     def seed_new_amiibos(self, amiibos: list[dict]):
-        existing_ids = self.sheet.col_values(1)[1:]
+        existing_values = self.sheet.get_all_values()
+        existing_map: dict[str, tuple[int, list[str]]] = {}
+        for idx, row in enumerate(existing_values[1:], start=2):
+            if row:
+                existing_map[row[0]] = (idx, row)
+
         new_rows = []
+        updates: dict[int, list[str]] = {}
 
         for amiibo in amiibos:
             amiibo_id = amiibo["head"] + amiibo["gameSeries"] + amiibo["tail"]
-            if amiibo_id not in existing_ids:
+            release_date = self._format_release_date(amiibo.get("release"))
+
+            if amiibo_id not in existing_map:
                 new_rows.append(
                     [
                         amiibo_id,
                         amiibo["name"],
                         amiibo.get("gameSeries", ""),
-                        self._format_release_date(amiibo.get("release")),
+                        release_date,
                         amiibo.get("type", ""),
                         "0",
                     ]
                 )
+                continue
+
+            row_index, row = existing_map[amiibo_id]
+            updated_row = list(row)
+            if len(updated_row) < len(self.HEADER):
+                updated_row.extend([""] * (len(self.HEADER) - len(updated_row)))
+
+            changed = False
+            if not updated_row[2] and amiibo.get("gameSeries"):
+                updated_row[2] = amiibo.get("gameSeries", "")
+                changed = True
+            if not updated_row[3] and release_date:
+                updated_row[3] = release_date
+                changed = True
+            if not updated_row[4] and amiibo.get("type"):
+                updated_row[4] = amiibo.get("type", "")
+                changed = True
+
+            if changed:
+                updates[row_index] = updated_row[: len(self.HEADER)]
+
+        if updates:
+            for row_index, row_values in updates.items():
+                self.sheet.update(f"A{row_index}:F{row_index}", [row_values])
 
         if new_rows:
             self.sheet.append_rows(new_rows, value_input_option="USER_ENTERED")
