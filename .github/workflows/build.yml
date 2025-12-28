@@ -1,10 +1,6 @@
 name: Build and Push Docker Image
 
 on:
-  push:
-    branches:
-      - main
-      - terraform_step
   pull_request:
     branches:
       - main
@@ -56,3 +52,12 @@ jobs:
           docker build -t "$IMAGE_BASE:latest" -t "$IMAGE_BASE:${GITHUB_SHA}" .
           docker push "$IMAGE_BASE:latest"
           docker push "$IMAGE_BASE:${GITHUB_SHA}"
+
+      - name: Deploy new Cloud Run revision
+        run: |
+          IMAGE_BASE="$REGION-docker.pkg.dev/$PROJECT_ID/$SERVICE_NAME/$SERVICE_NAME"
+          gcloud run services update "$SERVICE_NAME" \
+            --image "$IMAGE_BASE:${GITHUB_SHA}" \
+            --region "$REGION" \
+            --project "$PROJECT_ID" \
+            --quiet

@@ -221,3 +221,27 @@ class IndexView(View):
         if request.user.is_authenticated:
             return redirect("amiibo_list")
         return render(request, "tracker/index.html")
+
+
+class PrivacyPolicyView(View):
+    def get(self, request):
+        return render(
+            request,
+            "tracker/privacy.html",
+            {
+                "data_usage": [
+                    {
+                        "item": "Email address",
+                        "purpose": "Used to identify your account, keep your session tied to your data, and let you know which Google account is connected.",
+                    },
+                    {
+                        "item": "Basic profile (name, avatar)",
+                        "purpose": "Displayed in the app header so you can quickly see which account is active.",
+                    },
+                    {
+                        "item": "Google Sheets access",
+                        "purpose": "Lets Amiibo Tracker read and update the sheet you authorize so we can store your collection status and dark mode preference without touching any other documents.",
+                    },
+                ]
+            },
+        )
