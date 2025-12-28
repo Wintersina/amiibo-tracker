@@ -61,8 +61,15 @@ WSGI_APPLICATION = "amiibo_tracker.wsgi.application"
 
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+        # Default to Django's dummy backend so the app does not try to create or
+        # write to a local SQLite file in environments where persistence is
+        # ephemeral (e.g., Cloud Run). If a database is needed for local
+        # development or future features, set DJANGO_DB_ENGINE to a real backend
+        # such as "django.db.backends.sqlite3".
+        "ENGINE": os.environ.get(
+            "DJANGO_DB_ENGINE", "django.db.backends.dummy"
+        ),
+        "NAME": os.environ.get("DJANGO_DB_NAME", "dummy"),
     }
 }
 
@@ -75,9 +82,9 @@ CACHES = {
 
 # By default Django stores session data in the database (the `django_session`
 # table). In environments where the database may not be writable or may be
-# reset between deploys (e.g., Cloud Run), store sessions in the cache instead
-# to avoid that dependency.
-SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+# reset between deploys (e.g., Cloud Run), store sessions in signed cookies so
+# we do not rely on any database tables being present.
+SESSION_ENGINE = "django.contrib.sessions.backends.signed_cookies"
 
 logging.basicConfig(level=logging.INFO)
 
