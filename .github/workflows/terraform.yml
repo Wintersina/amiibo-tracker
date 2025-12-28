@@ -2,8 +2,10 @@ name: Deploy to Google Cloud with Terraform
 
 on:
   workflow_run:
-    workflows: ["Build and Push Docker Image"]
-    types: [completed]
+    workflows:
+      - Build and Push Docker Image
+    types:
+      - completed
   workflow_dispatch:
 
 env:
@@ -20,21 +22,31 @@ jobs:
     runs-on: ubuntu-latest
     if: |
       github.event_name == 'workflow_dispatch' ||
-      (github.event_name == 'workflow_run' &&
-       github.event.workflow_run.conclusion == 'success' &&
+      (
+        github.event_name == 'workflow_run' &&
+        github.event.workflow_run.conclusion == 'success' &&
         (
-          (github.event.workflow_run.event == 'push' &&
-           (github.event.workflow_run.head_branch == 'main' || github.event.workflow_run.head_branch == 'terraform_step')) ||
-          (github.event.workflow_run.event == 'pull_request' &&
-           (
-             (github.event.workflow_run.head_branch == 'main' || github.event.workflow_run.head_branch == 'terraform_step') ||
-             (
-               github.event.workflow_run.pull_requests &&
-               github.event.workflow_run.pull_requests[0] &&
-               (github.event.workflow_run.pull_requests[0].base.ref == 'main' || github.event.workflow_run.pull_requests[0].base.ref == 'terraform_step')
-             )
-           ))
-        ))
+          (
+            github.event.workflow_run.event == 'push' &&
+            (github.event.workflow_run.head_branch == 'main' || github.event.workflow_run.head_branch == 'terraform_step')
+          ) ||
+          (
+            github.event.workflow_run.event == 'pull_request' &&
+            (
+              github.event.workflow_run.head_branch == 'main' ||
+              github.event.workflow_run.head_branch == 'terraform_step' ||
+              (
+                github.event.workflow_run.pull_requests &&
+                github.event.workflow_run.pull_requests[0] &&
+                (
+                  github.event.workflow_run.pull_requests[0].base.ref == 'main' ||
+                  github.event.workflow_run.pull_requests[0].base.ref == 'terraform_step'
+                )
+              )
+            )
+          )
+        )
+      )
 
     steps:
       - name: Checkout Repository
@@ -108,18 +120,18 @@ jobs:
           fi
 
           RESOLVED=$(python - <<'PY'
-import json
-import os
+            import json
+            import os
 
-hosts = json.loads(os.environ.get("ALLOWED_HOSTS_INPUT") or "[]")
+            hosts = json.loads(os.environ.get("ALLOWED_HOSTS_INPUT") or "[]")
 
-for domain in ("goozamiibo.com", "www.goozamiibo.com"):
-    if domain not in hosts:
-        hosts.append(domain)
+            for domain in ("goozamiibo.com", "www.goozamiibo.com"):
+                if domain not in hosts:
+                    hosts.append(domain)
 
-print(json.dumps(hosts))
+            print(json.dumps(hosts))
 PY
-)
+          )
 
           echo "allowed_hosts_json=$RESOLVED" >> "$GITHUB_OUTPUT"
         env:
