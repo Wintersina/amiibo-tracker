@@ -10,6 +10,8 @@ from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.decorators.csrf import csrf_exempt
 from google_auth_oauthlib.flow import Flow
+from oauthlib.oauth2 import OAuth2Error
+from oauthlib.oauth2.rfc6749.errors import InvalidGrantError
 
 from constants import OauthConstants
 from tracker.google_sheet_client_manager import GoogleSheetClientManager
@@ -83,6 +85,14 @@ class OAuthCallbackView(View):
 
         request_state = request.GET.get("state")
         oauth_state = request.session.get("oauth_state")
+        error = request.GET.get("error")
+        authorization_code = request.GET.get("code")
+
+        # If Google returned an explicit error or no auth code, send the user back
+        # through the OAuth login flow instead of raising an exception.
+        if error or not authorization_code:
+            request.session.pop("oauth_state", None)
+            return redirect("oauth_login")
 
         # If the state is missing from the session (e.g., a new browser session) try to
         # recover using the callback payload before forcing users through a second
@@ -103,7 +113,11 @@ class OAuthCallbackView(View):
             state=oauth_state,
         )
 
-        flow.fetch_token(authorization_response=request.build_absolute_uri())
+        try:
+            flow.fetch_token(authorization_response=request.build_absolute_uri())
+        except (InvalidGrantError, OAuth2Error):
+            request.session.pop("oauth_state", None)
+            return redirect("oauth_login")
 
         credentials = flow.credentials
 
