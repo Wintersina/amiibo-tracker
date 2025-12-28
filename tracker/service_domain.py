@@ -2,6 +2,7 @@ from functools import cached_property
 from datetime import datetime
 
 import requests
+from cachetools import TTLCache
 
 from tracker.google_sheet_client_manager import GoogleSheetClientManager
 from tracker.helpers import LoggingMixin
@@ -151,6 +152,7 @@ class AmiiboService(LoggingMixin):
 class GoogleSheetConfigManager(LoggingMixin):
     CONFIG_HEADER = ["Config name", "Config value"]
     DEFAULT_IGNORE_TYPES = {"Band": "1", "Card": "1", "Yarn": "1"}
+    _CONFIG_CACHE = TTLCache(maxsize=32, ttl=60)
 
     def __init__(
         self,
@@ -161,9 +163,7 @@ class GoogleSheetConfigManager(LoggingMixin):
         self.sheet_name = sheet_name
         self.work_sheet_title = work_sheet_title
         self.google_sheet_client: GoogleSheetClientManager = google_sheet_client_manager
-        self._config_cache: dict[str, tuple[int, str]] | None = None
-        self._config_cache_timestamp: datetime | None = None
-        self._config_cache_ttl_seconds = 5
+        self._config_cache_key = (self.sheet_name, self.work_sheet_title)
 
     @cached_property
     def sheet(self):
@@ -218,14 +218,11 @@ class GoogleSheetConfigManager(LoggingMixin):
             self.sheet.append_row([key, value], value_input_option="USER_ENTERED")
             # next row is len(config_map) + 2 (account for header row)
             config_map[key] = (len(config_map) + 2, value)
-        self._config_cache = config_map
-        self._config_cache_timestamp = datetime.utcnow()
+        self._CONFIG_CACHE[self._config_cache_key] = config_map
 
     def _get_config_map(self) -> dict[str, tuple[int, str]]:
-        if self._config_cache and self._config_cache_timestamp:
-            age = (datetime.utcnow() - self._config_cache_timestamp).total_seconds()
-            if age < self._config_cache_ttl_seconds:
-                return self._config_cache
+        if cached_map := self._CONFIG_CACHE.get(self._config_cache_key):
+            return cached_map
 
         self._ensure_structure(self.sheet)
         values = self.sheet.get_all_values()
@@ -237,8 +234,7 @@ class GoogleSheetConfigManager(LoggingMixin):
             value = row[1] if len(row) > 1 else ""
             config_map[name] = (idx, value)
 
-        self._config_cache = config_map
-        self._config_cache_timestamp = datetime.utcnow()
+        self._CONFIG_CACHE[self._config_cache_key] = config_map
         return config_map
 
     def _ensure_structure(self, sheet):
@@ -269,8 +265,8 @@ class GoogleSheetConfigManager(LoggingMixin):
                     sheet.append_row(
                         [key, default_val], value_input_option="USER_ENTERED"
                     )
-        self._config_cache = None
-        self._config_cache_timestamp = None
+        if self._config_cache_key in self._CONFIG_CACHE:
+            del self._CONFIG_CACHE[self._config_cache_key]
 
     def _type_config_key(self, amiibo_type: str) -> str:
         return f"IgnoreType:{amiibo_type}"
@@ -285,8 +281,7 @@ class GoogleSheetConfigManager(LoggingMixin):
                 [key, default_value], value_input_option="USER_ENTERED"
             )
             config_map[key] = (new_row_index, default_value)
-            self._config_cache = config_map
-            self._config_cache_timestamp = datetime.utcnow()
+            self._CONFIG_CACHE[self._config_cache_key] = config_map
 
     def _default_type_value(self, amiibo_type: str) -> str:
         return self.DEFAULT_IGNORE_TYPES.get(amiibo_type, "0")

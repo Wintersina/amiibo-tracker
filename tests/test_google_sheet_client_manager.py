@@ -17,7 +17,8 @@ class DummyWorksheet:
 
 
 class DummySpreadsheet:
-    def __init__(self):
+    def __init__(self, sheet_id="dummy-sheet-id"):
+        self.id = sheet_id
         self.worksheets = {}
 
     def worksheet(self, name):
@@ -216,3 +217,42 @@ def test_default_sheet_is_removed_after_initialization():
         manager.work_sheet_amiibo_manager,
         manager.work_sheet_config_manager,
     }
+
+
+def test_spreadsheet_cache_reused_between_instances():
+    shared_sheet = object()
+
+    first = GoogleSheetClientManager(sheet_name="Shared", credentials_file="creds.json")
+    first._open_or_create_spreadsheet = lambda: shared_sheet
+    first._initialize_default_worksheets = lambda spreadsheet: None
+
+    assert first.spreadsheet is shared_sheet
+
+    second = GoogleSheetClientManager(sheet_name="Shared", credentials_file="creds.json")
+
+    def fail_open():  # pragma: no cover - fails if cache misses
+        raise AssertionError("should reuse cached spreadsheet")
+
+    second._open_or_create_spreadsheet = fail_open
+    second._initialize_default_worksheets = fail_open
+
+    assert second.spreadsheet is shared_sheet
+
+
+def test_get_or_create_worksheet_uses_cache():
+    manager = GoogleSheetClientManager()
+    spreadsheet = DummySpreadsheet(sheet_id="cache-me")
+    spreadsheet.worksheets["Existing"] = DummyWorksheet("Existing")
+
+    first = manager._get_or_create_worksheet(spreadsheet, "Existing")
+    assert first is spreadsheet.worksheets["Existing"]
+
+    def fail_lookup(name):  # pragma: no cover - fails if cache misses
+        raise AssertionError(f"unexpected worksheet lookup for {name}")
+
+    spreadsheet.worksheet = fail_lookup
+
+    second_manager = GoogleSheetClientManager()
+    cached = second_manager._get_or_create_worksheet(spreadsheet, "Existing")
+
+    assert cached is first
