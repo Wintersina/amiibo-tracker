@@ -8,6 +8,7 @@ from tracker.views import (
     OAuthCallbackView,
     LogoutView,
     ToggleCollectedView,
+    PrivacyPolicyView,
 )
 
 urlpatterns = [
@@ -25,4 +26,5 @@ urlpatterns = [
         name="oauth2callback_compat",
     ),
     path("logout/", LogoutView.as_view(), name="logout"),
+    path("privacy/", PrivacyPolicyView.as_view(), name="privacy"),
 ]

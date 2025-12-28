@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Amiibo Tracker Privacy Policy</title>
+    <style>
+        body {
+            font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            margin: 0;
+            padding: 2rem;
+            background: #0c0c0f;
+            color: #f5f7fb;
+            line-height: 1.6;
+        }
+
+        main {
+            max-width: 860px;
+            margin: 0 auto;
+            background: #13131a;
+            border: 1px solid #1f1f2a;
+            border-radius: 18px;
+            padding: 2.5rem;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.35);
+        }
+
+        h1 {
+            margin-top: 0;
+            color: #82e0ff;
+            letter-spacing: 0.02em;
+        }
+
+        h2 {
+            margin-top: 2rem;
+            color: #e2e8f0;
+        }
+
+        p {
+            color: #cbd5e1;
+        }
+
+        ul {
+            padding-left: 1.2rem;
+            color: #cbd5e1;
+        }
+
+        li strong {
+            color: #f8fafc;
+        }
+
+        .data-card {
+            background: #0f1118;
+            border: 1px solid #1f2735;
+            border-radius: 14px;
+            padding: 1rem 1.25rem;
+            margin-top: 1rem;
+        }
+
+        .contact {
+            margin-top: 2rem;
+            padding-top: 1rem;
+            border-top: 1px solid #1f2735;
+        }
+    </style>
+</head>
+<body>
+    <main>
+        <h1>Privacy Policy</h1>
+        <p>
+            Amiibo Tracker uses Google Sign-In only for authentication and for connecting to the Google Sheets file that you choose.
+            You can access this page without signing in.
+        </p>
+
+        <h2>What we collect and why</h2>
+        <div class="data-card">
+            <ul>
+                {% for item in data_usage %}
+                    <li><strong>{{ item.item }}:</strong> {{ item.purpose }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <h2>How Google Sheets access works</h2>
+        <p>
+            When you sign in and grant permission, Amiibo Tracker only reads and writes to the specific Google Sheet you authorize.
+            We store your collected Amiibos, toggles, and preferences in that sheet so you can keep control of your data and revoke access at any time.
+            No other documents or Google Drive files are touched.
+        </p>
+
+        <h2>Data sharing</h2>
+        <p>
+            We do not sell, share, or distribute your data to third parties. Access is strictly limited to the functions you grant through Google.
+        </p>
+
+        <h2>Contact</h2>
+        <p class="contact">
+            For privacy questions or requests, email <a href="mailto:wintersina@gmail.com">wintersina@gmail.com</a>.
+        </p>
+    </main>
+</body>
+</html>
