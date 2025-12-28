@@ -54,32 +54,19 @@ class GoogleSheetClientManager(HelperMixin, LoggingMixin):
 
         except gspread.exceptions.SpreadsheetNotFound:
             self.log_info(
-                f"Spreadsheet '{self.sheet_name}' not found. Creating a new spreadsheet."
-            )
-            spreadsheet = self.client.create(self.sheet_name)
-
-            self.log_info(
-                f"Creating worksheet '{self.work_sheet_amiibo_manager}' within the new spreadsheet."
-            )
-            self.work_sheet_amiibo_manager_object = self.spreadsheet.add_worksheet(
-                title=self.work_sheet_amiibo_manager, rows=500, cols=3
-            )
-            self.work_sheet_config_manager_object = self.spreadsheet.add_worksheet(
-                title=self.work_sheet_config_manager, rows=500, cols=3
+                "Spreadsheet '%s' not found; attempting to create it with Drive file access.",
+                self.sheet_name,
             )
 
-            self.work_sheet_amiibo_manager_object.append_row(
-                ["Amiibo ID", "Amiibo Name", "Collected Status"]
-            )
-
-            self.work_sheet_config_manager_object.append_row(["DarkMode"])
-            self.work_sheet_config_manager_object.append_row(["0"])
-
-        self.log_info(
-            f"Successfully initialized with spreadsheet '{self.spreadsheet.title}'"
-        )
-
-        return spreadsheet
+            try:
+                return self.client.create(self.sheet_name)
+            except gspread.exceptions.APIError as error:
+                message = (
+                    f"Spreadsheet '{self.sheet_name}' was not found and could not be created. "
+                    "Please ensure the app has the 'Google Drive file' permission so it can create files it owns."
+                )
+                self.log_error("%s Error: %s", message, error)
+                raise ValueError(message) from error
 
     def get_creds(self, creds_json) -> Credentials:
         creds = Credentials.from_authorized_user_info(creds_json, OauthConstants.SCOPES)
