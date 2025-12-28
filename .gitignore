@@ -1,7 +1,27 @@
+# Python-related
 __pycache__/
+*.pyc
+
+# Env and local config
 .env
-.idea
+.idea/
 .DS_Store
-credentials.json
 db.sqlite3
-env/*
+credentials.json
+client_secret.json
+manual_script.sh
+
+# Virtualenv
+env/
+venv/
+
+# Terraform files and sensitive vars
+*.tfvars
+terraform.tfvars
+terraform/*.tfvars
+*.tfstate
+*.tfstate.backup
+.terraform/
+
+# Optional: VSCode or editor-specific
+.vscode/

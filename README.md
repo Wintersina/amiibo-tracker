@@ -81,56 +81,141 @@ Example format of `credentials.json`:
 ### 5. Run the Django development server
 
 ```bash
-python manage.py runserver
+./scripts/mac_local_run.sh
+```
+for windows
+```bash
+./scripts/windows_local_run.sh
 ```
 
 Visit [http://localhost:8000](http://localhost:8000) in your browser.
 
 ---
 
-## 🧹 Code Formatting with Black
+## ☁️ Deploying to Google Cloud Run with Terraform
 
-We use [`black`](https://github.com/psf/black) to auto-format all Python code.
+The repository includes Terraform configuration to provision the minimum Google Cloud resources for Cloud Run and Artifact Registry. You still need to supply your OAuth client JSON via Secret Manager and provide the Docker image URL to deploy.
 
-### Format all Python files
+1. **Prerequisites**
+   - [gcloud CLI](https://cloud.google.com/sdk/docs/install)
+   - [Terraform](https://developer.hashicorp.com/terraform/downloads)
+   - Google Cloud project with billing enabled
+   - OAuth client secret stored in Secret Manager (latest version will be injected into the service)
+
+2. **Build and push the container image**
+   ```bash
+   gcloud builds submit --tag "${REGION}-docker.pkg.dev/${PROJECT_ID}/amiibo-tracker/amiibo-tracker:latest"
+   ```
+
+3. **Store your OAuth client secret in Secret Manager**
+   ```bash
+   # Save your OAuth client JSON locally first, then upload it
+   gcloud secrets create amiibo-tracker-oauth-client --replication-policy="automatic"
+   gcloud secrets versions add amiibo-tracker-oauth-client --data-file="path/to/client_secret.json"
+   ```
+   The secret name (`amiibo-tracker-oauth-client` above) is passed to Terraform via `-var="oauth_client_secret_secret=..."`.
+
+### 🔧 Windows helper scripts
+
+Google Cloud projects and regions are specific to your own account—use `gcloud config get-value project` to see the currently
+configured project and choose any supported [regional location](https://cloud.google.com/run/docs/locations) for deployments.
+
+Two Windows scripts in `scripts/` automate building the image and uploading the OAuth client secret:
+
+- **PowerShell**: `scripts\windows_deploy.ps1 -Region "REGION" -ProjectId "PROJECT_ID" -SecretFile "path/to/client_secret.json"`
+- **Batch wrapper**: `scripts\windows_deploy.bat REGION PROJECT_ID path/to/client_secret.json`
+
+Both scripts will:
+
+1. Set the active gcloud project.
+2. Submit the Cloud Build with the tag format `${REGION}-docker.pkg.dev/${PROJECT_ID}/amiibo-tracker/amiibo-tracker:latest`.
+3. Create (or reuse) the `amiibo-tracker-oauth-client` secret with automatic replication.
+4. Upload a new secret version from your local client secret JSON.
+
+To initialize and apply the Terraform stack from Windows, use the new helpers:
+
+- **PowerShell**: `scripts\windows_terraform.ps1 -ProjectId "PROJECT_ID" -Region "REGION" -DjangoSecretKey "SECRET" -OAuthRedirectUri "https://your.app/oauth/callback" [-AllowedHosts "example.com,localhost"] [-AutoApprove]`
+- **Batch wrapper**: `scripts\windows_terraform.bat PROJECT_ID REGION SECRET https://your.app/oauth/callback [example.com,localhost] [AUTO]`
+
+These scripts will set the gcloud project, run `terraform init`, and then `terraform apply` with the provided values. `-AllowedHosts` accepts a comma-separated list, and `-AutoApprove` skips interactive confirmation.
+
+### 🔐 GitHub Actions secrets
+
+The Terraform deploy workflow (`.github/workflows/terraform.yml`) needs the following repository or environment secrets:
+
+| Secret name | Purpose |
+| --- | --- |
+| `GCP_PROJECT_ID` | Google Cloud project ID (e.g., `amiibo-tracker-458804`). |
+| `GCP_REGION` | Deployment region (e.g., `us-east1`). |
+| `GCP_SERVICE_ACCOUNT_KEY` | JSON key for a service account with `roles/run.admin`, `roles/artifactregistry.reader`, and `roles/secretmanager.secretAccessor`. |
+| `TF_STATE_BUCKET` | GCS bucket for Terraform remote state (e.g., `my-tf-state-bucket`). |
+| `DJANGO_SECRET_KEY` | Django secret key used by the deployed service. |
+| `OAUTH_REDIRECT_URI` | OAuth redirect URI registered in Google Cloud Console. |
+| `OAUTH_CLIENT_SECRET_SECRET` | Secret Manager name that stores your OAuth client JSON (e.g., `amiibo-tracker-oauth-client`). |
+| `ALLOWED_HOSTS_JSON` | Optional JSON array of allowed hosts (defaults to `[]`). Provide bare hostnames (no protocol or trailing slash). |
+
+To provision the service account key, create or reuse a deployment account and export a JSON key (store it securely). Then add the secrets, for example with the GitHub CLI:
 
 ```bash
-black .
+gh secret set GCP_PROJECT_ID --body "amiibo-tracker-458804"
+gh secret set GCP_REGION --body "us-east1"
+gh secret set TF_STATE_BUCKET --body "my-tf-state-bucket"
+gh secret set DJANGO_SECRET_KEY --body "replace-with-strong-secret"
+gh secret set OAUTH_REDIRECT_URI --body "https://your.app/oauth/callback"
+gh secret set OAUTH_CLIENT_SECRET_SECRET --body "amiibo-tracker-oauth-client"
+gh secret set ALLOWED_HOSTS_JSON --body '["your.app","localhost"]'  # Use bare hosts like amiibo-tracker-xxxx.a.run.app
+gh secret set GCP_SERVICE_ACCOUNT_KEY < path/to/service-account-key.json
 ```
 
-### Optional: Set up Black as a Git pre-commit hook
+Notes on `ALLOWED_HOSTS_JSON`:
 
-Install `pre-commit`:
+- Cloud Run URLs are created automatically and look like `https://SERVICE-HASH-REGION.a.run.app`. After your first deploy, you can fetch the exact host with either `terraform output -raw cloud_run_url` (from the `terraform` directory) or `gcloud run services describe amiibo-tracker --region "$GCP_REGION" --format="value(status.url)"` and strip the `https://` prefix (hosts must be stored without protocol or trailing slash).
+- You can update the GitHub secret with the discovered host, for example: `HOST=$(terraform output -raw cloud_run_url | sed 's#https://##') && gh secret set ALLOWED_HOSTS_JSON --body "[\"$HOST\",\"localhost\"]"`.
+- If you leave `ALLOWED_HOSTS_JSON` unset, the workflow will try to reuse the existing Cloud Run host automatically; if no service exists yet, Terraform falls back to a permissive wildcard so the first deploy can succeed. You can tighten it later by setting the secret.
 
-```bash
-pip install pre-commit
-```
+If you use GitHub environments (e.g., `production`), create the secrets at the environment level and restrict deployments to those environments.
 
-Create a `.pre-commit-config.yaml` file in your project root:
+4. **Bootstrap Terraform**
+   ```bash
+   cd terraform
+   terraform init
+   ```
 
-```yaml
-repos:
-  - repo: https://github.com/psf/black
-    rev: 24.4.2  # Use the latest stable version
-    hooks:
-      - id: black
-```
+5. **Apply infrastructure**
+   ```bash
+   terraform apply \
+     -var="project_id=${PROJECT_ID}" \
+     -var="region=${REGION}" \
+     -var="image_url=${REGION}-docker.pkg.dev/${PROJECT_ID}/amiibo-tracker/amiibo-tracker:latest" \
+     -var="django_secret_key=${DJANGO_SECRET_KEY}" \
+     -var="allowed_hosts=${ALLOWED_HOSTS_AS_JSON_LIST}" \
+     -var="oauth_redirect_uri=${OAUTH_REDIRECT_URI}" \
+     -var="oauth_client_secret_secret=${SECRET_MANAGER_NAME}" \
+     -var="client_secret_path=/secrets/client_secret.json"
+   ```
 
-Then initialize the pre-commit hook:
+6. **Review outputs**
+   Terraform will print the Cloud Run URL after a successful apply. Use it to update your OAuth redirect URI and to access the deployed app.
 
-```bash
-pre-commit install
-```
+7. **Validate the deployment**
+   To confirm that GitHub-managed Terraform state produced a healthy Cloud Run service, use the helper script:
+   ```bash
+   ./scripts/check_cloud_run.sh [SERVICE_NAME] [REGION]
+   ```
+   It will read your active `gcloud` project, retrieve the service URL, and perform a simple HTTP health check (treating 200/302 as success). Ensure your local environment is authenticated with `gcloud auth application-default login` or `gcloud auth login` and has permission to read the service.
 
-Run it manually on all files:
+### Environment variables used at runtime
 
-```bash
-pre-commit run --all-files
-```
+| Variable | Purpose |
+| --- | --- |
+| `ENV_NAME` | Automatically set to `production` in Terraform deployments. |
+| `DJANGO_SECRET_KEY` | Secret key for Django. **Required.** |
+| `ALLOWED_HOSTS` | Comma-separated list of allowed hosts for Django. |
+| `OAUTH_REDIRECT_URI` | OAuth redirect URI registered in Google Cloud Console. |
+| `GOOGLE_OAUTH_CLIENT_SECRETS` | Optional filesystem path to the OAuth client JSON; defaults to `client_secret.json` at the project root. |
+| `GOOGLE_OAUTH_CLIENT_SECRETS_DATA` | Optional inline OAuth client JSON (injected from Secret Manager via Terraform). If set, the JSON is written to `GOOGLE_OAUTH_CLIENT_SECRETS` and used by the app. |
 
-From now on, Black will automatically format your code every time you commit.
 
----
 
 ## 🖼️ Example Screenshots
 
