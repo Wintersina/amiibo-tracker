@@ -15,6 +15,8 @@
             --button-hover: #0c5f56;
             --accent: #f3c969;
             --muted: #6b7280;
+            --uncollected-btn: #9ca3af;
+            --uncollected-hover: #6b7280;
         }
 
         body.dark {
@@ -27,6 +29,8 @@
             --button-hover: #16a34a;
             --accent: #f3c969;
             --muted: #9ca3af;
+            --uncollected-btn: #6b7280;
+            --uncollected-hover: #4b5563;
         }
 
         * {
@@ -206,7 +210,7 @@
         button {
             padding: 0.6em 1.1em;
             font-size: 0.95em;
-            background-color: var(--button-bg);
+            background-color: var(--uncollected-btn);
             border: none;
             color: white;
             border-radius: 10px;
@@ -217,8 +221,16 @@
         }
 
         button:hover {
-            background-color: var(--button-hover);
+            background-color: var(--uncollected-hover);
             transform: translateY(-1px);
+        }
+
+        .amiibo-card.collected button {
+            background: linear-gradient(135deg, var(--button-bg), var(--button-hover));
+        }
+
+        .amiibo-card.collected button:hover {
+            background: linear-gradient(135deg, var(--button-hover), var(--button-bg));
         }
 
         .toggle-btn {
@@ -334,7 +346,7 @@
                                 {{ amiibo.display_release|default:"N/A" }}
                             </p>
                             <button onclick="toggleCollected(this)">
-                                {% if amiibo.collected %}Unmark{% else %}Collect{% endif %}
+                                {% if amiibo.collected %}Collected{% else %}Collect{% endif %}
                             </button>
                         </div>
                     {% endfor %}
@@ -347,6 +359,24 @@
 </main>
 
 <script>
+    function setButtonState(button, isCollected) {
+        button.dataset.collected = isCollected ? 'true' : 'false';
+        button.textContent = isCollected ? 'Collected' : 'Collect';
+    }
+
+    function handleButtonHover(event) {
+        const button = event.currentTarget;
+
+        if (button.dataset.collected === 'true') {
+            button.textContent = 'Unmark';
+        }
+    }
+
+    function handleButtonLeave(event) {
+        const button = event.currentTarget;
+        setButtonState(button, button.dataset.collected === 'true');
+    }
+
     async function toggleCollected(button) {
         const card = button.parentElement;
         const amiiboId = card.dataset.id;
@@ -363,7 +393,8 @@
 
         if (response.ok) {
             card.classList.toggle('collected');
-            button.textContent = action === 'collect' ? 'Unmark' : 'Collect';
+            const isCollected = card.classList.contains('collected');
+            setButtonState(button, isCollected);
             updateCollectedCount();
         }
     }
@@ -430,7 +461,19 @@
         });
     });
 
-    window.addEventListener('DOMContentLoaded', updateCollectedCount);
+    function initializeButtons() {
+        document.querySelectorAll('.amiibo-card button').forEach(button => {
+            const isCollected = button.parentElement.classList.contains('collected');
+            setButtonState(button, isCollected);
+            button.addEventListener('mouseenter', handleButtonHover);
+            button.addEventListener('mouseleave', handleButtonLeave);
+        });
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+        updateCollectedCount();
+        initializeButtons();
+    });
 </script>
 
 </body>
