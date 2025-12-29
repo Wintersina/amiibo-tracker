@@ -64,7 +64,7 @@ class LoggingMixin(object):
 
         return log_fn(msg, *log_args, extra=log_extra)
 
-    def log_action(self, action: str, request=None, level: str = "info", **context):
+    def log_action(self, event: str, request=None, level: str = "info", **context):
         caller = inspect.stack()[1].function
         user_context = {}
 
@@ -74,7 +74,7 @@ class LoggingMixin(object):
                 "session_user_email": request.session.get("user_email"),
             }
 
-        message = f"{self.__class__.__name__}.{caller}[{action}]"
+        message = f"{self.__class__.__name__}.{caller}[{event}]"
         merged_context = {**user_context, **context}
 
         return self.log(message, merged_context, level=level)
