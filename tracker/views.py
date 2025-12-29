@@ -44,10 +44,17 @@ def rate_limit_json_response(error: APIError):
 
 
 @method_decorator(csrf_exempt, name="dispatch")
-class ToggleCollectedView(View):
+class ToggleCollectedView(View, LoggingMixin):
     def post(self, request):
         creds_json = request.session.get("credentials")
         if not creds_json:
+            self.log_action(
+                "missing-credentials",
+                request,
+                level="warning",
+                http_method="POST",
+                endpoint="toggle-collected",
+            )
             return redirect("oauth_login")
 
         google_sheet_client_manager = GoogleSheetClientManager(creds_json=creds_json)
@@ -55,6 +62,13 @@ class ToggleCollectedView(View):
         try:
             data = json.loads(request.body)
         except json.JSONDecodeError:
+            self.log_action(
+                "invalid-payload",
+                request,
+                level="warning",
+                http_method="POST",
+                endpoint="toggle-collected",
+            )
             return JsonResponse(
                 {"status": "error", "message": "Invalid JSON payload."}, status=400
             )
@@ -63,6 +77,15 @@ class ToggleCollectedView(View):
         action = data.get("action")
 
         if not amiibo_id or action not in {"collect", "uncollect"}:
+            self.log_action(
+                "missing-parameters",
+                request,
+                level="warning",
+                http_method="POST",
+                endpoint="toggle-collected",
+                amiibo_id=amiibo_id,
+                action=action,
+            )
             return JsonResponse(
                 {
                     "status": "error",
@@ -78,12 +101,33 @@ class ToggleCollectedView(View):
             success = service.toggle_collected(amiibo_id, action)
 
             if not success:
+                self.log_action(
+                    "amiibo-not-found",
+                    request,
+                    level="warning",
+                    amiibo_id=amiibo_id,
+                    action=action,
+                )
                 return JsonResponse({"status": "not found"}, status=404)
 
+            self.log_action(
+                "collection-updated",
+                request,
+                amiibo_id=amiibo_id,
+                action=action,
+            )
             return JsonResponse({"status": "success"})
 
         except APIError as error:
             if is_rate_limit_error(error):
+                self.log_action(
+                    "rate-limited",
+                    request,
+                    level="warning",
+                    amiibo_id=amiibo_id,
+                    action=action,
+                    retry_after=retry_after_seconds(error),
+                )
                 return rate_limit_json_response(error)
             return JsonResponse(
                 {"status": "error", "message": "Unexpected Google API error."},
@@ -91,6 +135,14 @@ class ToggleCollectedView(View):
             )
 
         except Exception as e:
+            self.log_action(
+                "toggle-error",
+                request,
+                level="error",
+                amiibo_id=amiibo_id,
+                action=action,
+                error=str(e),
+            )
             return JsonResponse({"status": "error", "message": str(e)}, status=500)
 
     def get(self, request):
@@ -106,6 +158,7 @@ class OAuthView(View):
             GoogleSheetClientManager.client_secret_path(),
             scopes=OauthConstants.SCOPES,
             redirect_uri=OauthConstants.REDIRECT_URI,
+            autogenerate_code_verifier=True,
         )
         auth_url, state = flow.authorization_url(
             access_type="offline",
@@ -114,6 +167,7 @@ class OAuthView(View):
         )
 
         request.session["oauth_state"] = state
+        request.session["oauth_code_verifier"] = flow.code_verifier
 
         return redirect(auth_url)
 
@@ -132,6 +186,7 @@ class OAuthCallbackView(View, LoggingMixin):
 
         request_state = request.GET.get("state")
         oauth_state = request.session.get("oauth_state")
+        oauth_code_verifier = request.session.get("oauth_code_verifier")
         error = request.GET.get("error")
         authorization_code = request.GET.get("code")
 
@@ -139,6 +194,7 @@ class OAuthCallbackView(View, LoggingMixin):
         # through the OAuth login flow instead of raising an exception.
         if error or not authorization_code:
             request.session.pop("oauth_state", None)
+            request.session.pop("oauth_code_verifier", None)
             return redirect("oauth_login")
 
         # If the state is missing from the session (e.g., a new browser session) try to
@@ -146,24 +202,35 @@ class OAuthCallbackView(View, LoggingMixin):
         # authorization prompt. Still require the provided state to match what we last
         # issued when available to avoid unnecessary re-auth redirects.
         if oauth_state and request_state and request_state != oauth_state:
+            request.session.pop("oauth_state", None)
+            request.session.pop("oauth_code_verifier", None)
             return redirect("oauth_login")
 
         if not oauth_state:
             if not request_state:
+                request.session.pop("oauth_code_verifier", None)
                 return redirect("oauth_login")
             oauth_state = request_state
+
+        if not oauth_code_verifier:
+            request.session.pop("oauth_state", None)
+            request.session.pop("oauth_code_verifier", None)
+            return redirect("oauth_login")
 
         flow = Flow.from_client_secrets_file(
             GoogleSheetClientManager.client_secret_path(),
             scopes=OauthConstants.SCOPES,
             redirect_uri=OauthConstants.REDIRECT_URI,
             state=oauth_state,
+            code_verifier=oauth_code_verifier,
+            autogenerate_code_verifier=False,
         )
 
         try:
             flow.fetch_token(authorization_response=request.build_absolute_uri())
         except (InvalidGrantError, OAuth2Error):
             request.session.pop("oauth_state", None)
+            request.session.pop("oauth_code_verifier", None)
             return redirect("oauth_login")
 
         credentials = flow.credentials
@@ -174,6 +241,7 @@ class OAuthCallbackView(View, LoggingMixin):
         request.session.pop("user_email", None)
 
         request.session.pop("oauth_state", None)
+        request.session.pop("oauth_code_verifier", None)
         request.session["credentials"] = credentials_to_dict(credentials)
 
         user_service = googleapiclient.discovery.build(
@@ -184,12 +252,11 @@ class OAuthCallbackView(View, LoggingMixin):
         request.session["user_name"] = user_info.get("name")
         request.session["user_email"] = user_info.get("email")
 
-        self.log_info(
-            "user logged in",
-            {
-                "user_name": request.session.get("user_name"),
-                "user_email": request.session.get("user_email"),
-            },
+        self.log_action(
+            "login-success",
+            request,
+            user_name=request.session.get("user_name"),
+            user_email=request.session.get("user_email"),
         )
 
         return redirect("amiibo_list")
@@ -197,6 +264,7 @@ class OAuthCallbackView(View, LoggingMixin):
 
 class LogoutView(View, LoggingMixin):
     def get(self, request):
+        self.log_action("logout-requested", request)
         creds = request.session.get("credentials")
         if creds:
             token = creds.get("token")
@@ -206,18 +274,25 @@ class LogoutView(View, LoggingMixin):
                     params={"token": token},
                     headers={"content-type": "application/x-www-form-urlencoded"},
                 )
-                self.log_info(
-                    "successfully logged out", {"status_code": response.status_code}
+                self.log_action(
+                    "logout-complete",
+                    request,
+                    status_code=response.status_code,
                 )
             except Exception as e:
-                print(f"Failed to revoke token: {e}")
+                self.log_action(
+                    "logout-revoke-failed",
+                    request,
+                    level="error",
+                    error=str(e),
+                )
 
         request.session.flush()
         django_logout(request)
         return redirect("index")
 
 
-class AmiiboListView(View):
+class AmiiboListView(View, LoggingMixin):
     def get(self, request):
         creds_json = request.session.get("credentials")
         if not creds_json:
@@ -272,6 +347,15 @@ class AmiiboListView(View):
                         "total_count": total,
                     }
                 )
+
+            self.log_action(
+                "render-collection",
+                request,
+                total_amiibos=len(sorted_amiibos),
+                grouped_series=len(enriched_groups),
+                ignored_types=len(ignored_types),
+                dark_mode=dark_mode,
+            )
 
             return render(
                 request,
@@ -340,12 +424,27 @@ class AmiiboListView(View):
                 },
             )
 
+            self.log_action(
+                "render-collection-rate-limited",
+                request,
+                total_amiibos=len(sorted_amiibos),
+                grouped_series=len(enriched_groups),
+                retry_after=retry_after_seconds(error),
+            )
+
 
 @method_decorator(csrf_exempt, name="dispatch")
-class ToggleDarkModeView(View):
+class ToggleDarkModeView(View, LoggingMixin):
     def post(self, request):
         creds_json = request.session.get("credentials")
         if not creds_json:
+            self.log_action(
+                "missing-credentials",
+                request,
+                level="warning",
+                http_method="POST",
+                endpoint="toggle-dark-mode",
+            )
             return redirect("oauth_login")
 
         google_sheet_client_manager = GoogleSheetClientManager(creds_json=creds_json)
@@ -359,24 +458,50 @@ class ToggleDarkModeView(View):
             )
             config.set_dark_mode(enable_dark)
 
+            self.log_action(
+                "dark-mode-updated",
+                request,
+                dark_mode=enable_dark,
+            )
             return JsonResponse({"status": "success"})
 
         except APIError as error:
             if is_rate_limit_error(error):
+                self.log_action(
+                    "rate-limited",
+                    request,
+                    level="warning",
+                    endpoint="toggle-dark-mode",
+                    retry_after=retry_after_seconds(error),
+                )
                 return rate_limit_json_response(error)
             return JsonResponse(
                 {"status": "error", "message": "Unexpected Google API error."},
                 status=500,
             )
         except Exception as e:
+            self.log_action(
+                "dark-mode-error",
+                request,
+                level="error",
+                endpoint="toggle-dark-mode",
+                error=str(e),
+            )
             return JsonResponse({"status": "error", "message": str(e)}, status=500)
 
 
 @method_decorator(csrf_exempt, name="dispatch")
-class ToggleTypeFilterView(View):
+class ToggleTypeFilterView(View, LoggingMixin):
     def post(self, request):
         creds_json = request.session.get("credentials")
         if not creds_json:
+            self.log_action(
+                "missing-credentials",
+                request,
+                level="warning",
+                http_method="POST",
+                endpoint="toggle-type-filter",
+            )
             return redirect("oauth_login")
 
         google_sheet_client_manager = GoogleSheetClientManager(creds_json=creds_json)
@@ -384,6 +509,13 @@ class ToggleTypeFilterView(View):
         try:
             data = json.loads(request.body)
         except json.JSONDecodeError:
+            self.log_action(
+                "invalid-payload",
+                request,
+                level="warning",
+                http_method="POST",
+                endpoint="toggle-type-filter",
+            )
             return JsonResponse(
                 {"status": "error", "message": "Invalid JSON payload."}, status=400
             )
@@ -392,6 +524,13 @@ class ToggleTypeFilterView(View):
         ignore = data.get("ignore", True)
 
         if not amiibo_type:
+            self.log_action(
+                "missing-parameters",
+                request,
+                level="warning",
+                http_method="POST",
+                endpoint="toggle-type-filter",
+            )
             return JsonResponse(
                 {"status": "error", "message": "Missing type"}, status=400
             )
@@ -402,16 +541,36 @@ class ToggleTypeFilterView(View):
             )
             config.set_ignore_type(amiibo_type, ignore)
 
+            self.log_action(
+                "type-filter-updated",
+                request,
+                amiibo_type=amiibo_type,
+                ignore=ignore,
+            )
             return JsonResponse({"status": "success"})
 
         except APIError as error:
             if is_rate_limit_error(error):
+                self.log_action(
+                    "rate-limited",
+                    request,
+                    level="warning",
+                    endpoint="toggle-type-filter",
+                    retry_after=retry_after_seconds(error),
+                )
                 return rate_limit_json_response(error)
             return JsonResponse(
                 {"status": "error", "message": "Unexpected Google API error."},
                 status=500,
             )
         except Exception as e:
+            self.log_action(
+                "type-filter-error",
+                request,
+                level="error",
+                endpoint="toggle-type-filter",
+                error=str(e),
+            )
             return JsonResponse({"status": "error", "message": str(e)}, status=500)
 
     def get(self, request):
