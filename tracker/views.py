@@ -118,7 +118,7 @@ class OAuthView(View):
         return redirect(auth_url)
 
 
-class OAuthCallbackView(View):
+class OAuthCallbackView(View, LoggingMixin):
     def get(self, request):
         def credentials_to_dict(creds):
             return {
@@ -183,6 +183,14 @@ class OAuthCallbackView(View):
 
         request.session["user_name"] = user_info.get("name")
         request.session["user_email"] = user_info.get("email")
+
+        self.log_info(
+            "user logged in",
+            {
+                "user_name": request.session.get("user_name"),
+                "user_email": request.session.get("user_email"),
+            },
+        )
 
         return redirect("amiibo_list")
 
