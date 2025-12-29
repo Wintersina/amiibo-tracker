@@ -51,8 +51,11 @@ def build_sheet_client_manager(request) -> GoogleSheetClientManager:
 
 
 def ensure_spreadsheet_session(request, manager: GoogleSheetClientManager):
+    if not hasattr(manager, "spreadsheet"):
+        return None
+
     spreadsheet = manager.spreadsheet
-    if manager.spreadsheet_id:
+    if getattr(manager, "spreadsheet_id", None):
         request.session["spreadsheet_id"] = manager.spreadsheet_id
     return spreadsheet
 

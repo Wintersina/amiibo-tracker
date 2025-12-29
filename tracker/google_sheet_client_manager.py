@@ -59,7 +59,8 @@ class GoogleSheetClientManager(HelperMixin, LoggingMixin):
             return self._spreadsheet_cache[cache_key]
 
         spreadsheet = self._open_or_create_spreadsheet()
-        self.spreadsheet_id = spreadsheet.id
+        if hasattr(spreadsheet, "id"):
+            self.spreadsheet_id = spreadsheet.id
         cache_key = self._spreadsheet_cache_key()
         self._initialize_default_worksheets(spreadsheet)
         self._spreadsheet_cache[cache_key] = spreadsheet
@@ -74,6 +75,15 @@ class GoogleSheetClientManager(HelperMixin, LoggingMixin):
                     "Stored spreadsheet id '%s' was not found; falling back to discovery by name.",
                     self.spreadsheet_id,
                 )
+
+        try:
+            return self.client.open(self.sheet_name)
+        except gspread.exceptions.SpreadsheetNotFound:
+            pass
+        except AttributeError:
+            # Clients used in tests may not support name-based open; fall back to
+            # drive.file discovery and creation.
+            pass
 
         if existing_spreadsheet := self._find_existing_spreadsheet_by_name():
             return existing_spreadsheet
