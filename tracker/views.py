@@ -1,5 +1,6 @@
 import json
 import os
+import warnings
 from collections import defaultdict
 
 import googleapiclient.discovery
@@ -249,6 +250,22 @@ class OAuthCallbackView(View, LoggingMixin):
 
         try:
             flow.fetch_token(authorization_response=request.build_absolute_uri())
+        except Warning as scope_warning:
+            self.log_action(
+                "scope-warning", request, level="warning", warning=str(scope_warning)
+            )
+
+            try:
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore")
+                    flow.fetch_token(
+                        authorization_response=request.build_absolute_uri()
+                    )
+            except (InvalidGrantError, OAuth2Error, Warning):
+                request.session.pop("oauth_state", None)
+                request.session.pop("oauth_code_verifier", None)
+                return redirect("oauth_login")
+
         except (InvalidGrantError, OAuth2Error):
             request.session.pop("oauth_state", None)
             request.session.pop("oauth_code_verifier", None)
