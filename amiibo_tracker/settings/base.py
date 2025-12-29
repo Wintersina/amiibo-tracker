@@ -93,14 +93,23 @@ CACHES = {
 # we do not rely on any database tables being present.
 SESSION_ENGINE = "django.contrib.sessions.backends.signed_cookies"
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(name)s %(message)s",
+)
 
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
+    "formatters": {
+        "console": {
+            "format": "%(asctime)s %(levelname)s %(name)s %(message)s",
+        }
+    },
     "handlers": {
         "console": {
             "class": "logging.StreamHandler",
+            "formatter": "console",
         },
     },
     "root": {
@@ -110,13 +119,14 @@ LOGGING = {
     "loggers": {
         "django": {
             "handlers": ["console"],
-            "level": "INFO",
+            "level": "WARNING",
             "propagate": True,
         },
-        "your_module_name": {
-            "handlers": ["console"],
-            "level": "INFO",
-            "propagate": False,
-        },
+        "googleapiclient": {"level": "WARNING"},
+        "google.auth": {"level": "WARNING"},
+        "google.auth.transport.requests": {"level": "WARNING"},
+        "oauthlib": {"level": "WARNING"},
+        "urllib3": {"level": "WARNING"},
+        "gspread": {"level": "WARNING"},
     },
 }
