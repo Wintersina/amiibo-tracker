@@ -3,6 +3,7 @@ from collections import defaultdict
 
 import googleapiclient.discovery
 import requests
+from gspread.exceptions import APIError
 from django.contrib.auth import logout as django_logout
 from django.http import JsonResponse
 from django.shortcuts import redirect, render
@@ -19,6 +20,29 @@ from tracker.helpers import LoggingMixin
 from tracker.service_domain import AmiiboService, GoogleSheetConfigManager
 
 
+def is_rate_limit_error(error: Exception) -> bool:
+    return isinstance(error, APIError) and getattr(error, "code", None) == 429
+
+
+def retry_after_seconds(error: APIError, default: int = 30) -> int:
+    try:
+        return int(error.response.headers.get("Retry-After", default))
+    except Exception:
+        return default
+
+
+def rate_limit_json_response(error: APIError):
+    wait_seconds = retry_after_seconds(error)
+    return JsonResponse(
+        {
+            "status": "rate_limited",
+            "message": "Google Sheets rate limit reached. Please wait before trying again.",
+            "retry_after": wait_seconds,
+        },
+        status=429,
+    )
+
+
 @method_decorator(csrf_exempt, name="dispatch")
 class ToggleCollectedView(View):
     def post(self, request):
@@ -30,9 +54,24 @@ class ToggleCollectedView(View):
 
         try:
             data = json.loads(request.body)
-            amiibo_id = data["amiibo_id"]
-            action = data["action"]
+        except json.JSONDecodeError:
+            return JsonResponse(
+                {"status": "error", "message": "Invalid JSON payload."}, status=400
+            )
 
+        amiibo_id = data.get("amiibo_id")
+        action = data.get("action")
+
+        if not amiibo_id or action not in {"collect", "uncollect"}:
+            return JsonResponse(
+                {
+                    "status": "error",
+                    "message": "Both amiibo_id and a valid action are required.",
+                },
+                status=400,
+            )
+
+        try:
             service = AmiiboService(
                 google_sheet_client_manager=google_sheet_client_manager
             )
@@ -42,6 +81,14 @@ class ToggleCollectedView(View):
                 return JsonResponse({"status": "not found"}, status=404)
 
             return JsonResponse({"status": "success"})
+
+        except APIError as error:
+            if is_rate_limit_error(error):
+                return rate_limit_json_response(error)
+            return JsonResponse(
+                {"status": "error", "message": "Unexpected Google API error."},
+                status=500,
+            )
 
         except Exception as e:
             return JsonResponse({"status": "error", "message": str(e)}, status=500)
@@ -71,7 +118,7 @@ class OAuthView(View):
         return redirect(auth_url)
 
 
-class OAuthCallbackView(View):
+class OAuthCallbackView(View, LoggingMixin):
     def get(self, request):
         def credentials_to_dict(creds):
             return {
@@ -137,6 +184,14 @@ class OAuthCallbackView(View):
         request.session["user_name"] = user_info.get("name")
         request.session["user_email"] = user_info.get("email")
 
+        self.log_info(
+            "user logged in",
+            {
+                "user_name": request.session.get("user_name"),
+                "user_email": request.session.get("user_email"),
+            },
+        )
+
         return redirect("amiibo_list")
 
 
@@ -175,60 +230,115 @@ class AmiiboListView(View):
         config = GoogleSheetConfigManager(
             google_sheet_client_manager=google_sheet_client_manager
         )
-        dark_mode = config.is_dark_mode()
 
-        amiibos = service.fetch_amiibos()
-        available_types = sorted(
-            {amiibo.get("type", "") for amiibo in amiibos if amiibo.get("type")}
-        )
-        ignored_types = config.get_ignored_types(available_types)
-        filtered_amiibos = [a for a in amiibos if a.get("type") not in ignored_types]
-
-        service.seed_new_amiibos(filtered_amiibos)
-        collected_status = service.get_collected_status()
-
-        for amiibo in filtered_amiibos:
-            amiibo_id = amiibo["head"] + amiibo["gameSeries"] + amiibo["tail"]
-            amiibo["collected"] = collected_status.get(amiibo_id) == "1"
-            amiibo["display_release"] = AmiiboService._format_release_date(
-                amiibo.get("release")
+        try:
+            amiibos = service.fetch_amiibos()
+            available_types = sorted(
+                {amiibo.get("type", "") for amiibo in amiibos if amiibo.get("type")}
             )
 
-        sorted_amiibos = sorted(
-            filtered_amiibos, key=lambda x: (x["amiiboSeries"], x["name"])
-        )
+            dark_mode = config.is_dark_mode()
+            ignored_types = config.get_ignored_types(available_types)
+            filtered_amiibos = [
+                a for a in amiibos if a.get("type") not in ignored_types
+            ]
 
-        grouped_amiibos = defaultdict(list)
-        for amiibo in sorted_amiibos:
-            grouped_amiibos[amiibo["amiiboSeries"]].append(amiibo)
+            service.seed_new_amiibos(filtered_amiibos)
+            collected_status = service.get_collected_status()
 
-        enriched_groups = []
-        for series, amiibos in grouped_amiibos.items():
-            total = len(amiibos)
-            collected = sum(1 for a in amiibos if a["collected"])
-            enriched_groups.append(
+            for amiibo in filtered_amiibos:
+                amiibo_id = amiibo["head"] + amiibo["gameSeries"] + amiibo["tail"]
+                amiibo["collected"] = collected_status.get(amiibo_id) == "1"
+                amiibo["display_release"] = AmiiboService._format_release_date(
+                    amiibo.get("release")
+                )
+
+            sorted_amiibos = sorted(
+                filtered_amiibos, key=lambda x: (x["amiiboSeries"], x["name"])
+            )
+            grouped_amiibos = defaultdict(list)
+            for amiibo in sorted_amiibos:
+                grouped_amiibos[amiibo["amiiboSeries"]].append(amiibo)
+
+            enriched_groups = []
+            for series, amiibos in grouped_amiibos.items():
+                total = len(amiibos)
+                collected = sum(1 for a in amiibos if a["collected"])
+                enriched_groups.append(
+                    {
+                        "series": series,
+                        "list": amiibos,
+                        "collected_count": collected,
+                        "total_count": total,
+                    }
+                )
+
+            return render(
+                request,
+                "tracker/amiibos.html",
                 {
-                    "series": series,
-                    "list": amiibos,
-                    "collected_count": collected,
-                    "total_count": total,
-                }
+                    "amiibos": sorted_amiibos,
+                    "dark_mode": dark_mode,
+                    "user_name": user_name,
+                    "grouped_amiibos": enriched_groups,
+                    "amiibo_types": [
+                        {"name": amiibo_type, "ignored": amiibo_type in ignored_types}
+                        for amiibo_type in available_types
+                    ],
+                    "rate_limited": False,
+                    "rate_limit_wait_seconds": 0,
+                },
             )
 
-        return render(
-            request,
-            "tracker/amiibos.html",
-            {
-                "amiibos": sorted_amiibos,
-                "dark_mode": dark_mode,
-                "user_name": user_name,
-                "grouped_amiibos": enriched_groups,
-                "amiibo_types": [
-                    {"name": amiibo_type, "ignored": amiibo_type in ignored_types}
-                    for amiibo_type in available_types
-                ],
-            },
-        )
+        except APIError as error:
+            if not is_rate_limit_error(error):
+                raise
+
+            amiibos = service.fetch_amiibos()
+            available_types = sorted(
+                {amiibo.get("type", "") for amiibo in amiibos if amiibo.get("type")}
+            )
+
+            for amiibo in amiibos:
+                amiibo["collected"] = False
+                amiibo["display_release"] = AmiiboService._format_release_date(
+                    amiibo.get("release")
+                )
+
+            sorted_amiibos = sorted(
+                amiibos, key=lambda x: (x.get("amiiboSeries", ""), x.get("name", ""))
+            )
+            grouped_amiibos = defaultdict(list)
+            for amiibo in sorted_amiibos:
+                grouped_amiibos[amiibo.get("amiiboSeries", "Unknown")].append(amiibo)
+
+            enriched_groups = []
+            for series, amiibo_list in grouped_amiibos.items():
+                enriched_groups.append(
+                    {
+                        "series": series,
+                        "list": amiibo_list,
+                        "collected_count": 0,
+                        "total_count": len(amiibo_list),
+                    }
+                )
+
+            return render(
+                request,
+                "tracker/amiibos.html",
+                {
+                    "amiibos": sorted_amiibos,
+                    "dark_mode": False,
+                    "user_name": user_name,
+                    "grouped_amiibos": enriched_groups,
+                    "amiibo_types": [
+                        {"name": amiibo_type, "ignored": False}
+                        for amiibo_type in available_types
+                    ],
+                    "rate_limited": True,
+                    "rate_limit_wait_seconds": retry_after_seconds(error),
+                },
+            )
 
 
 @method_decorator(csrf_exempt, name="dispatch")
@@ -250,6 +360,14 @@ class ToggleDarkModeView(View):
             config.set_dark_mode(enable_dark)
 
             return JsonResponse({"status": "success"})
+
+        except APIError as error:
+            if is_rate_limit_error(error):
+                return rate_limit_json_response(error)
+            return JsonResponse(
+                {"status": "error", "message": "Unexpected Google API error."},
+                status=500,
+            )
         except Exception as e:
             return JsonResponse({"status": "error", "message": str(e)}, status=500)
 
@@ -265,20 +383,34 @@ class ToggleTypeFilterView(View):
 
         try:
             data = json.loads(request.body)
-            amiibo_type = data.get("type")
-            ignore = data.get("ignore", True)
+        except json.JSONDecodeError:
+            return JsonResponse(
+                {"status": "error", "message": "Invalid JSON payload."}, status=400
+            )
 
-            if not amiibo_type:
-                return JsonResponse(
-                    {"status": "error", "message": "Missing type"}, status=400
-                )
+        amiibo_type = data.get("type")
+        ignore = data.get("ignore", True)
 
+        if not amiibo_type:
+            return JsonResponse(
+                {"status": "error", "message": "Missing type"}, status=400
+            )
+
+        try:
             config = GoogleSheetConfigManager(
                 google_sheet_client_manager=google_sheet_client_manager
             )
             config.set_ignore_type(amiibo_type, ignore)
 
             return JsonResponse({"status": "success"})
+
+        except APIError as error:
+            if is_rate_limit_error(error):
+                return rate_limit_json_response(error)
+            return JsonResponse(
+                {"status": "error", "message": "Unexpected Google API error."},
+                status=500,
+            )
         except Exception as e:
             return JsonResponse({"status": "error", "message": str(e)}, status=500)
 

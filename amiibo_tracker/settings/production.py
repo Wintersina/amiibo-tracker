@@ -7,11 +7,7 @@ from .base import *  # noqa: F401,F403
 os.environ["ENV_NAME"] = "production"
 DEBUG = False
 
-ALLOWED_HOSTS = ALLOWED_HOSTS or [
-    "goozamiibo.com",
-    "www.goozamiibo.com",
-    "amiibo-tracker-juiposodeq-ue.a.run.app",
-]
+ALLOWED_HOSTS = ALLOWED_HOSTS or ["goozamiibo.com"]
 
 default_db_path = os.environ.get("DJANGO_SQLITE_PATH", "/tmp/db.sqlite3")
 

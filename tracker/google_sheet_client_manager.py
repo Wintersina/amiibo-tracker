@@ -6,6 +6,7 @@ from django.conf import settings
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import Flow
 from oauth2client.service_account import ServiceAccountCredentials
+from cachetools import TTLCache
 
 from constants import OauthConstants
 from tracker.helpers import HelperMixin, LoggingMixin
@@ -13,6 +14,8 @@ from tracker.helpers import HelperMixin, LoggingMixin
 
 class GoogleSheetClientManager(HelperMixin, LoggingMixin):
     _secret_path_cache = None
+    _spreadsheet_cache = TTLCache(maxsize=8, ttl=60)
+    _worksheet_cache = TTLCache(maxsize=16, ttl=60)
 
     @classmethod
     def client_secret_path(cls) -> str:
@@ -49,8 +52,13 @@ class GoogleSheetClientManager(HelperMixin, LoggingMixin):
 
     @cached_property
     def spreadsheet(self):
+        cache_key = self._spreadsheet_cache_key()
+        if cache_key in self._spreadsheet_cache:
+            return self._spreadsheet_cache[cache_key]
+
         spreadsheet = self._open_or_create_spreadsheet()
         self._initialize_default_worksheets(spreadsheet)
+        self._spreadsheet_cache[cache_key] = spreadsheet
         return spreadsheet
 
     def _open_or_create_spreadsheet(self):
@@ -102,6 +110,10 @@ class GoogleSheetClientManager(HelperMixin, LoggingMixin):
         return client
 
     def _get_or_create_worksheet(self, spreadsheet, worksheet_name):
+        cache_key = self._worksheet_cache_key(spreadsheet.id, worksheet_name)
+        if cache_key in self._worksheet_cache:
+            return self._worksheet_cache[cache_key]
+
         try:
             sheet = spreadsheet.worksheet(worksheet_name)
             created = False
@@ -129,6 +141,7 @@ class GoogleSheetClientManager(HelperMixin, LoggingMixin):
                 sheet.append_row(["IgnoreType:Card", "1"])
                 sheet.append_row(["IgnoreType:Yarn", "1"])
 
+        self._worksheet_cache[cache_key] = sheet
         return sheet
 
     def get_or_create_worksheet_by_name(self, worksheet_name):
@@ -150,3 +163,10 @@ class GoogleSheetClientManager(HelperMixin, LoggingMixin):
 
         if hasattr(spreadsheet, "del_worksheet"):
             spreadsheet.del_worksheet(default_sheet)
+
+    def _spreadsheet_cache_key(self) -> tuple[str, str, bool]:
+        return (self.sheet_name, self.credentials_file, bool(self.creds_json))
+
+    @staticmethod
+    def _worksheet_cache_key(spreadsheet_id: str, worksheet_name: str) -> tuple[str, str]:
+        return (spreadsheet_id, worksheet_name)
