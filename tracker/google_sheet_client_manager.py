@@ -43,12 +43,14 @@ class GoogleSheetClientManager(HelperMixin, LoggingMixin):
         work_sheet_config_manager="AmiiboCollectionConfigManager",
         credentials_file=None,
         creds_json=None,
+        spreadsheet_id=None,
     ):
         self.sheet_name = sheet_name
         self.work_sheet_amiibo_manager = work_sheet_amiibo_manager
         self.work_sheet_config_manager = work_sheet_config_manager
         self.credentials_file = credentials_file or "credentials.json"
         self.creds_json = creds_json
+        self.spreadsheet_id = spreadsheet_id
 
     @cached_property
     def spreadsheet(self):
@@ -57,29 +59,66 @@ class GoogleSheetClientManager(HelperMixin, LoggingMixin):
             return self._spreadsheet_cache[cache_key]
 
         spreadsheet = self._open_or_create_spreadsheet()
+        self.spreadsheet_id = spreadsheet.id
+        cache_key = self._spreadsheet_cache_key()
         self._initialize_default_worksheets(spreadsheet)
         self._spreadsheet_cache[cache_key] = spreadsheet
         return spreadsheet
 
     def _open_or_create_spreadsheet(self):
-        try:
-            return self.client.open(self.sheet_name)
+        if self.spreadsheet_id:
+            try:
+                return self.client.open_by_key(self.spreadsheet_id)
+            except gspread.exceptions.SpreadsheetNotFound:
+                self.log_warning(
+                    "Stored spreadsheet id '%s' was not found; falling back to discovery by name.",
+                    self.spreadsheet_id,
+                )
 
-        except gspread.exceptions.SpreadsheetNotFound:
-            self.log_info(
-                "Spreadsheet '%s' not found; attempting to create it with Drive file access.",
-                self.sheet_name,
+        if existing_spreadsheet := self._find_existing_spreadsheet_by_name():
+            return existing_spreadsheet
+
+        self.log_info(
+            "Spreadsheet '%s' not found; attempting to create it with Drive file access.",
+            self.sheet_name,
+        )
+
+        try:
+            return self.client.create(self.sheet_name)
+        except gspread.exceptions.APIError as error:
+            message = (
+                f"Spreadsheet '{self.sheet_name}' was not found and could not be created. "
+                "Please ensure the app has the 'Google Drive file' permission so it can create files it owns."
             )
+            self.log_error("%s Error: %s", message, error)
+            raise ValueError(message) from error
+
+    def _find_existing_spreadsheet_by_name(self):
+        try:
+            spreadsheets = self.client.list_spreadsheet_files()
+        except Exception as error:  # gspread can surface multiple exception types
+            self.log_warning(
+                "Unable to list accessible spreadsheets for '%s': %s",
+                self.sheet_name,
+                error,
+            )
+            return None
+
+        for spreadsheet in spreadsheets:
+            if spreadsheet.get("name") != self.sheet_name:
+                continue
 
             try:
-                return self.client.create(self.sheet_name)
-            except gspread.exceptions.APIError as error:
-                message = (
-                    f"Spreadsheet '{self.sheet_name}' was not found and could not be created. "
-                    "Please ensure the app has the 'Google Drive file' permission so it can create files it owns."
+                return self.client.open_by_key(spreadsheet.get("id"))
+            except gspread.exceptions.SpreadsheetNotFound:
+                self.log_warning(
+                    "Spreadsheet id '%s' for '%s' was not found during lookup.",
+                    spreadsheet.get("id"),
+                    self.sheet_name,
                 )
-                self.log_error("%s Error: %s", message, error)
-                raise ValueError(message) from error
+                continue
+
+        return None
 
     def _initialize_default_worksheets(self, spreadsheet):
         self._get_or_create_worksheet(spreadsheet, self.work_sheet_amiibo_manager)
@@ -164,8 +203,13 @@ class GoogleSheetClientManager(HelperMixin, LoggingMixin):
         if hasattr(spreadsheet, "del_worksheet"):
             spreadsheet.del_worksheet(default_sheet)
 
-    def _spreadsheet_cache_key(self) -> tuple[str, str, bool]:
-        return (self.sheet_name, self.credentials_file, bool(self.creds_json))
+    def _spreadsheet_cache_key(self) -> tuple[str, str, bool, str | None]:
+        return (
+            self.sheet_name,
+            self.credentials_file,
+            bool(self.creds_json),
+            self.spreadsheet_id,
+        )
 
     @staticmethod
     def _worksheet_cache_key(spreadsheet_id: str, worksheet_name: str) -> tuple[str, str]:

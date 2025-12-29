@@ -43,6 +43,20 @@ def rate_limit_json_response(error: APIError):
     )
 
 
+def build_sheet_client_manager(request) -> GoogleSheetClientManager:
+    return GoogleSheetClientManager(
+        creds_json=request.session.get("credentials"),
+        spreadsheet_id=request.session.get("spreadsheet_id"),
+    )
+
+
+def ensure_spreadsheet_session(request, manager: GoogleSheetClientManager):
+    spreadsheet = manager.spreadsheet
+    if manager.spreadsheet_id:
+        request.session["spreadsheet_id"] = manager.spreadsheet_id
+    return spreadsheet
+
+
 @method_decorator(csrf_exempt, name="dispatch")
 class ToggleCollectedView(View, LoggingMixin):
     def post(self, request):
@@ -57,9 +71,10 @@ class ToggleCollectedView(View, LoggingMixin):
             )
             return redirect("oauth_login")
 
-        google_sheet_client_manager = GoogleSheetClientManager(creds_json=creds_json)
-
         try:
+            google_sheet_client_manager = build_sheet_client_manager(request)
+            ensure_spreadsheet_session(request, google_sheet_client_manager)
+
             data = json.loads(request.body)
         except json.JSONDecodeError:
             self.log_action(
@@ -252,6 +267,18 @@ class OAuthCallbackView(View, LoggingMixin):
         request.session["user_name"] = user_info.get("name")
         request.session["user_email"] = user_info.get("email")
 
+        try:
+            manager = build_sheet_client_manager(request)
+            ensure_spreadsheet_session(request, manager)
+        except Exception as error:
+            self.log_action(
+                "spreadsheet-init-failed",
+                request,
+                level="error",
+                error=str(error),
+            )
+            raise
+
         self.log_action(
             "login-success",
             request,
@@ -300,7 +327,8 @@ class AmiiboListView(View, LoggingMixin):
 
         user_name = request.session.get("user_name", "User")
 
-        google_sheet_client_manager = GoogleSheetClientManager(creds_json=creds_json)
+        google_sheet_client_manager = build_sheet_client_manager(request)
+        ensure_spreadsheet_session(request, google_sheet_client_manager)
         service = AmiiboService(google_sheet_client_manager=google_sheet_client_manager)
         config = GoogleSheetConfigManager(
             google_sheet_client_manager=google_sheet_client_manager
@@ -447,9 +475,10 @@ class ToggleDarkModeView(View, LoggingMixin):
             )
             return redirect("oauth_login")
 
-        google_sheet_client_manager = GoogleSheetClientManager(creds_json=creds_json)
-
         try:
+            google_sheet_client_manager = build_sheet_client_manager(request)
+            ensure_spreadsheet_session(request, google_sheet_client_manager)
+
             data = json.loads(request.body)
             enable_dark = data.get("dark_mode", True)
 
@@ -504,9 +533,10 @@ class ToggleTypeFilterView(View, LoggingMixin):
             )
             return redirect("oauth_login")
 
-        google_sheet_client_manager = GoogleSheetClientManager(creds_json=creds_json)
-
         try:
+            google_sheet_client_manager = build_sheet_client_manager(request)
+            ensure_spreadsheet_session(request, google_sheet_client_manager)
+
             data = json.loads(request.body)
         except json.JSONDecodeError:
             self.log_action(
