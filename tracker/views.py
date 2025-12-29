@@ -158,6 +158,7 @@ class OAuthView(View):
             GoogleSheetClientManager.client_secret_path(),
             scopes=OauthConstants.SCOPES,
             redirect_uri=OauthConstants.REDIRECT_URI,
+            autogenerate_code_verifier=True,
         )
         auth_url, state = flow.authorization_url(
             access_type="offline",
@@ -166,6 +167,7 @@ class OAuthView(View):
         )
 
         request.session["oauth_state"] = state
+        request.session["oauth_code_verifier"] = flow.code_verifier
 
         return redirect(auth_url)
 
@@ -184,6 +186,7 @@ class OAuthCallbackView(View, LoggingMixin):
 
         request_state = request.GET.get("state")
         oauth_state = request.session.get("oauth_state")
+        oauth_code_verifier = request.session.get("oauth_code_verifier")
         error = request.GET.get("error")
         authorization_code = request.GET.get("code")
 
@@ -191,6 +194,7 @@ class OAuthCallbackView(View, LoggingMixin):
         # through the OAuth login flow instead of raising an exception.
         if error or not authorization_code:
             request.session.pop("oauth_state", None)
+            request.session.pop("oauth_code_verifier", None)
             return redirect("oauth_login")
 
         # If the state is missing from the session (e.g., a new browser session) try to
@@ -198,24 +202,35 @@ class OAuthCallbackView(View, LoggingMixin):
         # authorization prompt. Still require the provided state to match what we last
         # issued when available to avoid unnecessary re-auth redirects.
         if oauth_state and request_state and request_state != oauth_state:
+            request.session.pop("oauth_state", None)
+            request.session.pop("oauth_code_verifier", None)
             return redirect("oauth_login")
 
         if not oauth_state:
             if not request_state:
+                request.session.pop("oauth_code_verifier", None)
                 return redirect("oauth_login")
             oauth_state = request_state
+
+        if not oauth_code_verifier:
+            request.session.pop("oauth_state", None)
+            request.session.pop("oauth_code_verifier", None)
+            return redirect("oauth_login")
 
         flow = Flow.from_client_secrets_file(
             GoogleSheetClientManager.client_secret_path(),
             scopes=OauthConstants.SCOPES,
             redirect_uri=OauthConstants.REDIRECT_URI,
             state=oauth_state,
+            code_verifier=oauth_code_verifier,
+            autogenerate_code_verifier=False,
         )
 
         try:
             flow.fetch_token(authorization_response=request.build_absolute_uri())
         except (InvalidGrantError, OAuth2Error):
             request.session.pop("oauth_state", None)
+            request.session.pop("oauth_code_verifier", None)
             return redirect("oauth_login")
 
         credentials = flow.credentials
@@ -226,6 +241,7 @@ class OAuthCallbackView(View, LoggingMixin):
         request.session.pop("user_email", None)
 
         request.session.pop("oauth_state", None)
+        request.session.pop("oauth_code_verifier", None)
         request.session["credentials"] = credentials_to_dict(credentials)
 
         user_service = googleapiclient.discovery.build(
