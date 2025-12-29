@@ -1,4 +1,6 @@
 import json
+import os
+import warnings
 from collections import defaultdict
 
 import googleapiclient.discovery
@@ -18,6 +20,8 @@ from constants import OauthConstants
 from tracker.google_sheet_client_manager import GoogleSheetClientManager
 from tracker.helpers import LoggingMixin
 from tracker.service_domain import AmiiboService, GoogleSheetConfigManager
+
+os.environ.setdefault("OAUTHLIB_RELAX_TOKEN_SCOPE", "1")
 
 
 def is_rate_limit_error(error: Exception) -> bool:
@@ -180,7 +184,7 @@ class OAuthView(View):
         )
         auth_url, state = flow.authorization_url(
             access_type="offline",
-            include_granted_scopes="true",
+            include_granted_scopes=True,
             prompt="consent",
         )
 
@@ -246,12 +250,48 @@ class OAuthCallbackView(View, LoggingMixin):
 
         try:
             flow.fetch_token(authorization_response=request.build_absolute_uri())
+        except Warning as scope_warning:
+            self.log_action(
+                "scope-warning", request, level="warning", warning=str(scope_warning)
+            )
+
+            try:
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore")
+                    flow.fetch_token(
+                        authorization_response=request.build_absolute_uri()
+                    )
+            except (InvalidGrantError, OAuth2Error, Warning):
+                request.session.pop("oauth_state", None)
+                request.session.pop("oauth_code_verifier", None)
+                return redirect("oauth_login")
+
         except (InvalidGrantError, OAuth2Error):
             request.session.pop("oauth_state", None)
             request.session.pop("oauth_code_verifier", None)
             return redirect("oauth_login")
 
         credentials = flow.credentials
+
+        required_scopes = set(OauthConstants.SCOPES)
+        granted_scopes = set(credentials.scopes or [])
+
+        if not required_scopes.issubset(granted_scopes):
+            self.log_action(
+                "missing-scopes",
+                request,
+                level="warning",
+                required_scopes=list(required_scopes),
+                granted_scopes=list(granted_scopes),
+            )
+
+            request.session.pop("oauth_state", None)
+            request.session.pop("oauth_code_verifier", None)
+            request.session.pop("credentials", None)
+            request.session.pop("user_name", None)
+            request.session.pop("user_email", None)
+
+            return redirect("oauth_login")
 
         # Clear any stale session data before persisting new account details
         request.session.pop("credentials", None)
