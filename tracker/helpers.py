@@ -1,5 +1,7 @@
 import os
 
+import inspect
+import json
 import logging
 import uuid
 from functools import partialmethod
@@ -56,7 +58,26 @@ class LoggingMixin(object):
             if isinstance(value, uuid.UUID):
                 log_extra[key] = str(value)
 
+        context = {k: v for k, v in log_extra.items() if v is not None}
+        if context:
+            msg = f"{msg} | context={json.dumps(context, default=str, sort_keys=True)}"
+
         return log_fn(msg, *log_args, extra=log_extra)
+
+    def log_action(self, event: str, request=None, level: str = "info", **context):
+        caller = inspect.stack()[1].function
+        user_context = {}
+
+        if request is not None:
+            user_context = {
+                "session_user_name": request.session.get("user_name"),
+                "session_user_email": request.session.get("user_email"),
+            }
+
+        message = f"{self.__class__.__name__}.{caller}[{event}]"
+        merged_context = {**user_context, **context}
+
+        return self.log(message, merged_context, level=level)
 
     # An alternative to log_info that can be used for temporary logs.
     # Allows us to easily differentiate between logs that should be cleaned
