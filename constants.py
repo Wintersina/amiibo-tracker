@@ -4,7 +4,7 @@ class OauthConstants:
         "https://www.googleapis.com/auth/userinfo.email",
         "openid",
         "https://www.googleapis.com/auth/spreadsheets",
-        "https://www.googleapis.com/auth/drive",
+        "https://www.googleapis.com/auth/drive.file",
     ]
     # Google must receive the exact redirect_uri registered in the OAuth
     # client configuration. Hardcode the production callback so the login flow
