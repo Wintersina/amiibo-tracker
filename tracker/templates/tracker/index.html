@@ -177,33 +177,60 @@
             color: #fff;
         }
 
-        .details {
+        .info-list {
             position: relative;
             z-index: 1;
-            margin-top: 1.75rem;
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-            gap: 1rem;
+            margin-top: 1.5rem;
+            padding: 0;
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 0.85rem;
         }
 
-        .detail-card {
+        .info-item {
             background: rgba(255, 255, 255, 0.03);
             border: 1px solid rgba(243, 201, 105, 0.3);
-            border-radius: 16px;
-            padding: 1.25rem 1.4rem;
+            border-radius: 14px;
+            padding: 1.1rem 1.2rem;
             box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
         }
 
-        .detail-card h2 {
-            margin: 0 0 0.45rem 0;
-            font-size: 1.2rem;
+        .info-heading {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.85rem;
+            margin-bottom: 0.35rem;
         }
 
-        .detail-card p {
+        .info-heading h2 {
+            margin: 0;
+            font-size: 1.08rem;
+        }
+
+        .info-item p {
             margin: 0;
             line-height: 1.65;
             color: rgba(253, 247, 227, 0.88);
             font-size: 0.98rem;
+        }
+
+        .info-btn {
+            text-decoration: none;
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--cream);
+            border: 1px solid rgba(243, 201, 105, 0.45);
+            border-radius: 10px;
+            padding: 0.55rem 0.9rem;
+            font-weight: 700;
+            font-size: 0.95rem;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .info-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.28);
         }
 
         @media (max-width: 720px) {
@@ -229,7 +256,7 @@
                     Simple, private, and easy to update.
                 </p>
                 <p class="subtext">
-                    Amiibo Tracker by SlySprite helps you keep a personal, up-to-date catalogue of every Amiibo you own or want.
+                    Amiibo Tracker helps you keep a personal, up-to-date catalogue of every Amiibo you own or want.
                     Your data stays in a Google Sheet you control so you can export, share, or archive it whenever you like.
                 </p>
 
@@ -238,30 +265,37 @@
                         <img src="{% static 'images/google-logo.svg' %}" alt="Google logo">
                         Login with Google
                     </a>
-                    <a href="{% url 'privacy' %}" class="action-btn secondary">Privacy details</a>
                 </div>
-            </div>
-        </div>
-        <div class="details">
-            <div class="detail-card">
-                <h2>What the app does</h2>
-                <p>
-                    Create and maintain a complete Amiibo inventory: mark figures you own and filter by series right inside your own spreadsheet.
-                    The app only adds and updates rows you choose, making it easy to keep everything organized in one place.
-                </p>
-            </div>
-            <div class="detail-card">
-                <h2>Why we ask for Google access</h2>
-                <p>
-                    Google authentication is used to let you pick the specific Sheet you want to sync. We request permission to view and edit that Sheet so we can populate and update your collection data.
-                    We do not read emails or any other Drive files, and you can revoke access at any time from your Google account settings.
-                </p>
-            </div>
-            <div class="detail-card">
-                <h2>Privacy and transparency</h2>
-                <p>
-                    Your Amiibo list lives in your Google Drive—there are no shared databases or hidden third parties. Review the <a class="footer-link" href="{% url 'privacy' %}">Privacy Policy</a> to learn exactly how data is handled before you sign in.
-                </p>
+
+                <div class="info-list">
+                    <div class="info-item">
+                        <div class="info-heading">
+                            <h2>What the app does</h2>
+                        </div>
+                        <p>
+                            Create and maintain a complete Amiibo inventory: mark figures you own and filter by series right inside your own spreadsheet.
+                            The app only adds and updates rows you choose, making it easy to keep everything organized in one place.
+                        </p>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-heading">
+                            <h2>Why Amiibo Tracker asks for Google access</h2>
+                        </div>
+                        <p>
+                            Google authentication is used to let you pick the specific Sheet you want to sync. Amiibo Tracker requests permission to view and edit that Sheet so the app can populate and update your collection data.
+                            The Amiibo Tracker app does not read emails or any other Drive files, and you can revoke access at any time from your Google account settings.
+                        </p>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-heading">
+                            <h2>Privacy and transparency</h2>
+                            <a href="{% url 'privacy' %}" class="info-btn">Privacy details</a>
+                        </div>
+                        <p>
+                            Your Amiibo list lives in your Google Drive—there are no shared databases or hidden third parties. Review the Privacy Policy to learn exactly how data is handled before you sign in.
+                        </p>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
