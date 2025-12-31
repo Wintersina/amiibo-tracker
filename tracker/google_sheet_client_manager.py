@@ -180,15 +180,25 @@ class GoogleSheetClientManager(HelperMixin, LoggingMixin):
                         "Release Date",
                         "Type",
                         "Collected Status",
-                    ]
+                    ],
+                    value_input_option="USER_ENTERED",
                 )
 
             if worksheet_name == self.work_sheet_config_manager:
-                sheet.append_row(["Config name", "Config value"])
-                sheet.append_row(["DarkMode", "0"])
-                sheet.append_row(["IgnoreType:Band", "1"])
-                sheet.append_row(["IgnoreType:Card", "1"])
-                sheet.append_row(["IgnoreType:Yarn", "1"])
+                sheet.append_row(
+                    ["Config name", "Config value"],
+                    value_input_option="USER_ENTERED",
+                )
+                sheet.append_row(["DarkMode", "0"], value_input_option="USER_ENTERED")
+                sheet.append_row(
+                    ["IgnoreType:Band", "1"], value_input_option="USER_ENTERED"
+                )
+                sheet.append_row(
+                    ["IgnoreType:Card", "1"], value_input_option="USER_ENTERED"
+                )
+                sheet.append_row(
+                    ["IgnoreType:Yarn", "1"], value_input_option="USER_ENTERED"
+                )
 
         self._worksheet_cache[cache_key] = sheet
         return sheet
