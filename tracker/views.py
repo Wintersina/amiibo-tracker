@@ -171,16 +171,27 @@ def logout_user(request, log_action=None):
 @method_decorator(csrf_exempt, name="dispatch")
 class ToggleCollectedView(View, LoggingMixin):
     def post(self, request):
+        raw_creds = request.session.get("credentials")
         creds_json = get_active_credentials_json(request, self.log_action)
         if not creds_json:
-            self.log_action(
-                "missing-credentials",
-                request,
-                level="warning",
-                http_method="POST",
-                endpoint="toggle-collected",
-            )
-            return redirect("oauth_login")
+            if raw_creds:
+                creds_json = raw_creds
+                self.log_action(
+                    "using-stored-credentials",
+                    request,
+                    level="warning",
+                    http_method="POST",
+                    endpoint="toggle-collected",
+                )
+            else:
+                self.log_action(
+                    "missing-credentials",
+                    request,
+                    level="warning",
+                    http_method="POST",
+                    endpoint="toggle-collected",
+                )
+                return redirect("oauth_login")
 
         try:
             google_sheet_client_manager = build_sheet_client_manager(
