@@ -774,22 +774,128 @@ class PrivacyPolicyView(View):
         )
 
 
-class AmiiboDatabaseView(View):
+class AmiiboDatabaseView(View, LoggingMixin):
     def get(self, request):
+        data, error_response = self._load_local_database()
+        if error_response:
+            return error_response
+
+        amiibos = data.get("amiibo", []) if isinstance(data, dict) else []
+        remote_amiibos = self._fetch_remote_amiibos()
+
+        if remote_amiibos:
+            self._log_missing_remote_items(amiibos, remote_amiibos)
+
+        filtered_amiibos = self._filter_amiibos(amiibos, request)
+
+        if request.GET.get("showusage") is not None:
+            filtered_amiibos = self._attach_usage_data(filtered_amiibos, remote_amiibos)
+
+        return JsonResponse({"amiibo": filtered_amiibos}, safe=False)
+
+    def _load_local_database(self):
         database_path = Path(__file__).with_name("amiibo_database.json")
 
         try:
             with database_path.open(encoding="utf-8") as database_file:
-                data = json.load(database_file)
+                return json.load(database_file), None
         except FileNotFoundError:
-            return JsonResponse(
+            return None, JsonResponse(
                 {"status": "error", "message": "Amiibo database unavailable."},
                 status=500,
             )
         except json.JSONDecodeError:
-            return JsonResponse(
+            return None, JsonResponse(
                 {"status": "error", "message": "Amiibo database is corrupted."},
                 status=500,
             )
 
-        return JsonResponse(data, safe=False)
+    def _fetch_remote_amiibos(self):
+        api_url = "https://amiiboapi.onrender.com/api/amiibo/"
+
+        try:
+            response = requests.get(api_url, timeout=10)
+            response.raise_for_status()
+            data = response.json()
+            amiibos = data.get("amiibo", [])
+            return amiibos if isinstance(amiibos, list) else []
+        except (requests.RequestException, ValueError) as error:
+            self.log_warning(
+                "remote-amiibo-fetch-failed",
+                error=str(error),
+                api_url=api_url,
+            )
+            return []
+
+    @staticmethod
+    def _filter_amiibos(amiibos: list[dict], request):
+        name_filter = request.GET.get("name")
+        game_series_filter = request.GET.get("gameseries") or request.GET.get(
+            "gameSeries"
+        )
+        character_filter = request.GET.get("character")
+
+        def matches(value, query):
+            return query.lower() in (value or "").lower()
+
+        filtered = []
+        for amiibo in amiibos:
+            if name_filter and not matches(amiibo.get("name"), name_filter):
+                continue
+            if game_series_filter and not matches(
+                amiibo.get("gameSeries"), game_series_filter
+            ):
+                continue
+            if character_filter and not matches(
+                amiibo.get("character"), character_filter
+            ):
+                continue
+            filtered.append(dict(amiibo))
+
+        return filtered
+
+    def _log_missing_remote_items(self, local_amiibos: list[dict], remote_amiibos):
+        local_ids = {
+            f"{amiibo.get('head', '')}{amiibo.get('tail', '')}"
+            for amiibo in local_amiibos
+            if amiibo.get("head") and amiibo.get("tail")
+        }
+
+        missing_remote = [
+            amiibo
+            for amiibo in remote_amiibos
+            if amiibo.get("head")
+            and amiibo.get("tail")
+            and f"{amiibo.get('head')}{amiibo.get('tail')}" not in local_ids
+        ]
+
+        if missing_remote:
+            self.log_warning(
+                "amiibo-database-missing-items",
+                missing_count=len(missing_remote),
+                missing_ids=[
+                    f"{amiibo.get('name', 'unknown')} ({amiibo.get('head')}{amiibo.get('tail')})"
+                    for amiibo in missing_remote
+                ],
+            )
+
+    @staticmethod
+    def _attach_usage_data(amiibos: list[dict], remote_amiibos: list[dict]):
+        usage_keys = ["gamesSwitch", "games3DS", "gamesWiiU"]
+        remote_lookup = {
+            f"{amiibo.get('head')}{amiibo.get('tail')}": amiibo
+            for amiibo in remote_amiibos
+            if amiibo.get("head") and amiibo.get("tail")
+        }
+
+        enriched = []
+        for amiibo in amiibos:
+            amiibo_id = f"{amiibo.get('head', '')}{amiibo.get('tail', '')}"
+            remote_match = remote_lookup.get(amiibo_id, {})
+            amiibo_with_usage = dict(amiibo)
+            for key in usage_keys:
+                if key in remote_match:
+                    amiibo_with_usage[key] = remote_match[key]
+            enriched.append(amiibo_with_usage)
+
+        return enriched
