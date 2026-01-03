@@ -2,6 +2,7 @@ import json
 import os
 import warnings
 from collections import defaultdict
+from pathlib import Path
 
 import googleapiclient.discovery
 import requests
@@ -771,3 +772,24 @@ class PrivacyPolicyView(View):
                 ]
             },
         )
+
+
+class AmiiboDatabaseView(View):
+    def get(self, request):
+        database_path = Path(__file__).with_name("amiibo_database.json")
+
+        try:
+            with database_path.open(encoding="utf-8") as database_file:
+                data = json.load(database_file)
+        except FileNotFoundError:
+            return JsonResponse(
+                {"status": "error", "message": "Amiibo database unavailable."},
+                status=500,
+            )
+        except json.JSONDecodeError:
+            return JsonResponse(
+                {"status": "error", "message": "Amiibo database is corrupted."},
+                status=500,
+            )
+
+        return JsonResponse(data, safe=False)
