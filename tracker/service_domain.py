@@ -1,5 +1,7 @@
+import json
 from functools import cached_property
 from datetime import datetime
+from pathlib import Path
 
 import requests
 from cachetools import TTLCache
@@ -38,9 +40,41 @@ class AmiiboService(LoggingMixin):
         return sheet
 
     def fetch_amiibos(self):
-        # no error handling for this at this time
-        response = requests.get("https://amiiboapi.com/api/amiibo/")
-        return response.json().get("amiibo", [])
+        remote_amiibos = self._fetch_remote_amiibos()
+        if remote_amiibos:
+            return remote_amiibos
+
+        return self._fetch_local_amiibos()
+
+    def _fetch_remote_amiibos(self) -> list[dict]:
+        api_url = "https://amiiboapi.onrender.com/api/amiibo/"
+
+        try:
+            response = requests.get(api_url, timeout=10)
+            response.raise_for_status()
+            data = response.json()
+            return data.get("amiibo", [])
+        except (requests.RequestException, ValueError) as error:
+            self.log_warning(
+                "remote-amiibo-fetch-failed",
+                error=str(error),
+                api_url=api_url,
+            )
+            return []
+
+    def _fetch_local_amiibos(self) -> list[dict]:
+        database_path = Path(__file__).with_name("amiibo_database.json")
+        with database_path.open(encoding="utf-8") as database_file:
+            data = database_file.read()
+
+        return (self._parse_amiibo_database(data) or {}).get("amiibo", [])
+
+    @staticmethod
+    def _parse_amiibo_database(raw_data: str) -> dict:
+        try:
+            return json.loads(raw_data)
+        except json.JSONDecodeError:
+            return {}
 
     def seed_new_amiibos(self, amiibos: list[dict]):
         existing_values = self.sheet.get_all_values()
