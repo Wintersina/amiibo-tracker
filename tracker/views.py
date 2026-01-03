@@ -1,9 +1,13 @@
 import json
+import os
+import warnings
 from collections import defaultdict
 
 import googleapiclient.discovery
 import requests
 from gspread.exceptions import APIError
+from google.auth.transport.requests import Request as GoogleAuthRequest
+from google.oauth2.credentials import Credentials
 from django.contrib.auth import logout as django_logout
 from django.http import JsonResponse
 from django.shortcuts import redirect, render
@@ -18,6 +22,8 @@ from constants import OauthConstants
 from tracker.google_sheet_client_manager import GoogleSheetClientManager
 from tracker.helpers import LoggingMixin
 from tracker.service_domain import AmiiboService, GoogleSheetConfigManager
+
+os.environ.setdefault("OAUTHLIB_RELAX_TOKEN_SCOPE", "1")
 
 
 def is_rate_limit_error(error: Exception) -> bool:
@@ -43,9 +49,9 @@ def rate_limit_json_response(error: APIError):
     )
 
 
-def build_sheet_client_manager(request) -> GoogleSheetClientManager:
+def build_sheet_client_manager(request, creds_json=None) -> GoogleSheetClientManager:
     return GoogleSheetClientManager(
-        creds_json=request.session.get("credentials"),
+        creds_json=creds_json if creds_json is not None else request.session.get("credentials"),
         spreadsheet_id=request.session.get("spreadsheet_id"),
     )
 
@@ -60,22 +66,137 @@ def ensure_spreadsheet_session(request, manager: GoogleSheetClientManager):
     return spreadsheet
 
 
+def credentials_to_dict(creds: Credentials):
+    return {
+        "token": creds.token,
+        "refresh_token": creds.refresh_token,
+        "token_uri": creds.token_uri,
+        "client_id": creds.client_id,
+        "client_secret": creds.client_secret,
+        "scopes": creds.scopes,
+        "expiry": creds.expiry.isoformat() if creds.expiry else None,
+    }
+
+
+def get_active_credentials_json(request, log_action=None):
+    creds_json = request.session.get("credentials")
+    if not creds_json:
+        return None
+
+    try:
+        credentials = Credentials.from_authorized_user_info(
+            creds_json, OauthConstants.SCOPES
+        )
+    except Exception as error:
+        if log_action:
+            log_action(
+                "credentials-parse-failed",
+                request,
+                level="warning",
+                error=str(error),
+            )
+        request.session.pop("credentials", None)
+        return None
+
+    if credentials.expired:
+        if not credentials.refresh_token:
+            if log_action:
+                log_action(
+                    "credentials-expired",
+                    request,
+                    level="warning",
+                )
+            request.session.pop("credentials", None)
+            return None
+
+        try:
+            credentials.refresh(GoogleAuthRequest())
+            request.session["credentials"] = credentials_to_dict(credentials)
+        except Exception as error:
+            if log_action:
+                log_action(
+                    "credential-refresh-failed",
+                    request,
+                    level="warning",
+                    error=str(error),
+                )
+            request.session.pop("credentials", None)
+            return None
+
+    if not credentials.valid:
+        if log_action:
+            log_action(
+                "credentials-invalid",
+                request,
+                level="warning",
+            )
+        request.session.pop("credentials", None)
+        return None
+
+    return request.session.get("credentials")
+
+
+def logout_user(request, log_action=None):
+    if log_action:
+        log_action("logout-requested", request)
+
+    creds = request.session.get("credentials")
+    if creds:
+        token = creds.get("token")
+        try:
+            response = requests.post(
+                "https://oauth2.googleapis.com/revoke",
+                params={"token": token},
+                headers={"content-type": "application/x-www-form-urlencoded"},
+            )
+            if log_action:
+                log_action(
+                    "logout-complete",
+                    request,
+                    status_code=response.status_code,
+                )
+        except Exception as e:
+            if log_action:
+                log_action(
+                    "logout-revoke-failed",
+                    request,
+                    level="error",
+                    error=str(e),
+                )
+
+    request.session.flush()
+    django_logout(request)
+
+
 @method_decorator(csrf_exempt, name="dispatch")
 class ToggleCollectedView(View, LoggingMixin):
     def post(self, request):
-        creds_json = request.session.get("credentials")
+        raw_creds = request.session.get("credentials")
+        creds_json = get_active_credentials_json(request, self.log_action)
         if not creds_json:
-            self.log_action(
-                "missing-credentials",
-                request,
-                level="warning",
-                http_method="POST",
-                endpoint="toggle-collected",
-            )
-            return redirect("oauth_login")
+            if raw_creds:
+                creds_json = raw_creds
+                self.log_action(
+                    "using-stored-credentials",
+                    request,
+                    level="warning",
+                    http_method="POST",
+                    endpoint="toggle-collected",
+                )
+            else:
+                self.log_action(
+                    "missing-credentials",
+                    request,
+                    level="warning",
+                    http_method="POST",
+                    endpoint="toggle-collected",
+                )
+                return redirect("oauth_login")
 
         try:
-            google_sheet_client_manager = build_sheet_client_manager(request)
+            google_sheet_client_manager = build_sheet_client_manager(
+                request, creds_json
+            )
             ensure_spreadsheet_session(request, google_sheet_client_manager)
 
             data = json.loads(request.body)
@@ -167,10 +288,13 @@ class ToggleCollectedView(View, LoggingMixin):
         return JsonResponse({"status": "invalid method"}, status=400)
 
 
-class OAuthView(View):
+class OAuthView(View, LoggingMixin):
     def get(self, request):
-        if request.session.get("credentials"):
+        creds_json = get_active_credentials_json(request, self.log_action)
+        if creds_json:
             return redirect("amiibo_list")
+
+        logout_user(request, self.log_action)
 
         flow = Flow.from_client_secrets_file(
             GoogleSheetClientManager.client_secret_path(),
@@ -192,16 +316,6 @@ class OAuthView(View):
 
 class OAuthCallbackView(View, LoggingMixin):
     def get(self, request):
-        def credentials_to_dict(creds):
-            return {
-                "token": creds.token,
-                "refresh_token": creds.refresh_token,
-                "token_uri": creds.token_uri,
-                "client_id": creds.client_id,
-                "client_secret": creds.client_secret,
-                "scopes": creds.scopes,
-            }
-
         request_state = request.GET.get("state")
         oauth_state = request.session.get("oauth_state")
         oauth_code_verifier = request.session.get("oauth_code_verifier")
@@ -246,12 +360,48 @@ class OAuthCallbackView(View, LoggingMixin):
 
         try:
             flow.fetch_token(authorization_response=request.build_absolute_uri())
+        except Warning as scope_warning:
+            self.log_action(
+                "scope-warning", request, level="warning", warning=str(scope_warning)
+            )
+
+            try:
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore")
+                    flow.fetch_token(
+                        authorization_response=request.build_absolute_uri()
+                    )
+            except (InvalidGrantError, OAuth2Error, Warning):
+                request.session.pop("oauth_state", None)
+                request.session.pop("oauth_code_verifier", None)
+                return redirect("oauth_login")
+
         except (InvalidGrantError, OAuth2Error):
             request.session.pop("oauth_state", None)
             request.session.pop("oauth_code_verifier", None)
             return redirect("oauth_login")
 
         credentials = flow.credentials
+
+        required_scopes = set(OauthConstants.SCOPES)
+        granted_scopes = set(credentials.scopes or [])
+
+        if not required_scopes.issubset(granted_scopes):
+            self.log_action(
+                "missing-scopes",
+                request,
+                level="warning",
+                required_scopes=list(required_scopes),
+                granted_scopes=list(granted_scopes),
+            )
+
+            request.session.pop("oauth_state", None)
+            request.session.pop("oauth_code_verifier", None)
+            request.session.pop("credentials", None)
+            request.session.pop("user_name", None)
+            request.session.pop("user_email", None)
+
+            return redirect("oauth_login")
 
         # Clear any stale session data before persisting new account details
         request.session.pop("credentials", None)
@@ -294,43 +444,21 @@ class OAuthCallbackView(View, LoggingMixin):
 
 class LogoutView(View, LoggingMixin):
     def get(self, request):
-        self.log_action("logout-requested", request)
-        creds = request.session.get("credentials")
-        if creds:
-            token = creds.get("token")
-            try:
-                response = requests.post(
-                    "https://oauth2.googleapis.com/revoke",
-                    params={"token": token},
-                    headers={"content-type": "application/x-www-form-urlencoded"},
-                )
-                self.log_action(
-                    "logout-complete",
-                    request,
-                    status_code=response.status_code,
-                )
-            except Exception as e:
-                self.log_action(
-                    "logout-revoke-failed",
-                    request,
-                    level="error",
-                    error=str(e),
-                )
-
-        request.session.flush()
-        django_logout(request)
+        logout_user(request, self.log_action)
         return redirect("index")
 
 
 class AmiiboListView(View, LoggingMixin):
     def get(self, request):
-        creds_json = request.session.get("credentials")
+        creds_json = get_active_credentials_json(request, self.log_action)
         if not creds_json:
             return redirect("oauth_login")
 
         user_name = request.session.get("user_name", "User")
 
-        google_sheet_client_manager = build_sheet_client_manager(request)
+        google_sheet_client_manager = build_sheet_client_manager(
+            request, creds_json
+        )
         ensure_spreadsheet_session(request, google_sheet_client_manager)
         service = AmiiboService(google_sheet_client_manager=google_sheet_client_manager)
         config = GoogleSheetConfigManager(
@@ -467,7 +595,7 @@ class AmiiboListView(View, LoggingMixin):
 @method_decorator(csrf_exempt, name="dispatch")
 class ToggleDarkModeView(View, LoggingMixin):
     def post(self, request):
-        creds_json = request.session.get("credentials")
+        creds_json = get_active_credentials_json(request, self.log_action)
         if not creds_json:
             self.log_action(
                 "missing-credentials",
@@ -479,7 +607,9 @@ class ToggleDarkModeView(View, LoggingMixin):
             return redirect("oauth_login")
 
         try:
-            google_sheet_client_manager = build_sheet_client_manager(request)
+            google_sheet_client_manager = build_sheet_client_manager(
+                request, creds_json
+            )
             ensure_spreadsheet_session(request, google_sheet_client_manager)
 
             data = json.loads(request.body)
@@ -525,7 +655,7 @@ class ToggleDarkModeView(View, LoggingMixin):
 @method_decorator(csrf_exempt, name="dispatch")
 class ToggleTypeFilterView(View, LoggingMixin):
     def post(self, request):
-        creds_json = request.session.get("credentials")
+        creds_json = get_active_credentials_json(request, self.log_action)
         if not creds_json:
             self.log_action(
                 "missing-credentials",
@@ -537,7 +667,9 @@ class ToggleTypeFilterView(View, LoggingMixin):
             return redirect("oauth_login")
 
         try:
-            google_sheet_client_manager = build_sheet_client_manager(request)
+            google_sheet_client_manager = build_sheet_client_manager(
+                request, creds_json
+            )
             ensure_spreadsheet_session(request, google_sheet_client_manager)
 
             data = json.loads(request.body)
