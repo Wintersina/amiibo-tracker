@@ -26,6 +26,10 @@ pushd "%PROJECT_ROOT%"
 set "OAUTHLIB_INSECURE_TRANSPORT=1"
 
 echo.
+echo Installing dependencies...
+python -m pip install -r requirements.txt
+
+echo.
 echo Running migrations...
 python manage.py migrate
 
