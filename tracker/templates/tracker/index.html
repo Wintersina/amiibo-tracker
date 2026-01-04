@@ -27,7 +27,7 @@
             padding: 0;
             font-family: 'Vazirmatn', system-ui, sans-serif;
             background: linear-gradient(180deg, rgba(6, 10, 14, 0.95), rgba(12, 18, 24, 0.9)),
-                        url('{% static "images/amiibo_bg.png" %}') center/420px repeat;
+            url('{% static "images/amiibo_bg.png" %}') center/420px repeat;
             background-attachment: fixed;
             min-height: 100vh;
             display: flex;
@@ -55,7 +55,7 @@
             inset: 18px;
             border-radius: 20px;
             background-image: radial-gradient(circle at 12px 12px, rgba(243, 201, 105, 0.35) 2px, transparent 0),
-                              radial-gradient(circle at 42px 42px, rgba(255, 255, 255, 0.15) 1.5px, transparent 0);
+            radial-gradient(circle at 42px 42px, rgba(255, 255, 255, 0.15) 1.5px, transparent 0);
             background-size: 120px 120px, 160px 160px;
             opacity: 0.4;
             pointer-events: none;
@@ -66,7 +66,7 @@
             border: 1px solid rgba(255, 255, 255, 0.06);
             border-radius: 28px;
             background: radial-gradient(circle at 25% 20%, rgba(243, 201, 105, 0.08), transparent 30%),
-                        radial-gradient(circle at 80% 60%, rgba(15, 118, 110, 0.08), transparent 35%);
+            radial-gradient(circle at 80% 60%, rgba(15, 118, 110, 0.08), transparent 35%);
         }
 
         .hero {
@@ -239,9 +239,11 @@
             .canvas {
                 padding: 2rem;
             }
+
             .hero-copy p {
                 font-size: 1rem;
             }
+
             .actions {
                 justify-content: center;
             }
@@ -249,57 +251,63 @@
     </style>
 </head>
 <body>
-    <div class="canvas">
-        <div class="hero">
-            <div class="hero-copy">
-                <h1>Your Amiibo collection</h1>
-                <p>
-                    Track what you own using Google Sheets.
-                    Simple, private, and easy to update.
-                </p>
-                <p class="subtext">
-                    Amiibo Tracker helps you keep a personal, up-to-date catalogue of every Amiibo you own or want.
-                    Your data stays in a Google Sheet you control so you can export, share, or archive it whenever you like.
-                </p>
+<div class="canvas">
+    <div class="hero">
+        <div class="hero-copy">
+            <h1>Your Amiibo collection</h1>
+            <p>
+                Track what you own using Google Sheets.
+                Simple, private, and easy to update.
+            </p>
+            <p class="subtext">
+                Amiibo Tracker helps you keep a personal, up-to-date catalogue of every Amiibo you own or want.
+                Your data stays in a Google Sheet you control so you can export, share, or archive it whenever you like.
+            </p>
 
-                <div class="actions">
-                    <a href="{% url 'oauth_login' %}" class="action-btn google-btn">
-                        <img src="{% static 'images/google-logo.svg' %}" alt="Google logo">
-                        Login with Google
-                    </a>
+            <div class="actions">
+                <a href="{% url 'oauth_login' %}" class="action-btn google-btn">
+                    <img src="{% static 'images/google-logo.svg' %}" alt="Google logo">
+                    Login with Google
+                </a>
+            </div>
+
+            <div class="info-list">
+                <div class="info-item">
+                    <div class="info-heading">
+                        <h2>What the app does</h2>
+                    </div>
+                    <p>
+                        Create and maintain a complete Amiibo inventory: mark figures you own and filter by series right
+                        inside your own spreadsheet.
+                        The app only adds and updates rows you choose, making it easy to keep everything organized in
+                        one place.
+                    </p>
                 </div>
-
-                <div class="info-list">
-                    <div class="info-item">
-                        <div class="info-heading">
-                            <h2>What the app does</h2>
-                        </div>
-                        <p>
-                            Create and maintain a complete Amiibo inventory: mark figures you own and filter by series right inside your own spreadsheet.
-                            The app only adds and updates rows you choose, making it easy to keep everything organized in one place.
-                        </p>
+                <div class="info-item">
+                    <div class="info-heading">
+                        <h2>Why Amiibo Tracker asks for Google access</h2>
                     </div>
-                    <div class="info-item">
-                        <div class="info-heading">
-                            <h2>Why Amiibo Tracker asks for Google access</h2>
-                        </div>
-                        <p>
-                            Google authentication is used to let you pick the specific Sheet you want to sync. Amiibo Tracker requests permission to view and edit that Sheet so the app can populate and update your collection data.
-                            The Amiibo Tracker app does not read emails or any other Drive files, and you can revoke access at any time from your Google account settings.
-                        </p>
+                    <p>
+                        Google authentication is used to let you pick the specific Sheet you want to sync. Amiibo
+                        Tracker requests permission to view and edit that Sheet so the app can populate and update your
+                        collection data.
+                        The Amiibo Tracker app does not read emails or any other Drive files, and you can revoke access
+                        at any time from your Google account settings.
+                    </p>
+                </div>
+                <div class="info-item">
+                    <div class="info-heading">
+                        <h2>Privacy and transparency</h2>
                     </div>
-                    <div class="info-item">
-                        <div class="info-heading">
-                            <h2>Privacy and transparency</h2>
-                            <a href="{% url 'privacy' %}" class="info-btn">Privacy details</a>
-                        </div>
-                        <p>
-                            Your Amiibo list lives in your Google Drive—there are no shared databases or hidden third parties. Review the Privacy Policy to learn exactly how data is handled before you sign in.
-                        </p>
-                    </div>
+                    <p>
+                        Your Amiibo list lives in your Google Drive—there are no shared databases or hidden third
+                        parties. Review the Privacy Policy to learn exactly how data is handled before you sign in.
+                    </p>
+                    <a href="{% url 'privacy' %}" class="info-btn">Privacy details</a>
                 </div>
             </div>
         </div>
     </div>
+</div>
 </body>
 </html>
