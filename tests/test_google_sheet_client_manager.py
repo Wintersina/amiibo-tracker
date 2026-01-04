@@ -12,7 +12,7 @@ class DummyWorksheet:
         self.title = title
         self.rows = []
 
-    def append_row(self, row):
+    def append_row(self, row, *_, **__):
         self.rows.append(row)
 
 
