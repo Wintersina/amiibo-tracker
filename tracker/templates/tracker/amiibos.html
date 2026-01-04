@@ -3,7 +3,9 @@
 <html>
 <head>
     <title>Amiibo Tracker</title>
+    <meta name="google-adsense-account" content="ca-pub-6947554333794592">
     <link rel="icon" href="{% static 'images/favicon.png' %}">
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6947554333794592" crossorigin="anonymous"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600;700&display=swap');
 
@@ -393,6 +395,29 @@
             color: var(--text);
         }
 
+        .ad-frame {
+            margin: 1.75rem auto 0;
+            max-width: 720px;
+            padding: 1rem 1.2rem 0.6rem;
+            border-radius: 16px;
+            border: 1px dashed var(--card-border);
+            background: linear-gradient(135deg, rgba(243, 201, 105, 0.12), rgba(15, 118, 110, 0.08));
+            text-align: center;
+        }
+
+        body.dark .ad-frame {
+            border-color: #1f2937;
+            background: linear-gradient(135deg, rgba(243, 201, 105, 0.08), rgba(34, 197, 94, 0.08));
+        }
+
+        .ad-label {
+            display: block;
+            margin-bottom: 0.35rem;
+            color: var(--muted);
+            font-weight: 700;
+            letter-spacing: 0.02em;
+        }
+
     </style>
 </head>
 <body class="{% if dark_mode %}dark{% endif %}">
@@ -461,6 +486,19 @@
             </div>
         </div>
     {% endfor %}
+</div>
+
+<div class="ad-frame" aria-label="Sponsored message">
+    <span class="ad-label">Sponsored</span>
+    <ins class="adsbygoogle"
+         style="display:block"
+         data-ad-client="ca-pub-6947554333794592"
+         data-ad-slot="auto"
+         data-ad-format="auto"
+         data-full-width-responsive="true"></ins>
+    <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+    </script>
 </div>
 
 </main>
