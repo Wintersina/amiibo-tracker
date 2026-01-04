@@ -7,5 +7,8 @@ cd "$PROJECT_ROOT"
 
 export OAUTHLIB_INSECURE_TRANSPORT=1
 
+echo "Installing dependencies..."
+python -m pip install -r requirements.txt
+
 python manage.py migrate
 python manage.py runserver
