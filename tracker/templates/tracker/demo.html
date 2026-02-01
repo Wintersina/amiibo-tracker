@@ -685,7 +685,7 @@
 
     async function loadAmiibos() {
         try {
-            const response = await fetch('{% static "amiibo_database.json" %}');
+            const response = await fetch('{% url "amiibo_database" %}');
             const data = await response.json();
             allAmiibos = data.amiibo || [];
 
