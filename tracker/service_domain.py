@@ -6,10 +6,10 @@ from pathlib import Path
 from cachetools import TTLCache
 
 from tracker.google_sheet_client_manager import GoogleSheetClientManager
-from tracker.helpers import LoggingMixin, AmiiboRemoteFetchMixin
+from tracker.helpers import LoggingMixin, AmiiboRemoteFetchMixin, AmiiboLocalFetchMixin
 
 
-class AmiiboService(LoggingMixin, AmiiboRemoteFetchMixin):
+class AmiiboService(LoggingMixin, AmiiboRemoteFetchMixin, AmiiboLocalFetchMixin):
     HEADER = [
         "Amiibo ID",
         "Amiibo Name",
@@ -44,20 +44,6 @@ class AmiiboService(LoggingMixin, AmiiboRemoteFetchMixin):
             return remote_amiibos
 
         return self._fetch_local_amiibos()
-
-    def _fetch_local_amiibos(self) -> list[dict]:
-        database_path = Path(__file__).with_name("amiibo_database.json")
-        with database_path.open(encoding="utf-8") as database_file:
-            data = database_file.read()
-
-        return (self._parse_amiibo_database(data) or {}).get("amiibo", [])
-
-    @staticmethod
-    def _parse_amiibo_database(raw_data: str) -> dict:
-        try:
-            return json.loads(raw_data)
-        except json.JSONDecodeError:
-            return {}
 
     def seed_new_amiibos(self, amiibos: list[dict]):
         existing_values = self.sheet.get_all_values()

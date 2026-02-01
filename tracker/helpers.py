@@ -7,6 +7,7 @@ import logging
 import uuid
 from functools import partialmethod
 from importlib import import_module
+from pathlib import Path
 
 
 class HelperMixin:
@@ -105,5 +106,23 @@ class AmiiboRemoteFetchMixin:
                     "remote-amiibo-fetch-failed",
                     error=str(error),
                     api_url=api_url,
+                )
+            return []
+
+
+class AmiiboLocalFetchMixin:
+    def _fetch_local_amiibos(self) -> list[dict]:
+        database_path = Path(__file__).parent / "amiibo_database.json"
+        try:
+            with database_path.open(encoding="utf-8") as database_file:
+                data = json.load(database_file)
+                amiibos = data.get("amiibo", [])
+                return amiibos if isinstance(amiibos, list) else []
+        except (FileNotFoundError, json.JSONDecodeError) as error:
+            if hasattr(self, "log_error"):
+                self.log_error(
+                    "local-amiibo-fetch-failed",
+                    error=str(error),
+                    path=str(database_path),
                 )
             return []
