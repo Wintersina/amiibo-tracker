@@ -1,4 +1,5 @@
 import os
+import requests
 
 import inspect
 import json
@@ -86,3 +87,23 @@ class LoggingMixin(object):
     log_info = partialmethod(log, level="info")
     log_warning = partialmethod(log, level="warning")
     log_error = partialmethod(log, level="exception")
+
+
+class AmiiboRemoteFetchMixin:
+    def _fetch_remote_amiibos(self) -> list[dict]:
+        api_url = "https://amiiboapi.org/api/amiibo/"
+
+        try:
+            response = requests.get(api_url, timeout=10)
+            response.raise_for_status()
+            data = response.json()
+            amiibos = data.get("amiibo", [])
+            return amiibos if isinstance(amiibos, list) else []
+        except (requests.RequestException, ValueError) as error:
+            if hasattr(self, "log_warning"):
+                self.log_warning(
+                    "remote-amiibo-fetch-failed",
+                    error=str(error),
+                    api_url=api_url,
+                )
+            return []

@@ -3,14 +3,13 @@ from functools import cached_property
 from datetime import datetime
 from pathlib import Path
 
-import requests
 from cachetools import TTLCache
 
 from tracker.google_sheet_client_manager import GoogleSheetClientManager
-from tracker.helpers import LoggingMixin
+from tracker.helpers import LoggingMixin, AmiiboRemoteFetchMixin
 
 
-class AmiiboService(LoggingMixin):
+class AmiiboService(LoggingMixin, AmiiboRemoteFetchMixin):
     HEADER = [
         "Amiibo ID",
         "Amiibo Name",
@@ -45,22 +44,6 @@ class AmiiboService(LoggingMixin):
             return remote_amiibos
 
         return self._fetch_local_amiibos()
-
-    def _fetch_remote_amiibos(self) -> list[dict]:
-        api_url = "https://amiiboapi.onrender.com/api/amiibo/"
-
-        try:
-            response = requests.get(api_url, timeout=10)
-            response.raise_for_status()
-            data = response.json()
-            return data.get("amiibo", [])
-        except (requests.RequestException, ValueError) as error:
-            self.log_warning(
-                "remote-amiibo-fetch-failed",
-                error=str(error),
-                api_url=api_url,
-            )
-            return []
 
     def _fetch_local_amiibos(self) -> list[dict]:
         database_path = Path(__file__).with_name("amiibo_database.json")
@@ -135,9 +118,11 @@ class AmiiboService(LoggingMixin):
     def get_collected_status(self):
         rows = self.sheet.get_all_values()[1:]
         return {
-            row[0]: row[self.COLLECTED_STATUS_COL - 1]
-            if len(row) >= self.COLLECTED_STATUS_COL
-            else "0"
+            row[0]: (
+                row[self.COLLECTED_STATUS_COL - 1]
+                if len(row) >= self.COLLECTED_STATUS_COL
+                else "0"
+            )
             for row in rows
         }
 

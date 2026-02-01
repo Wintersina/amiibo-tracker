@@ -21,7 +21,7 @@ from oauthlib.oauth2.rfc6749.errors import InvalidGrantError
 
 from constants import OauthConstants
 from tracker.google_sheet_client_manager import GoogleSheetClientManager
-from tracker.helpers import LoggingMixin
+from tracker.helpers import LoggingMixin, AmiiboRemoteFetchMixin
 from tracker.service_domain import AmiiboService, GoogleSheetConfigManager
 
 os.environ.setdefault("OAUTHLIB_RELAX_TOKEN_SCOPE", "1")
@@ -52,7 +52,9 @@ def rate_limit_json_response(error: APIError):
 
 def build_sheet_client_manager(request, creds_json=None) -> GoogleSheetClientManager:
     return GoogleSheetClientManager(
-        creds_json=creds_json if creds_json is not None else request.session.get("credentials"),
+        creds_json=(
+            creds_json if creds_json is not None else request.session.get("credentials")
+        ),
         spreadsheet_id=request.session.get("spreadsheet_id"),
     )
 
@@ -457,9 +459,7 @@ class AmiiboListView(View, LoggingMixin):
 
         user_name = request.session.get("user_name", "User")
 
-        google_sheet_client_manager = build_sheet_client_manager(
-            request, creds_json
-        )
+        google_sheet_client_manager = build_sheet_client_manager(request, creds_json)
         ensure_spreadsheet_session(request, google_sheet_client_manager)
         service = AmiiboService(google_sheet_client_manager=google_sheet_client_manager)
         config = GoogleSheetConfigManager(
@@ -774,7 +774,7 @@ class PrivacyPolicyView(View):
         )
 
 
-class AmiiboDatabaseView(View, LoggingMixin):
+class AmiiboDatabaseView(View, LoggingMixin, AmiiboRemoteFetchMixin):
     def get(self, request):
         data, error_response = self._load_local_database()
         if error_response:
@@ -809,23 +809,6 @@ class AmiiboDatabaseView(View, LoggingMixin):
                 {"status": "error", "message": "Amiibo database is corrupted."},
                 status=500,
             )
-
-    def _fetch_remote_amiibos(self):
-        api_url = "https://amiiboapi.onrender.com/api/amiibo/"
-
-        try:
-            response = requests.get(api_url, timeout=10)
-            response.raise_for_status()
-            data = response.json()
-            amiibos = data.get("amiibo", [])
-            return amiibos if isinstance(amiibos, list) else []
-        except (requests.RequestException, ValueError) as error:
-            self.log_warning(
-                "remote-amiibo-fetch-failed",
-                error=str(error),
-                api_url=api_url,
-            )
-            return []
 
     @staticmethod
     def _filter_amiibos(amiibos: list[dict], request):
