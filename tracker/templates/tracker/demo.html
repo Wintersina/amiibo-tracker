@@ -76,24 +76,54 @@
         }
 
         .demo-banner {
-            background: linear-gradient(135deg, rgba(243, 201, 105, 0.25), rgba(15, 118, 110, 0.2));
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.88));
             border: 2px solid var(--accent);
             border-radius: 14px;
-            padding: 1rem 1.5rem;
+            padding: 1.2rem 1.5rem;
             margin: 1rem auto 1.5rem;
             max-width: 1400px;
             text-align: center;
             font-weight: 600;
+            color: var(--text);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            flex-wrap: wrap;
         }
 
-        .demo-banner a {
-            color: var(--button-bg);
-            text-decoration: underline;
-            font-weight: 700;
+        body.dark .demo-banner {
+            background: linear-gradient(135deg, rgba(31, 41, 55, 0.95), rgba(17, 24, 39, 0.92));
         }
 
-        body.dark .demo-banner a {
-            color: var(--button-bg);
+        .demo-banner-text {
+            margin: 0;
+        }
+
+        .demo-banner-btn {
+            background: #ffffff;
+            color: #3c4043;
+            border: 1px solid #dadce0;
+            text-decoration: none;
+            border-radius: 12px;
+            padding: 0.7rem 1.2rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.6rem;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+        }
+
+        .demo-banner-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 22px rgba(0, 0, 0, 0.18);
+        }
+
+        .demo-banner-btn img {
+            width: 18px;
+            height: 18px;
         }
 
         .top-controls {
@@ -384,12 +414,17 @@
 </head>
 <body>
 <div class="demo-banner">
-    This is a demo version with sample data. <a href="{% url 'index' %}">Sign in with Google</a> to track your own collection!
+    <span class="demo-banner-text">This is a demo version with sample data.</span>
+    <a href="{% url 'oauth_login' %}" class="demo-banner-btn">
+        <img src="{% static 'images/google-logo.svg' %}" alt="Google logo">
+        Sign in with Google
+    </a>
+    <span class="demo-banner-text">to track your own collection!</span>
 </div>
 
 <div class="top-controls">
     <div class="welcome">
-        <div>Amiibo Collection Demo</div>
+        <div>Welcome, Demo User.</div>
         <div id="collectionTotal" class="collection-pill">Collected: 0</div>
     </div>
     <div class="control-row">
@@ -475,8 +510,8 @@
 
     function renderAmiibos() {
         const grouped = groupBySeries(allAmiibos);
-        const container = document.getElementById('amiibo-list');
-        container.innerHTML = '';
+        const listContainer = document.getElementById('amiibo-list');
+        listContainer.innerHTML = '';
 
         Object.keys(grouped).sort().forEach(series => {
             const amiibos = grouped[series];
@@ -497,8 +532,8 @@
             header.insertBefore(toggleBtn, header.firstChild);
             header.insertBefore(document.createTextNode(series + ' '), header.firstChild);
 
-            const container = document.createElement('div');
-            container.className = 'amiibo-container';
+            const amiiboContainer = document.createElement('div');
+            amiiboContainer.className = 'amiibo-container';
 
             const grid = document.createElement('div');
             grid.className = 'amiibo-grid';
@@ -545,10 +580,10 @@
                 grid.appendChild(card);
             });
 
-            container.appendChild(grid);
+            amiiboContainer.appendChild(grid);
             groupDiv.appendChild(header);
-            groupDiv.appendChild(container);
-            container.appendChild(groupDiv);
+            groupDiv.appendChild(amiiboContainer);
+            listContainer.appendChild(groupDiv);
         });
 
         updateCollectedCount();
