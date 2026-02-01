@@ -750,6 +750,11 @@ class IndexView(View):
         return render(request, "tracker/index.html")
 
 
+class DemoView(View):
+    def get(self, request):
+        return render(request, "tracker/demo.html")
+
+
 class PrivacyPolicyView(View):
     def get(self, request):
         return render(

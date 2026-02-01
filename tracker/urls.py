@@ -11,10 +11,12 @@ from tracker.views import (
     ToggleCollectedView,
     PrivacyPolicyView,
     AmiiboDatabaseView,
+    DemoView,
 )
 
 urlpatterns = [
     path("", IndexView.as_view(), name="index"),
+    path("demo/", DemoView.as_view(), name="demo"),
     path("tracker/", AmiiboListView.as_view(), name="amiibo_list"),
     path("toggle/", ToggleCollectedView.as_view(), name="toggle_collected"),
     path("toggle-dark-mode/", ToggleDarkModeView.as_view(), name="toggle_dark_mode"),

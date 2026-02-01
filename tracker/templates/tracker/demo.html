@@ -1,0 +1,718 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Amiibo Tracker - Demo</title>
+    <meta name="google-adsense-account" content="ca-pub-6947554333794592">
+    <link rel="icon" href="{% static 'images/favicon.png' %}">
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6947554333794592" crossorigin="anonymous"></script>
+    <meta name="description" content="Track your Nintendo Amiibo collection with ease. View our demo to see how Amiibo Tracker helps you organize your figures, cards, and plushes.">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600;700&display=swap');
+
+        :root {
+            --bg: #f7f2e7;
+            --text: #0f172a;
+            --card-bg: rgba(255, 255, 255, 0.9);
+            --card-border: #e5ddd0;
+            --collected-bg: #e6f4ea;
+            --button-bg: #0f766e;
+            --button-hover: #0c5f56;
+            --accent: #f3c969;
+            --muted: #6b7280;
+            --uncollected-btn: #9ca3af;
+            --uncollected-hover: #6b7280;
+        }
+
+        body.dark {
+            --bg: #0e141b;
+            --text: #e5e7eb;
+            --card-bg: rgba(24, 34, 45, 0.92);
+            --card-border: #1f2937;
+            --collected-bg: #14302b;
+            --button-bg: #22c55e;
+            --button-hover: #16a34a;
+            --accent: #f3c969;
+            --muted: #9ca3af;
+            --uncollected-btn: #6b7280;
+            --uncollected-hover: #4b5563;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Vazirmatn', system-ui, sans-serif;
+            margin: 0;
+            padding: 0 1.2rem 3rem;
+            background: linear-gradient(135deg, rgba(15, 118, 110, 0.12), rgba(243, 201, 105, 0.12)),
+                        url('/static/images/amiibo_bg.png') center/600px repeat;
+            color: var(--text);
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        body.dark {
+            background: linear-gradient(160deg, rgba(6, 10, 14, 0.9), rgba(12, 18, 24, 0.88)),
+                        url('/static/images/amiibo_bg.png') center/520px repeat;
+        }
+
+        main {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            margin-top: 1.5rem;
+            margin-bottom: 0.6rem;
+            letter-spacing: 0.01em;
+        }
+
+        .intro {
+            text-align: center;
+            color: var(--muted);
+            margin-bottom: 1.8rem;
+        }
+
+        .demo-banner {
+            background: linear-gradient(135deg, rgba(243, 201, 105, 0.25), rgba(15, 118, 110, 0.2));
+            border: 2px solid var(--accent);
+            border-radius: 14px;
+            padding: 1rem 1.5rem;
+            margin: 1rem auto 1.5rem;
+            max-width: 1400px;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .demo-banner a {
+            color: var(--button-bg);
+            text-decoration: underline;
+            font-weight: 700;
+        }
+
+        body.dark .demo-banner a {
+            color: var(--button-bg);
+        }
+
+        .top-controls {
+            position: sticky;
+            top: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem 1.25rem;
+            margin: 0 auto 1.5rem;
+            z-index: 100;
+            max-width: 1400px;
+            border-radius: 18px;
+            backdrop-filter: blur(12px);
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.88), rgba(255, 255, 255, 0.72));
+            border: 1px solid var(--card-border);
+            box-shadow: 0 16px 36px rgba(0, 0, 0, 0.12);
+        }
+
+        body.dark .top-controls {
+            background: linear-gradient(135deg, rgba(14, 20, 27, 0.92), rgba(14, 20, 27, 0.82));
+        }
+
+        .welcome {
+            margin-right: auto;
+            font-weight: 700;
+        }
+
+        .collection-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            margin-top: 0.3rem;
+            padding: 0.35rem 0.75rem;
+            border-radius: 999px;
+            background: linear-gradient(135deg, rgba(243, 201, 105, 0.3), rgba(15, 118, 110, 0.25));
+            color: var(--text);
+            font-weight: 600;
+        }
+
+        .control-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.6rem;
+            align-items: center;
+        }
+
+        .type-filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .type-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.35rem 0.75rem;
+            background: rgba(15, 118, 110, 0.08);
+            border-radius: 999px;
+            border: 1px solid var(--card-border);
+            color: var(--text);
+            font-weight: 600;
+        }
+
+        body.dark .type-chip {
+            background: rgba(34, 197, 94, 0.08);
+        }
+
+        .type-chip input {
+            accent-color: var(--button-bg);
+            width: 16px;
+            height: 16px;
+        }
+
+        .filter-select,
+        .search-input {
+            padding: 0.55em 1.1em;
+            font-size: 1em;
+            border-radius: 12px;
+            background-color: var(--card-bg);
+            color: var(--text);
+            border: 1px solid var(--card-border);
+            cursor: pointer;
+            outline: none;
+            min-width: 180px;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+        }
+
+        .search-input {
+            min-width: 240px;
+        }
+
+        .dark-toggle,
+        .back-btn {
+            border: none;
+            border-radius: 999px;
+            padding: 0.6rem 1rem;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            text-decoration: none;
+            color: var(--text);
+            background: rgba(255, 255, 255, 0.7);
+            box-shadow: 0 10px 18px rgba(0, 0, 0, 0.12);
+            transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+        }
+
+        .dark-toggle:hover,
+        .back-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 14px 22px rgba(0, 0, 0, 0.18);
+        }
+
+        .back-btn {
+            background: linear-gradient(135deg, var(--button-bg), var(--button-hover));
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.18);
+        }
+
+        .amiibo-card {
+            border: 1px solid var(--card-border);
+            border-radius: 14px;
+            padding: 1.1em 1.1em 1.2em;
+            margin: 0.75em;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            width: 200px;
+            min-height: 310px;
+            text-align: center;
+            box-shadow: 0 14px 32px rgba(0, 0, 0, 0.12);
+            background: var(--card-bg);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .amiibo-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 18px 36px rgba(0, 0, 0, 0.16);
+        }
+
+        .amiibo-card img {
+            max-height: 140px;
+            object-fit: contain;
+            margin-bottom: 0.75em;
+        }
+
+        .amiibo-name {
+            font-weight: 700;
+            margin: 0 0 0.25em;
+        }
+
+        .release-date {
+            margin: 0 0 0.8em;
+            color: var(--muted);
+            font-size: 0.95em;
+        }
+
+        .amiibo-meta {
+            margin: 0.2em 0 0.6em;
+            color: var(--muted);
+            font-size: 0.9em;
+        }
+
+        .collected {
+            background: linear-gradient(135deg, rgba(15, 118, 110, 0.12), rgba(243, 201, 105, 0.18));
+            border-color: rgba(15, 118, 110, 0.35);
+        }
+
+        body:not(.dark) .amiibo-card.collected {
+            background: linear-gradient(135deg, rgba(15, 118, 110, 0.22), rgba(243, 201, 105, 0.32));
+            border-color: rgba(15, 118, 110, 0.5);
+            box-shadow: 0 16px 32px rgba(15, 118, 110, 0.14);
+        }
+
+        button {
+            padding: 0.6em 1.1em;
+            font-size: 0.95em;
+            background-color: var(--uncollected-btn);
+            border: none;
+            color: white;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            font-weight: 700;
+            letter-spacing: 0.01em;
+        }
+
+        button:hover {
+            background-color: var(--uncollected-hover);
+            transform: translateY(-1px);
+        }
+
+        .amiibo-card.collected button {
+            background: linear-gradient(135deg, var(--button-bg), var(--button-hover));
+        }
+
+        .amiibo-card.collected button:hover {
+            background: linear-gradient(135deg, var(--button-hover), var(--button-bg));
+        }
+
+        .toggle-btn {
+            font-size: 1.2em;
+            border: none;
+            margin-right: 0.6em;
+            vertical-align: middle;
+            background: linear-gradient(135deg, rgba(243, 201, 105, 0.4), rgba(243, 201, 105, 0.2));
+            color: var(--text);
+            padding: 0.35em 0.65em;
+            border-radius: 10px;
+        }
+
+        .toggle-btn.rotate {
+            transform: rotate(90deg);
+        }
+
+        .game-series-group {
+            border: 2px solid var(--card-border);
+            border-radius: 14px;
+            margin-bottom: 2em;
+            padding: 1em;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.85));
+            transition: background-color 0.3s ease, border-color 0.3s ease;
+            box-shadow: 0 16px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        body.dark .game-series-group {
+            background: linear-gradient(135deg, rgba(31, 41, 55, 0.8), rgba(17, 24, 39, 0.9));
+        }
+
+        .amiibo-grid {
+            display: flex;
+            flex-wrap: wrap;
+            margin: 0 -0.75em;
+        }
+
+        .game-series-header {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-bottom: 1em;
+            color: var(--text);
+        }
+
+        .group-count {
+            font-size: 0.9em;
+            color: var(--muted);
+            margin-left: 0.5em;
+            font-weight: normal;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            font-size: 1.2rem;
+            color: var(--muted);
+        }
+
+        @media (max-width: 720px) {
+            .top-controls {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .control-row {
+                width: 100%;
+            }
+
+            .search-input {
+                flex: 1;
+                min-width: 100%;
+            }
+
+            .amiibo-card {
+                width: 46%;
+                min-height: 0;
+                margin: 0.5em;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="demo-banner">
+    This is a demo version with sample data. <a href="{% url 'index' %}">Sign in with Google</a> to track your own collection!
+</div>
+
+<div class="top-controls">
+    <div class="welcome">
+        <div>Amiibo Collection Demo</div>
+        <div id="collectionTotal" class="collection-pill">Collected: 0</div>
+    </div>
+    <div class="control-row">
+        <input id="searchInput" class="search-input" type="text" placeholder="Search Amiibo or date...">
+        <select id="filterSelect" class="filter-select">
+            <option value="all">Show All</option>
+            <option value="collected">Collected Only</option>
+            <option value="uncollected">Uncollected Only</option>
+        </select>
+        <div class="type-filters" aria-label="Filter by Amiibo type" id="typeFilters">
+            <span style="font-weight: 700;">Types:</span>
+        </div>
+        <button id="darkModeToggle" class="dark-toggle" aria-label="Toggle Dark Mode">🌙</button>
+        <a href="{% url 'index' %}" class="back-btn" aria-label="Back to Home">Back to Home</a>
+    </div>
+</div>
+
+<main>
+    <div id="loading" class="loading">Loading Amiibo collection...</div>
+    <div id="amiibo-list" style="display: none;"></div>
+</main>
+
+<script>
+    const STORAGE_KEY = 'amiibo_demo_collected';
+    const DARK_MODE_KEY = 'amiibo_demo_dark_mode';
+    const TYPE_FILTERS_KEY = 'amiibo_demo_type_filters';
+
+    let allAmiibos = [];
+    let collectedSet = new Set();
+    let typeFilters = new Set();
+
+    function loadFromLocalStorage() {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored) {
+            collectedSet = new Set(JSON.parse(stored));
+        }
+
+        const darkMode = localStorage.getItem(DARK_MODE_KEY) === 'true';
+        if (darkMode) {
+            document.body.classList.add('dark');
+            document.getElementById('darkModeToggle').textContent = '☀️';
+        }
+
+        const storedFilters = localStorage.getItem(TYPE_FILTERS_KEY);
+        if (storedFilters) {
+            typeFilters = new Set(JSON.parse(storedFilters));
+        }
+    }
+
+    function saveToLocalStorage() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify([...collectedSet]));
+    }
+
+    function saveTypeFilters() {
+        localStorage.setItem(TYPE_FILTERS_KEY, JSON.stringify([...typeFilters]));
+    }
+
+    function getAmiiboId(amiibo) {
+        return `${amiibo.head}${amiibo.gameSeries}${amiibo.tail}`;
+    }
+
+    function formatReleaseDate(release) {
+        if (!release) return 'N/A';
+        const date = release.na || release.eu || release.jp || release.au;
+        if (!date) return 'N/A';
+
+        const d = new Date(date);
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        return `${months[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
+    }
+
+    function groupBySeries(amiibos) {
+        const groups = {};
+        amiibos.forEach(amiibo => {
+            const series = amiibo.amiiboSeries || 'Unknown';
+            if (!groups[series]) {
+                groups[series] = [];
+            }
+            groups[series].push(amiibo);
+        });
+        return groups;
+    }
+
+    function renderAmiibos() {
+        const grouped = groupBySeries(allAmiibos);
+        const container = document.getElementById('amiibo-list');
+        container.innerHTML = '';
+
+        Object.keys(grouped).sort().forEach(series => {
+            const amiibos = grouped[series];
+            const collectedCount = amiibos.filter(a => collectedSet.has(getAmiiboId(a))).length;
+
+            const groupDiv = document.createElement('div');
+            groupDiv.className = 'game-series-group';
+
+            const header = document.createElement('div');
+            header.className = 'game-series-header';
+            header.onclick = () => toggleGroup(header);
+
+            const toggleBtn = document.createElement('button');
+            toggleBtn.className = 'toggle-btn';
+            toggleBtn.textContent = '-';
+
+            header.innerHTML = `<span class="group-count">(${collectedCount} / ${amiibos.length})</span>`;
+            header.insertBefore(toggleBtn, header.firstChild);
+            header.insertBefore(document.createTextNode(series + ' '), header.firstChild);
+
+            const container = document.createElement('div');
+            container.className = 'amiibo-container';
+
+            const grid = document.createElement('div');
+            grid.className = 'amiibo-grid';
+
+            amiibos.forEach(amiibo => {
+                const id = getAmiiboId(amiibo);
+                const isCollected = collectedSet.has(id);
+
+                const card = document.createElement('div');
+                card.className = `amiibo-card ${isCollected ? 'collected' : ''}`;
+                card.dataset.id = id;
+                card.dataset.type = amiibo.type || 'Unknown';
+                card.dataset.series = amiibo.amiiboSeries || 'Unknown';
+
+                const img = document.createElement('img');
+                img.src = amiibo.image;
+                img.alt = amiibo.name;
+
+                const name = document.createElement('p');
+                name.className = 'amiibo-name';
+                name.textContent = amiibo.name;
+
+                const meta = document.createElement('p');
+                meta.className = 'amiibo-meta';
+                meta.textContent = `${amiibo.gameSeries || 'Unknown'} • ${amiibo.type || 'Unknown'}`;
+
+                const releaseDate = document.createElement('p');
+                releaseDate.className = 'release-date';
+                releaseDate.textContent = formatReleaseDate(amiibo.release);
+
+                const button = document.createElement('button');
+                button.textContent = isCollected ? 'Collected' : 'Collect';
+                button.dataset.collected = isCollected;
+                button.onclick = () => toggleCollected(card, button);
+                button.onmouseenter = () => handleButtonHover(button);
+                button.onmouseleave = () => handleButtonLeave(button);
+
+                card.appendChild(img);
+                card.appendChild(name);
+                card.appendChild(meta);
+                card.appendChild(releaseDate);
+                card.appendChild(button);
+
+                grid.appendChild(card);
+            });
+
+            container.appendChild(grid);
+            groupDiv.appendChild(header);
+            groupDiv.appendChild(container);
+            container.appendChild(groupDiv);
+        });
+
+        updateCollectedCount();
+        filterAndSearch();
+    }
+
+    function toggleCollected(card, button) {
+        const id = card.dataset.id;
+        if (collectedSet.has(id)) {
+            collectedSet.delete(id);
+            card.classList.remove('collected');
+            button.dataset.collected = 'false';
+        } else {
+            collectedSet.add(id);
+            card.classList.add('collected');
+            button.dataset.collected = 'true';
+        }
+        setButtonState(button, button.dataset.collected === 'true');
+        saveToLocalStorage();
+        updateCollectedCount();
+        updateGroupCounts();
+    }
+
+    function setButtonState(button, isCollected) {
+        button.dataset.collected = isCollected ? 'true' : 'false';
+        button.textContent = isCollected ? 'Collected' : 'Collect';
+    }
+
+    function handleButtonHover(button) {
+        if (button.dataset.collected === 'true') {
+            button.textContent = 'Unmark';
+        }
+    }
+
+    function handleButtonLeave(button) {
+        setButtonState(button, button.dataset.collected === 'true');
+    }
+
+    function toggleGroup(header) {
+        const button = header.querySelector('.toggle-btn');
+        const container = header.nextElementSibling;
+
+        const isOpen = container.style.display !== 'none';
+        container.style.display = isOpen ? 'none' : 'block';
+        button.textContent = isOpen ? '+' : '-';
+    }
+
+    function updateCollectedCount() {
+        const collectedTotal = document.querySelectorAll('.amiibo-card.collected').length;
+        document.getElementById('collectionTotal').textContent = `Collected: ${collectedTotal}`;
+    }
+
+    function updateGroupCounts() {
+        document.querySelectorAll('.game-series-group').forEach(group => {
+            const cards = group.querySelectorAll('.amiibo-card');
+            const collected = group.querySelectorAll('.amiibo-card.collected').length;
+            const countSpan = group.querySelector('.group-count');
+            if (countSpan) {
+                countSpan.textContent = `(${collected} / ${cards.length})`;
+            }
+        });
+    }
+
+    function filterAndSearch() {
+        const value = document.getElementById('filterSelect').value;
+        const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+        const groups = document.querySelectorAll('.game-series-group');
+
+        groups.forEach(group => {
+            const cards = group.querySelectorAll('.amiibo-card');
+            let visibleCount = 0;
+
+            cards.forEach(card => {
+                const isCollected = card.classList.contains('collected');
+                const name = card.querySelector('.amiibo-name').textContent.toLowerCase();
+                const release = card.querySelector('.release-date').textContent.toLowerCase();
+                const type = (card.dataset.type || '').toLowerCase();
+                const series = (card.dataset.series || '').toLowerCase();
+
+                const matchesSearch = name.includes(searchTerm) || release.includes(searchTerm) ||
+                                     type.includes(searchTerm) || series.includes(searchTerm);
+                const matchesFilter =
+                    value === 'all' ||
+                    (value === 'collected' && isCollected) ||
+                    (value === 'uncollected' && !isCollected);
+
+                const typeNotFiltered = !typeFilters.has(card.dataset.type);
+
+                const shouldDisplay = matchesSearch && matchesFilter && typeNotFiltered;
+                card.style.display = shouldDisplay ? 'flex' : 'none';
+                if (shouldDisplay) visibleCount++;
+            });
+
+            group.style.display = visibleCount > 0 ? 'block' : 'none';
+        });
+
+        updateCollectedCount();
+    }
+
+    function setupTypeFilters() {
+        const types = new Set();
+        allAmiibos.forEach(amiibo => {
+            if (amiibo.type) {
+                types.add(amiibo.type);
+            }
+        });
+
+        const typeFiltersDiv = document.getElementById('typeFilters');
+        const typesArray = Array.from(types).sort();
+
+        typesArray.forEach(type => {
+            const label = document.createElement('label');
+            label.className = 'type-chip';
+
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.dataset.type = type;
+            checkbox.checked = !typeFilters.has(type);
+            checkbox.onchange = (e) => {
+                if (e.target.checked) {
+                    typeFilters.delete(type);
+                } else {
+                    typeFilters.add(type);
+                }
+                saveTypeFilters();
+                filterAndSearch();
+            };
+
+            label.appendChild(checkbox);
+            label.appendChild(document.createTextNode(type));
+            typeFiltersDiv.appendChild(label);
+        });
+    }
+
+    async function loadAmiibos() {
+        try {
+            const response = await fetch('{% static "amiibo_database.json" %}');
+            const data = await response.json();
+            allAmiibos = data.amiibo || [];
+
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('amiibo-list').style.display = 'block';
+
+            setupTypeFilters();
+            renderAmiibos();
+        } catch (error) {
+            console.error('Error loading amiibos:', error);
+            document.getElementById('loading').textContent = 'Error loading Amiibo data. Please refresh the page.';
+        }
+    }
+
+    document.getElementById('filterSelect').addEventListener('change', filterAndSearch);
+    document.getElementById('searchInput').addEventListener('input', filterAndSearch);
+
+    document.getElementById('darkModeToggle').addEventListener('click', () => {
+        const body = document.body;
+        const isDark = body.classList.toggle('dark');
+        document.getElementById('darkModeToggle').textContent = isDark ? '☀️' : '🌙';
+        localStorage.setItem(DARK_MODE_KEY, isDark);
+    });
+
+    loadFromLocalStorage();
+    loadAmiibos();
+</script>
+
+</body>
+</html>
