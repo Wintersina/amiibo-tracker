@@ -20,6 +20,13 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      - name: Deployment Info
+        run: |
+          echo "🚀 Starting Terraform Deployment"
+          echo "📦 Image SHA: ${{ github.event.workflow_run.head_sha || github.sha }}"
+          echo "🌍 Region: ${{ env.REGION }}"
+          echo "📋 Service: ${{ env.SERVICE_NAME }}"
+
       - name: Validate required secrets
         env:
           REQUIRED_GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
@@ -87,19 +94,19 @@ jobs:
             fi
           fi
 
-            RESOLVED=$(python - <<'PY'
-              import json
-              import os
+          RESOLVED=$(python3 <<EOF
+          import json
+          import os
 
-              hosts = json.loads(os.environ.get("ALLOWED_HOSTS_INPUT") or "[]")
+          hosts = json.loads(os.environ.get("ALLOWED_HOSTS_INPUT") or "[]")
 
-              for domain in ("goozamiibo.com", "www.goozamiibo.com"):
-                  if domain not in hosts:
-                      hosts.append(domain)
+          for domain in ("goozamiibo.com", "www.goozamiibo.com"):
+              if domain not in hosts:
+                  hosts.append(domain)
 
-              print(json.dumps(hosts))
-            PY
-            )
+          print(json.dumps(hosts))
+          EOF
+          )
 
           echo "allowed_hosts_json=$RESOLVED" >> "$GITHUB_OUTPUT"
         env:
@@ -135,3 +142,13 @@ jobs:
         working-directory: terraform
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.auth.outputs.credentials_file_path }}
+
+      - name: Deployment Complete
+        run: |
+          SERVICE_URL=$(gcloud run services describe "${{ env.SERVICE_NAME }}" \
+            --region "${{ env.REGION }}" \
+            --format="value(status.url)" 2>/dev/null || echo "")
+          echo "✅ Deployment successful!"
+          if [ -n "$SERVICE_URL" ]; then
+            echo "🌐 Service URL: $SERVICE_URL"
+          fi
