@@ -278,6 +278,31 @@
             background: linear-gradient(135deg, var(--button-hover), var(--button-bg));
         }
 
+        .amiibo-card.processing {
+            opacity: 0.7;
+            pointer-events: none;
+        }
+
+        .amiibo-card.processing button {
+            background: var(--muted);
+            cursor: wait;
+            position: relative;
+        }
+
+        .amiibo-card.processing button::after {
+            content: '';
+            position: absolute;
+            width: 14px;
+            height: 14px;
+            border: 2px solid white;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+            right: 0.5em;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
         .toggle-btn {
             font-size: 1.2em;
             border: none;
@@ -647,11 +672,16 @@
         elements: [],
     };
 
+    const toggleQueue = {
+        items: [],
+        processing: false,
+    };
+
     function getSheetActionElements() {
         return Array.from(document.querySelectorAll('[data-sheet-action]'));
     }
 
-    function toggleSheetActionState(disabled) {
+    function toggleSheetActionState(disabled, skipLoadingOverlay = false) {
         const shouldDisable = disabled || rateLimitState.active;
         const loadingOverlay = document.getElementById('loadingOverlay');
 
@@ -662,12 +692,63 @@
             }
         });
 
-        // Show/hide loading overlay
-        if (shouldDisable && !rateLimitState.active) {
-            loadingOverlay.classList.add('active');
-        } else {
-            loadingOverlay.classList.remove('active');
+        // Show/hide loading overlay (skip for queued operations)
+        if (!skipLoadingOverlay) {
+            if (shouldDisable && !rateLimitState.active) {
+                loadingOverlay.classList.add('active');
+            } else {
+                loadingOverlay.classList.remove('active');
+            }
         }
+    }
+
+    async function processQueue() {
+        if (toggleQueue.processing || toggleQueue.items.length === 0) {
+            return;
+        }
+
+        toggleQueue.processing = true;
+
+        while (toggleQueue.items.length > 0) {
+            const { card, button, amiiboId, action } = toggleQueue.items.shift();
+
+            // Mark card as processing
+            card.classList.add('processing');
+
+            try {
+                const response = await fetch('/toggle/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify({ amiibo_id: amiiboId, action: action })
+                });
+
+                if (await handleRateLimitResponse(response)) {
+                    // If rate limited, put item back and stop processing
+                    toggleQueue.items.unshift({ card, button, amiiboId, action });
+                    card.classList.remove('processing');
+                    break;
+                }
+
+                if (response.ok) {
+                    card.classList.toggle('collected');
+                    const isCollected = card.classList.contains('collected');
+                    setButtonState(button, isCollected);
+                    updateCollectedCount();
+                }
+            } catch (error) {
+                console.error('Toggle error:', error);
+            } finally {
+                card.classList.remove('processing');
+            }
+
+            // Small delay between operations to avoid overwhelming the server
+            await new Promise(resolve => setTimeout(resolve, 300));
+        }
+
+        toggleQueue.processing = false;
     }
 
     function startDebouncedAction(minDelay = 1500, maxDelay = 4500) {
@@ -755,6 +836,12 @@
 
     function handleButtonHover(event) {
         const button = event.currentTarget;
+        const card = button.parentElement;
+
+        // Don't change button text if processing
+        if (card.classList.contains('processing')) {
+            return;
+        }
 
         if (button.dataset.collected === 'true') {
             button.textContent = 'Unmark';
@@ -763,42 +850,38 @@
 
     function handleButtonLeave(event) {
         const button = event.currentTarget;
+        const card = button.parentElement;
+
+        // Don't change button text if processing
+        if (card.classList.contains('processing')) {
+            return;
+        }
+
         setButtonState(button, button.dataset.collected === 'true');
     }
 
     async function toggleCollected(button) {
-        const release = startDebouncedAction();
-        if (!release) {
+        // Don't add to queue if rate limited or already in queue
+        if (rateLimitState.active) {
             return;
         }
 
         const card = button.parentElement;
+
+        // Check if this card is already in the queue or processing
+        if (card.classList.contains('processing') ||
+            toggleQueue.items.some(item => item.card === card)) {
+            return;
+        }
+
         const amiiboId = card.dataset.id;
         const action = card.classList.contains('collected') ? 'uncollect' : 'collect';
 
-        try {
-            const response = await fetch('/toggle/', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': '{{ csrf_token }}'
-                },
-                body: JSON.stringify({amiibo_id: amiiboId, action: action})
-            });
+        // Add to queue
+        toggleQueue.items.push({ card, button, amiiboId, action });
 
-            if (await handleRateLimitResponse(response)) {
-                return;
-            }
-
-            if (response.ok) {
-                card.classList.toggle('collected');
-                const isCollected = card.classList.contains('collected');
-                setButtonState(button, isCollected);
-                updateCollectedCount();
-            }
-        } finally {
-            release();
-        }
+        // Start processing if not already running
+        processQueue();
     }
 
     function toggleGroup(header) {
