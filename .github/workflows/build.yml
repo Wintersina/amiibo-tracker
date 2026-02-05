@@ -1,12 +1,9 @@
 name: Build and Push Docker Image
 
 on:
-  pull_request:
+  push:
     branches:
       - main
-      - terraform_step
-    types:
-      - closed
   workflow_dispatch:
 
 env:
@@ -22,7 +19,6 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
-    if: github.event_name != 'pull_request' || (github.event.pull_request.merged == true && (github.event.pull_request.base.ref == 'main' || github.event.pull_request.base.ref == 'terraform_step'))
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -41,23 +37,32 @@ jobs:
 
       - name: Ensure Artifact Registry repository exists
         run: |
-          gcloud artifacts repositories create "$SERVICE_NAME" \
-            --location="$REGION" \
-            --repository-format=docker \
-            --description="Docker repo for $SERVICE_NAME" || true
+          if ! gcloud artifacts repositories describe "$SERVICE_NAME" \
+              --location="$REGION" \
+              --project="$PROJECT_ID" &>/dev/null; then
+            echo "Creating repository $SERVICE_NAME..."
+            gcloud artifacts repositories create "$SERVICE_NAME" \
+              --location="$REGION" \
+              --repository-format=docker \
+              --description="Docker repo for $SERVICE_NAME"
+          else
+            echo "Repository $SERVICE_NAME already exists."
+          fi
 
-      - name: Build and Push Docker image
+      - name: Build Docker image
         run: |
           IMAGE_BASE="$REGION-docker.pkg.dev/$PROJECT_ID/$SERVICE_NAME/$SERVICE_NAME"
+          echo "Building image: $IMAGE_BASE:${GITHUB_SHA}"
           docker build -t "$IMAGE_BASE:latest" -t "$IMAGE_BASE:${GITHUB_SHA}" .
+
+      - name: Push Docker image to Artifact Registry
+        run: |
+          IMAGE_BASE="$REGION-docker.pkg.dev/$PROJECT_ID/$SERVICE_NAME/$SERVICE_NAME"
+          echo "Pushing images to Artifact Registry..."
           docker push "$IMAGE_BASE:latest"
           docker push "$IMAGE_BASE:${GITHUB_SHA}"
-
-      - name: Deploy new Cloud Run revision
-        run: |
-          IMAGE_BASE="$REGION-docker.pkg.dev/$PROJECT_ID/$SERVICE_NAME/$SERVICE_NAME"
-          gcloud run services update "$SERVICE_NAME" \
-            --image "$IMAGE_BASE:${GITHUB_SHA}" \
-            --region "$REGION" \
-            --project "$PROJECT_ID" \
-            --quiet
+          echo "✅ Successfully pushed:"
+          echo "   - $IMAGE_BASE:latest"
+          echo "   - $IMAGE_BASE:${GITHUB_SHA}"
+          echo ""
+          echo "📦 Next: Terraform will deploy this image to Cloud Run"
