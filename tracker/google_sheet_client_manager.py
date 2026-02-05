@@ -171,29 +171,27 @@ class GoogleSheetClientManager(HelperMixin, LoggingMixin):
             raise ServiceUnavailableError() from last_exception
 
     def _open_or_create_spreadsheet(self):
+        # Try to open by stored ID with retry logic for transient errors
         if self.spreadsheet_id:
             try:
                 return self._retry_with_backoff(self.client.open_by_key, self.spreadsheet_id)
-            except SpreadsheetNotFoundError:
-                self.log_warning(
-                    "Stored spreadsheet id '%s' was not found; falling back to discovery by name.",
-                    self.spreadsheet_id,
-                )
-            except gspread.exceptions.SpreadsheetNotFound:
+            except (SpreadsheetNotFoundError, gspread.exceptions.SpreadsheetNotFound):
                 self.log_warning(
                     "Stored spreadsheet id '%s' was not found; falling back to discovery by name.",
                     self.spreadsheet_id,
                 )
 
+        # Try to open by name - don't use retry here since "not found" is expected
         try:
-            return self._retry_with_backoff(self.client.open, self.sheet_name)
-        except SpreadsheetNotFoundError:
+            return self.client.open(self.sheet_name)
+        except gspread.exceptions.SpreadsheetNotFound:
             pass
         except AttributeError:
             # Clients used in tests may not support name-based open; fall back to
             # drive.file discovery and creation.
             pass
 
+        # Try to find existing spreadsheet
         if existing_spreadsheet := self._find_existing_spreadsheet_by_name():
             return existing_spreadsheet
 
@@ -202,9 +200,19 @@ class GoogleSheetClientManager(HelperMixin, LoggingMixin):
             self.sheet_name,
         )
 
+        # Use retry logic for creation since this should succeed
         try:
             return self._retry_with_backoff(self.client.create, self.sheet_name)
         except gspread.exceptions.APIError as error:
+            # Re-raise as ValueError for backward compatibility with tests
+            message = (
+                f"Spreadsheet '{self.sheet_name}' was not found and could not be created. "
+                "Please ensure the app has the 'Google Drive file' permission so it can create files it owns."
+            )
+            self.log_error("%s Error: %s", message, error)
+            raise ValueError(message) from error
+        except (SpreadsheetPermissionError, QuotaExceededError) as error:
+            # Convert our custom exceptions to ValueError for backward compatibility
             message = (
                 f"Spreadsheet '{self.sheet_name}' was not found and could not be created. "
                 "Please ensure the app has the 'Google Drive file' permission so it can create files it owns."
