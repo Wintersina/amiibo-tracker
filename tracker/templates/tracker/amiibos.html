@@ -286,21 +286,6 @@
         .amiibo-card.processing button {
             background: var(--muted);
             cursor: wait;
-            position: relative;
-        }
-
-        .amiibo-card.processing button::after {
-            content: '';
-            position: absolute;
-            width: 14px;
-            height: 14px;
-            border: 2px solid white;
-            border-top-color: transparent;
-            border-radius: 50%;
-            animation: spin 0.6s linear infinite;
-            right: 0.5em;
-            top: 50%;
-            transform: translateY(-50%);
         }
 
         .toggle-btn {
@@ -712,8 +697,9 @@
         while (toggleQueue.items.length > 0) {
             const { card, button, amiiboId, action } = toggleQueue.items.shift();
 
-            // Mark card as processing
+            // Mark card as processing and update button text
             card.classList.add('processing');
+            button.textContent = 'Processing...';
 
             try {
                 const response = await fetch('/toggle/', {
@@ -729,6 +715,8 @@
                     // If rate limited, put item back and stop processing
                     toggleQueue.items.unshift({ card, button, amiiboId, action });
                     card.classList.remove('processing');
+                    const isCollected = card.classList.contains('collected');
+                    setButtonState(button, isCollected);
                     break;
                 }
 
@@ -740,6 +728,9 @@
                 }
             } catch (error) {
                 console.error('Toggle error:', error);
+                // Restore button state on error
+                const isCollected = card.classList.contains('collected');
+                setButtonState(button, isCollected);
             } finally {
                 card.classList.remove('processing');
             }
@@ -751,7 +742,7 @@
         toggleQueue.processing = false;
     }
 
-    function startDebouncedAction(minDelay = 1500, maxDelay = 4500) {
+    function startDebouncedAction(minDelay = 1000, maxDelay = 4000) {
         if (rateLimitState.active || sheetActionDebounce.active) {
             return null;
         }
