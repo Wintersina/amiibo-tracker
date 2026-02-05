@@ -485,29 +485,71 @@ class LogoutView(View, LoggingMixin):
         return redirect("index")
 
 
-class AmiiboListView(View, LoggingMixin):
-    def _render_error_view(self, request, error, user_name, amiibos=None):
+class AmiiboListView(View, LoggingMixin, AmiiboRemoteFetchMixin):
+    def _render_error_view(self, request, error, user_name):
         """
         Render the amiibo view with an error modal displayed.
+        Falls back to displaying amiibos from the API in read-only mode.
 
         Args:
             request: The HTTP request
             error: The GoogleSheetsError exception
             user_name: The user's name
-            amiibos: Optional list of amiibos to display (if available)
 
         Returns:
-            Rendered template with error information
+            Rendered template with error information and fallback data
         """
         self.log_error("Google Sheets error: %s", str(error))
 
+        # Try to fetch amiibos from the remote API as fallback
+        try:
+            amiibos = self._fetch_remote_amiibos()
+            available_types = sorted(
+                {amiibo.get("type", "") for amiibo in amiibos if amiibo.get("type")}
+            )
+
+            # Mark all as uncollected since we can't read from sheets
+            for amiibo in amiibos:
+                amiibo["collected"] = False
+                amiibo["display_release"] = AmiiboService._format_release_date(
+                    amiibo.get("release")
+                )
+
+            # Sort and group amiibos
+            sorted_amiibos = sorted(
+                amiibos, key=lambda x: (x.get("amiiboSeries", ""), x.get("name", ""))
+            )
+            grouped_amiibos = defaultdict(list)
+            for amiibo in sorted_amiibos:
+                grouped_amiibos[amiibo.get("amiiboSeries", "Unknown")].append(amiibo)
+
+            enriched_groups = []
+            for series, amiibo_list in grouped_amiibos.items():
+                enriched_groups.append(
+                    {
+                        "series": series,
+                        "list": amiibo_list,
+                        "collected_count": 0,
+                        "total_count": len(amiibo_list),
+                    }
+                )
+
+        except Exception as fetch_error:
+            self.log_warning("Failed to fetch fallback amiibos: %s", str(fetch_error))
+            sorted_amiibos = []
+            available_types = []
+            enriched_groups = []
+
         # Prepare context for error display
         context = {
-            "amiibos": amiibos or [],
+            "amiibos": sorted_amiibos,
             "dark_mode": False,
             "user_name": user_name,
-            "grouped_amiibos": [],
-            "amiibo_types": [],
+            "grouped_amiibos": enriched_groups,
+            "amiibo_types": [
+                {"name": amiibo_type, "ignored": False}
+                for amiibo_type in available_types
+            ],
             "rate_limited": False,
             "rate_limit_wait_seconds": 0,
             "error": {
