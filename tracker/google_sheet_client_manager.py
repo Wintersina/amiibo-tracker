@@ -1,7 +1,9 @@
 import os
+import time
 from functools import cached_property
 
 import gspread
+import requests
 from django.conf import settings
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import Flow
@@ -10,12 +12,26 @@ from cachetools import TTLCache
 
 from constants import OauthConstants
 from tracker.helpers import HelperMixin, LoggingMixin
+from tracker.exceptions import (
+    SpreadsheetNotFoundError,
+    SpreadsheetPermissionError,
+    ServiceUnavailableError,
+    RateLimitError,
+    QuotaExceededError,
+    InvalidCredentialsError,
+    NetworkError,
+)
 
 
 class GoogleSheetClientManager(HelperMixin, LoggingMixin):
     _secret_path_cache = None
     _spreadsheet_cache = TTLCache(maxsize=8, ttl=60)
     _worksheet_cache = TTLCache(maxsize=16, ttl=60)
+
+    # Retry configuration
+    MAX_RETRIES = 3
+    INITIAL_BACKOFF = 1  # seconds
+    MAX_BACKOFF = 30  # seconds
 
     @classmethod
     def client_secret_path(cls) -> str:
@@ -66,16 +82,106 @@ class GoogleSheetClientManager(HelperMixin, LoggingMixin):
         self._spreadsheet_cache[cache_key] = spreadsheet
         return spreadsheet
 
+    def _retry_with_backoff(self, func, *args, **kwargs):
+        """
+        Retry a function with exponential backoff for transient errors.
+
+        Args:
+            func: Function to call
+            *args: Positional arguments for the function
+            **kwargs: Keyword arguments for the function
+
+        Returns:
+            The result of the function call
+
+        Raises:
+            Various custom exceptions based on the error type
+        """
+        last_exception = None
+
+        for attempt in range(self.MAX_RETRIES):
+            try:
+                return func(*args, **kwargs)
+            except gspread.exceptions.APIError as error:
+                last_exception = error
+                error_code = getattr(error, "code", None) or (
+                    error.response.status_code if hasattr(error, "response") else None
+                )
+
+                # Handle different error codes
+                if error_code == 403:
+                    # Check if it's a quota or permission issue
+                    error_message = str(error).lower()
+                    if "quota" in error_message or "limit" in error_message:
+                        raise QuotaExceededError() from error
+                    raise SpreadsheetPermissionError(self.spreadsheet_id) from error
+
+                elif error_code == 404:
+                    raise SpreadsheetNotFoundError(self.spreadsheet_id) from error
+
+                elif error_code == 429:
+                    # Rate limit - extract retry_after if available
+                    retry_after = 30
+                    if hasattr(error, "response") and error.response:
+                        retry_after = int(error.response.headers.get("Retry-After", 30))
+                    raise RateLimitError(retry_after=retry_after) from error
+
+                elif error_code == 401:
+                    raise InvalidCredentialsError() from error
+
+                elif error_code == 503:
+                    # Service unavailable - retry with backoff
+                    if attempt < self.MAX_RETRIES - 1:
+                        backoff = min(self.INITIAL_BACKOFF * (2 ** attempt), self.MAX_BACKOFF)
+                        self.log_warning(
+                            "Google Sheets service unavailable (503), retrying in %s seconds (attempt %d/%d)",
+                            backoff,
+                            attempt + 1,
+                            self.MAX_RETRIES,
+                        )
+                        time.sleep(backoff)
+                        continue
+                    raise ServiceUnavailableError() from error
+
+                else:
+                    # Unknown API error
+                    self.log_error("Unknown API error: %s", error)
+                    raise
+
+            except requests.exceptions.ConnectionError as error:
+                last_exception = error
+                raise NetworkError() from error
+
+            except requests.exceptions.Timeout as error:
+                last_exception = error
+                if attempt < self.MAX_RETRIES - 1:
+                    backoff = min(self.INITIAL_BACKOFF * (2 ** attempt), self.MAX_BACKOFF)
+                    self.log_warning(
+                        "Request timeout, retrying in %s seconds (attempt %d/%d)",
+                        backoff,
+                        attempt + 1,
+                        self.MAX_RETRIES,
+                    )
+                    time.sleep(backoff)
+                    continue
+                raise NetworkError() from error
+
+        # If we exhausted all retries
+        if last_exception:
+            raise ServiceUnavailableError() from last_exception
+
     def _open_or_create_spreadsheet(self):
+        # Try to open by stored ID with retry logic for transient errors
         if self.spreadsheet_id:
             try:
-                return self.client.open_by_key(self.spreadsheet_id)
-            except gspread.exceptions.SpreadsheetNotFound:
+                return self._retry_with_backoff(self.client.open_by_key, self.spreadsheet_id)
+            except (SpreadsheetNotFoundError, gspread.exceptions.SpreadsheetNotFound):
                 self.log_warning(
                     "Stored spreadsheet id '%s' was not found; falling back to discovery by name.",
                     self.spreadsheet_id,
                 )
 
+        # Try to open by name - don't use retry here since "not found" is expected
         try:
             return self.client.open(self.sheet_name)
         except gspread.exceptions.SpreadsheetNotFound:
@@ -85,6 +191,7 @@ class GoogleSheetClientManager(HelperMixin, LoggingMixin):
             # drive.file discovery and creation.
             pass
 
+        # Try to find existing spreadsheet
         if existing_spreadsheet := self._find_existing_spreadsheet_by_name():
             return existing_spreadsheet
 
@@ -93,9 +200,19 @@ class GoogleSheetClientManager(HelperMixin, LoggingMixin):
             self.sheet_name,
         )
 
+        # Use retry logic for creation since this should succeed
         try:
-            return self.client.create(self.sheet_name)
+            return self._retry_with_backoff(self.client.create, self.sheet_name)
         except gspread.exceptions.APIError as error:
+            # Re-raise as ValueError for backward compatibility with tests
+            message = (
+                f"Spreadsheet '{self.sheet_name}' was not found and could not be created. "
+                "Please ensure the app has the 'Google Drive file' permission so it can create files it owns."
+            )
+            self.log_error("%s Error: %s", message, error)
+            raise ValueError(message) from error
+        except (SpreadsheetPermissionError, QuotaExceededError) as error:
+            # Convert our custom exceptions to ValueError for backward compatibility
             message = (
                 f"Spreadsheet '{self.sheet_name}' was not found and could not be created. "
                 "Please ensure the app has the 'Google Drive file' permission so it can create files it owns."

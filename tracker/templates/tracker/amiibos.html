@@ -395,6 +395,92 @@
             color: var(--text);
         }
 
+        .error-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            padding: 1.5rem;
+        }
+
+        .error-modal.active {
+            display: flex;
+        }
+
+        .error-card {
+            background: var(--card-bg);
+            color: var(--text);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 1.5rem 2rem;
+            max-width: 580px;
+            width: 100%;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+        }
+
+        .error-card h2 {
+            margin-top: 0;
+            margin-bottom: 0.75rem;
+            color: #dc2626;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        body.dark .error-card h2 {
+            color: #f87171;
+        }
+
+        .error-card p {
+            margin: 0.5rem 0 1.5rem 0;
+            color: var(--text);
+            line-height: 1.6;
+        }
+
+        .error-actions {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .error-btn {
+            padding: 0.7rem 1.5rem;
+            border: none;
+            border-radius: 10px;
+            font-weight: 700;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .error-btn-primary {
+            background: linear-gradient(135deg, var(--button-bg), var(--button-hover));
+            color: white;
+        }
+
+        .error-btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .error-btn-secondary {
+            background: var(--uncollected-btn);
+            color: white;
+        }
+
+        .error-btn-secondary:hover {
+            background: var(--uncollected-hover);
+        }
+
+        .error-icon {
+            font-size: 1.5rem;
+        }
+
     </style>
 </head>
 <body class="{% if dark_mode %}dark{% endif %}">
@@ -430,6 +516,14 @@
         <p id="rateLimitDescription">Google Sheets asked us to slow down. Please wait a few seconds before trying again.</p>
         <p class="countdown" id="rateLimitCountdown">30s</p>
         <p>Controls will unlock automatically when the timer ends.</p>
+    </div>
+</div>
+
+<div id="errorModal" class="error-modal" role="alertdialog" aria-modal="true" aria-labelledby="errorTitle" aria-describedby="errorDescription">
+    <div class="error-card">
+        <h2 id="errorTitle"><span class="error-icon">⚠️</span> <span id="errorTitleText">Something went wrong</span></h2>
+        <p id="errorDescription"></p>
+        <div class="error-actions" id="errorActions"></div>
     </div>
 </div>
 
@@ -760,7 +854,77 @@
         if (rateLimitConfig.active) {
             showRateLimitModal(rateLimitConfig.waitSeconds || 30);
         }
+        if (errorConfig.hasError) {
+            showErrorModal(errorConfig.message, errorConfig.actionRequired);
+        }
     });
+
+    // Error Modal Management
+    const errorConfig = {
+        hasError: {{ error|yesno:"true,false" }},
+        message: {% if error %}"{{ error.message|escapejs }}"{% else %}""{% endif %},
+        actionRequired: {% if error %}"{{ error.action_required|default:'none' }}"{% else %}"none"{% endif %},
+    };
+
+    const errorModal = document.getElementById('errorModal');
+    const errorTitleText = document.getElementById('errorTitleText');
+    const errorDescription = document.getElementById('errorDescription');
+    const errorActions = document.getElementById('errorActions');
+
+    function hideErrorModal() {
+        errorModal.classList.remove('active');
+        errorModal.setAttribute('aria-hidden', 'true');
+    }
+
+    function showErrorModal(message, actionRequired = 'none') {
+        errorDescription.textContent = message;
+
+        // Clear existing actions
+        errorActions.innerHTML = '';
+
+        // Add appropriate action buttons based on actionRequired
+        switch (actionRequired) {
+            case 'logout_required':
+                errorTitleText.textContent = 'Action Required';
+                errorActions.innerHTML = `
+                    <a href="{% url 'logout' %}" class="error-btn error-btn-primary">Logout</a>
+                    <button onclick="hideErrorModal()" class="error-btn error-btn-secondary">Dismiss</button>
+                `;
+                break;
+
+            case 'retry':
+                errorTitleText.textContent = 'Temporary Issue';
+                errorActions.innerHTML = `
+                    <button onclick="window.location.reload()" class="error-btn error-btn-primary">Retry Now</button>
+                    <button onclick="hideErrorModal()" class="error-btn error-btn-secondary">Dismiss</button>
+                `;
+                break;
+
+            case 'wait':
+                errorTitleText.textContent = 'Please Wait';
+                errorActions.innerHTML = `
+                    <button onclick="hideErrorModal()" class="error-btn error-btn-primary">OK</button>
+                `;
+                break;
+
+            case 'wait_24h':
+                errorTitleText.textContent = 'Quota Exceeded';
+                errorActions.innerHTML = `
+                    <button onclick="hideErrorModal()" class="error-btn error-btn-primary">OK</button>
+                `;
+                break;
+
+            default:
+                errorTitleText.textContent = 'Error';
+                errorActions.innerHTML = `
+                    <button onclick="window.location.reload()" class="error-btn error-btn-primary">Reload Page</button>
+                    <button onclick="hideErrorModal()" class="error-btn error-btn-secondary">Dismiss</button>
+                `;
+        }
+
+        errorModal.classList.add('active');
+        errorModal.setAttribute('aria-hidden', 'false');
+    }
 </script>
 
 </body>

@@ -113,7 +113,6 @@ class AmiiboService(LoggingMixin, AmiiboRemoteFetchMixin, AmiiboLocalFetchMixin)
         }
 
     def toggle_collected(self, amiibo_id: str, action: str):
-        self.log_info(f"{action} toggled {amiibo_id}")
         current_ids = self.sheet.col_values(1)[1:]
         if amiibo_id not in current_ids:
             return False
@@ -180,11 +179,9 @@ class GoogleSheetConfigManager(LoggingMixin):
 
     def is_dark_mode(self) -> bool:
         val = self.get_config_value("DarkMode", default="0")
-        self.log_info(f"is_dark_mode: {val}")
         return val == "1"
 
     def set_dark_mode(self, enable: bool):
-        self.log_info(f"set_dark_mode: {enable}")
         self.set_config_value("DarkMode", "1" if enable else "0")
 
     def get_ignored_types(self, available_types: list[str]) -> list[str]:
