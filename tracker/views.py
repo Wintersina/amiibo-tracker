@@ -23,6 +23,16 @@ from constants import OauthConstants
 from tracker.google_sheet_client_manager import GoogleSheetClientManager
 from tracker.helpers import LoggingMixin, AmiiboRemoteFetchMixin, AmiiboLocalFetchMixin
 from tracker.service_domain import AmiiboService, GoogleSheetConfigManager
+from tracker.exceptions import (
+    GoogleSheetsError,
+    SpreadsheetNotFoundError,
+    SpreadsheetPermissionError,
+    ServiceUnavailableError,
+    RateLimitError,
+    QuotaExceededError,
+    InvalidCredentialsError,
+    NetworkError,
+)
 
 os.environ.setdefault("OAUTHLIB_RELAX_TOKEN_SCOPE", "1")
 
@@ -197,11 +207,6 @@ class ToggleCollectedView(View, LoggingMixin):
                 return redirect("oauth_login")
 
         try:
-            google_sheet_client_manager = build_sheet_client_manager(
-                request, creds_json
-            )
-            ensure_spreadsheet_session(request, google_sheet_client_manager)
-
             data = json.loads(request.body)
         except json.JSONDecodeError:
             self.log_action(
@@ -213,6 +218,22 @@ class ToggleCollectedView(View, LoggingMixin):
             )
             return JsonResponse(
                 {"status": "error", "message": "Invalid JSON payload."}, status=400
+            )
+
+        try:
+            google_sheet_client_manager = build_sheet_client_manager(
+                request, creds_json
+            )
+            ensure_spreadsheet_session(request, google_sheet_client_manager)
+        except GoogleSheetsError as error:
+            self.log_error("Google Sheets error during toggle: %s", str(error))
+            return JsonResponse(
+                {
+                    "status": "error",
+                    "message": error.user_message,
+                    "action_required": error.action_required,
+                },
+                status=503,
             )
 
         amiibo_id = data.get("amiibo_id")
@@ -259,6 +280,19 @@ class ToggleCollectedView(View, LoggingMixin):
                 action=action,
             )
             return JsonResponse({"status": "success"})
+
+        except GoogleSheetsError as error:
+            self.log_error("Google Sheets error: %s", str(error))
+            status_code = 429 if isinstance(error, RateLimitError) else 503
+            return JsonResponse(
+                {
+                    "status": "error",
+                    "message": error.user_message,
+                    "action_required": error.action_required,
+                    "retry_after": getattr(error, "retry_after", None),
+                },
+                status=status_code,
+            )
 
         except APIError as error:
             if is_rate_limit_error(error):
@@ -452,6 +486,44 @@ class LogoutView(View, LoggingMixin):
 
 
 class AmiiboListView(View, LoggingMixin):
+    def _render_error_view(self, request, error, user_name, amiibos=None):
+        """
+        Render the amiibo view with an error modal displayed.
+
+        Args:
+            request: The HTTP request
+            error: The GoogleSheetsError exception
+            user_name: The user's name
+            amiibos: Optional list of amiibos to display (if available)
+
+        Returns:
+            Rendered template with error information
+        """
+        self.log_error("Google Sheets error: %s", str(error))
+
+        # Prepare context for error display
+        context = {
+            "amiibos": amiibos or [],
+            "dark_mode": False,
+            "user_name": user_name,
+            "grouped_amiibos": [],
+            "amiibo_types": [],
+            "rate_limited": False,
+            "rate_limit_wait_seconds": 0,
+            "error": {
+                "message": error.user_message,
+                "action_required": error.action_required,
+                "is_retryable": error.is_retryable,
+            },
+        }
+
+        # Special handling for rate limit errors
+        if isinstance(error, RateLimitError):
+            context["rate_limited"] = True
+            context["rate_limit_wait_seconds"] = error.retry_after
+
+        return render(request, "tracker/amiibos.html", context)
+
     def get(self, request):
         creds_json = get_active_credentials_json(request, self.log_action)
         if not creds_json:
@@ -459,8 +531,12 @@ class AmiiboListView(View, LoggingMixin):
 
         user_name = request.session.get("user_name", "User")
 
-        google_sheet_client_manager = build_sheet_client_manager(request, creds_json)
-        ensure_spreadsheet_session(request, google_sheet_client_manager)
+        try:
+            google_sheet_client_manager = build_sheet_client_manager(request, creds_json)
+            ensure_spreadsheet_session(request, google_sheet_client_manager)
+        except GoogleSheetsError as error:
+            # Handle errors that occur during spreadsheet initialization
+            return self._render_error_view(request, error, user_name)
         service = AmiiboService(google_sheet_client_manager=google_sheet_client_manager)
         config = GoogleSheetConfigManager(
             google_sheet_client_manager=google_sheet_client_manager
@@ -534,63 +610,20 @@ class AmiiboListView(View, LoggingMixin):
                 },
             )
 
+        except GoogleSheetsError as error:
+            # Handle our custom exceptions with user-friendly error modal
+            return self._render_error_view(request, error, user_name)
+
         except APIError as error:
-            if not is_rate_limit_error(error):
-                raise
+            # Handle any remaining APIError exceptions
+            if is_rate_limit_error(error):
+                # Convert to our custom exception for consistent handling
+                rate_limit_error = RateLimitError(retry_after=retry_after_seconds(error))
+                return self._render_error_view(request, rate_limit_error, user_name)
 
-            amiibos = service.fetch_amiibos()
-            available_types = sorted(
-                {amiibo.get("type", "") for amiibo in amiibos if amiibo.get("type")}
-            )
-
-            for amiibo in amiibos:
-                amiibo["collected"] = False
-                amiibo["display_release"] = AmiiboService._format_release_date(
-                    amiibo.get("release")
-                )
-
-            sorted_amiibos = sorted(
-                amiibos, key=lambda x: (x.get("amiiboSeries", ""), x.get("name", ""))
-            )
-            grouped_amiibos = defaultdict(list)
-            for amiibo in sorted_amiibos:
-                grouped_amiibos[amiibo.get("amiiboSeries", "Unknown")].append(amiibo)
-
-            enriched_groups = []
-            for series, amiibo_list in grouped_amiibos.items():
-                enriched_groups.append(
-                    {
-                        "series": series,
-                        "list": amiibo_list,
-                        "collected_count": 0,
-                        "total_count": len(amiibo_list),
-                    }
-                )
-
-            return render(
-                request,
-                "tracker/amiibos.html",
-                {
-                    "amiibos": sorted_amiibos,
-                    "dark_mode": False,
-                    "user_name": user_name,
-                    "grouped_amiibos": enriched_groups,
-                    "amiibo_types": [
-                        {"name": amiibo_type, "ignored": False}
-                        for amiibo_type in available_types
-                    ],
-                    "rate_limited": True,
-                    "rate_limit_wait_seconds": retry_after_seconds(error),
-                },
-            )
-
-            self.log_action(
-                "render-collection-rate-limited",
-                request,
-                total_amiibos=len(sorted_amiibos),
-                grouped_series=len(enriched_groups),
-                retry_after=retry_after_seconds(error),
-            )
+            # For other API errors, re-raise to let Django handle them
+            self.log_error("Unhandled API error: %s", error)
+            raise
 
 
 @method_decorator(csrf_exempt, name="dispatch")
@@ -627,6 +660,19 @@ class ToggleDarkModeView(View, LoggingMixin):
                 dark_mode=enable_dark,
             )
             return JsonResponse({"status": "success"})
+
+        except GoogleSheetsError as error:
+            self.log_error("Google Sheets error during dark mode toggle: %s", str(error))
+            status_code = 429 if isinstance(error, RateLimitError) else 503
+            return JsonResponse(
+                {
+                    "status": "error",
+                    "message": error.user_message,
+                    "action_required": error.action_required,
+                    "retry_after": getattr(error, "retry_after", None),
+                },
+                status=status_code,
+            )
 
         except APIError as error:
             if is_rate_limit_error(error):
@@ -668,11 +714,6 @@ class ToggleTypeFilterView(View, LoggingMixin):
             return redirect("oauth_login")
 
         try:
-            google_sheet_client_manager = build_sheet_client_manager(
-                request, creds_json
-            )
-            ensure_spreadsheet_session(request, google_sheet_client_manager)
-
             data = json.loads(request.body)
         except json.JSONDecodeError:
             self.log_action(
@@ -684,6 +725,24 @@ class ToggleTypeFilterView(View, LoggingMixin):
             )
             return JsonResponse(
                 {"status": "error", "message": "Invalid JSON payload."}, status=400
+            )
+
+        try:
+            google_sheet_client_manager = build_sheet_client_manager(
+                request, creds_json
+            )
+            ensure_spreadsheet_session(request, google_sheet_client_manager)
+        except GoogleSheetsError as error:
+            self.log_error("Google Sheets error during type filter toggle: %s", str(error))
+            status_code = 429 if isinstance(error, RateLimitError) else 503
+            return JsonResponse(
+                {
+                    "status": "error",
+                    "message": error.user_message,
+                    "action_required": error.action_required,
+                    "retry_after": getattr(error, "retry_after", None),
+                },
+                status=status_code,
             )
 
         amiibo_type = data.get("type")
@@ -714,6 +773,19 @@ class ToggleTypeFilterView(View, LoggingMixin):
                 ignore=ignore,
             )
             return JsonResponse({"status": "success"})
+
+        except GoogleSheetsError as error:
+            self.log_error("Google Sheets error: %s", str(error))
+            status_code = 429 if isinstance(error, RateLimitError) else 503
+            return JsonResponse(
+                {
+                    "status": "error",
+                    "message": error.user_message,
+                    "action_required": error.action_required,
+                    "retry_after": getattr(error, "retry_after", None),
+                },
+                status=status_code,
+            )
 
         except APIError as error:
             if is_rate_limit_error(error):
