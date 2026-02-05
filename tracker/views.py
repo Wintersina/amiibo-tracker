@@ -150,8 +150,12 @@ def get_active_credentials_json(request, log_action=None):
 
 
 def logout_user(request, log_action=None):
+    # Capture user info before session is flushed
+    user_name = request.session.get("user_name")
+    user_email = request.session.get("user_email")
+
     if log_action:
-        log_action("logout-requested", request)
+        log_action("logout-requested", request, user_name=user_name, user_email=user_email)
 
     creds = request.session.get("credentials")
     if creds:
@@ -167,6 +171,8 @@ def logout_user(request, log_action=None):
                     "logout-complete",
                     request,
                     status_code=response.status_code,
+                    user_name=user_name,
+                    user_email=user_email,
                 )
         except Exception as e:
             if log_action:
@@ -175,6 +181,8 @@ def logout_user(request, log_action=None):
                     request,
                     level="error",
                     error=str(e),
+                    user_name=user_name,
+                    user_email=user_email,
                 )
 
     request.session.flush()
@@ -226,7 +234,12 @@ class ToggleCollectedView(View, LoggingMixin):
             )
             ensure_spreadsheet_session(request, google_sheet_client_manager)
         except GoogleSheetsError as error:
-            self.log_error("Google Sheets error during toggle: %s", str(error))
+            self.log_error(
+                "Google Sheets error during toggle: %s",
+                str(error),
+                user_name=request.session.get("user_name"),
+                user_email=request.session.get("user_email"),
+            )
             return JsonResponse(
                 {
                     "status": "error",
@@ -282,7 +295,12 @@ class ToggleCollectedView(View, LoggingMixin):
             return JsonResponse({"status": "success"})
 
         except GoogleSheetsError as error:
-            self.log_error("Google Sheets error: %s", str(error))
+            self.log_error(
+                "Google Sheets error: %s",
+                str(error),
+                user_name=request.session.get("user_name"),
+                user_email=request.session.get("user_email"),
+            )
             status_code = 429 if isinstance(error, RateLimitError) else 503
             return JsonResponse(
                 {
@@ -499,7 +517,12 @@ class AmiiboListView(View, LoggingMixin, AmiiboRemoteFetchMixin):
         Returns:
             Rendered template with error information and fallback data
         """
-        self.log_error("Google Sheets error: %s", str(error))
+        self.log_error(
+            "Google Sheets error: %s",
+            str(error),
+            user_name=request.session.get("user_name"),
+            user_email=request.session.get("user_email"),
+        )
 
         # Try to fetch amiibos from the remote API as fallback
         try:
@@ -535,7 +558,12 @@ class AmiiboListView(View, LoggingMixin, AmiiboRemoteFetchMixin):
                 )
 
         except Exception as fetch_error:
-            self.log_warning("Failed to fetch fallback amiibos: %s", str(fetch_error))
+            self.log_warning(
+                "Failed to fetch fallback amiibos: %s",
+                str(fetch_error),
+                user_name=request.session.get("user_name"),
+                user_email=request.session.get("user_email"),
+            )
             sorted_amiibos = []
             available_types = []
             enriched_groups = []
@@ -664,7 +692,12 @@ class AmiiboListView(View, LoggingMixin, AmiiboRemoteFetchMixin):
                 return self._render_error_view(request, rate_limit_error, user_name)
 
             # For other API errors, re-raise to let Django handle them
-            self.log_error("Unhandled API error: %s", error)
+            self.log_error(
+                "Unhandled API error: %s",
+                error,
+                user_name=request.session.get("user_name"),
+                user_email=request.session.get("user_email"),
+            )
             raise
 
 
@@ -704,7 +737,12 @@ class ToggleDarkModeView(View, LoggingMixin):
             return JsonResponse({"status": "success"})
 
         except GoogleSheetsError as error:
-            self.log_error("Google Sheets error during dark mode toggle: %s", str(error))
+            self.log_error(
+                "Google Sheets error during dark mode toggle: %s",
+                str(error),
+                user_name=request.session.get("user_name"),
+                user_email=request.session.get("user_email"),
+            )
             status_code = 429 if isinstance(error, RateLimitError) else 503
             return JsonResponse(
                 {
@@ -817,7 +855,12 @@ class ToggleTypeFilterView(View, LoggingMixin):
             return JsonResponse({"status": "success"})
 
         except GoogleSheetsError as error:
-            self.log_error("Google Sheets error: %s", str(error))
+            self.log_error(
+                "Google Sheets error: %s",
+                str(error),
+                user_name=request.session.get("user_name"),
+                user_email=request.session.get("user_email"),
+            )
             status_code = 429 if isinstance(error, RateLimitError) else 503
             return JsonResponse(
                 {

@@ -76,7 +76,7 @@ class LoggingMixin(object):
                 "session_user_email": request.session.get("user_email"),
             }
 
-        message = f"{self.__class__.__name__}.{caller}[{event}]"
+        message = f"{caller}[{event}]"
         merged_context = {**user_context, **context}
 
         return self.log(message, merged_context, level=level)
