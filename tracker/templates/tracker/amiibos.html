@@ -751,7 +751,7 @@
         toggleQueue.processing = false;
     }
 
-    function startDebouncedAction(minDelay = 1500, maxDelay = 4500) {
+    function startDebouncedAction(minDelay = 1000, maxDelay = 4000) {
         if (rateLimitState.active || sheetActionDebounce.active) {
             return null;
         }
