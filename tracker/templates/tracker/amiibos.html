@@ -697,10 +697,7 @@
         while (toggleQueue.items.length > 0) {
             const { card, button, amiiboId, action } = toggleQueue.items.shift();
 
-            // Mark card as processing and update button text
-            card.classList.add('processing');
-            button.textContent = 'Processing...';
-
+            // Card is already marked as processing from toggleCollected
             try {
                 const response = await fetch('/toggle/', {
                     method: 'POST',
@@ -867,6 +864,10 @@
 
         const amiiboId = card.dataset.id;
         const action = card.classList.contains('collected') ? 'uncollect' : 'collect';
+
+        // Mark as processing immediately
+        card.classList.add('processing');
+        button.textContent = 'Processing...';
 
         // Add to queue
         toggleQueue.items.push({ card, button, amiiboId, action });
