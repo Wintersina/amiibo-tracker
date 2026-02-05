@@ -25,32 +25,20 @@ jobs:
       (
         github.event_name == 'workflow_run' &&
         github.event.workflow_run.conclusion == 'success' &&
-        (
-          (
-            github.event.workflow_run.event == 'push' &&
-            (github.event.workflow_run.head_branch == 'main' || github.event.workflow_run.head_branch == 'terraform_step')
-          ) ||
-          (
-            github.event.workflow_run.event == 'pull_request' &&
-            (
-              github.event.workflow_run.head_branch == 'main' ||
-              github.event.workflow_run.head_branch == 'terraform_step' ||
-              (
-                github.event.workflow_run.pull_requests &&
-                github.event.workflow_run.pull_requests[0] &&
-                (
-                  github.event.workflow_run.pull_requests[0].base.ref == 'main' ||
-                  github.event.workflow_run.pull_requests[0].base.ref == 'terraform_step'
-                )
-              )
-            )
-          )
-        )
+        github.event.workflow_run.event == 'push' &&
+        github.event.workflow_run.head_branch == 'main'
       )
 
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+
+      - name: Deployment Info
+        run: |
+          echo "🚀 Starting Terraform Deployment"
+          echo "📦 Image SHA: ${{ github.event.workflow_run.head_sha || github.sha }}"
+          echo "🌍 Region: ${{ env.REGION }}"
+          echo "📋 Service: ${{ env.SERVICE_NAME }}"
 
       - name: Validate required secrets
         env:
@@ -167,3 +155,13 @@ jobs:
         working-directory: terraform
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.auth.outputs.credentials_file_path }}
+
+      - name: Deployment Complete
+        run: |
+          SERVICE_URL=$(gcloud run services describe "${{ env.SERVICE_NAME }}" \
+            --region "${{ env.REGION }}" \
+            --format="value(status.url)" 2>/dev/null || echo "")
+          echo "✅ Deployment successful!"
+          if [ -n "$SERVICE_URL" ]; then
+            echo "🌐 Service URL: $SERVICE_URL"
+          fi
