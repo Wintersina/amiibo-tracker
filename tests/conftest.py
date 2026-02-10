@@ -1,49 +1,29 @@
 import pathlib
 import sys
+import os
 
 import pytest
-from django.conf import settings
-
 
 PROJECT_ROOT = pathlib.Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
+
+# Set Django settings module for tests before importing anything Django-related
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "amiibo_tracker.settings.testing")
+
+import django
+from django.conf import settings
+
+# Initialize Django for tests
+django.setup()
 
 from tracker.google_sheet_client_manager import GoogleSheetClientManager
 from tracker.service_domain import GoogleSheetConfigManager
 
 
 @pytest.fixture(scope="session", autouse=True)
-def configure_settings(tmp_path_factory):
-    if not settings.configured:
-        settings.configure(
-            BASE_DIR=str(tmp_path_factory.mktemp("base")),
-            DATABASES={
-                "default": {
-                    "ENGINE": "django.db.backends.sqlite3",
-                    "NAME": ":memory:",
-                }
-            },
-            INSTALLED_APPS=[
-                "django.contrib.sessions",
-                "django.contrib.contenttypes",
-                "tracker",
-            ],
-            MIDDLEWARE=[
-                "django.contrib.sessions.middleware.SessionMiddleware",
-            ],
-            SECRET_KEY="test-secret-key-for-tests-only",
-            ROOT_URLCONF="tracker.urls",
-            TEMPLATES=[
-                {
-                    "BACKEND": "django.template.backends.django.DjangoTemplates",
-                    "DIRS": [],
-                    "APP_DIRS": True,
-                },
-            ],
-        )
-        import django
-        django.setup()
+def configure_settings():
+    """Ensure Django is configured with testing settings."""
     return settings
 
 
