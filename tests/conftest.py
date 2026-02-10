@@ -16,7 +16,34 @@ from tracker.service_domain import GoogleSheetConfigManager
 @pytest.fixture(scope="session", autouse=True)
 def configure_settings(tmp_path_factory):
     if not settings.configured:
-        settings.configure(BASE_DIR=str(tmp_path_factory.mktemp("base")))
+        settings.configure(
+            BASE_DIR=str(tmp_path_factory.mktemp("base")),
+            DATABASES={
+                "default": {
+                    "ENGINE": "django.db.backends.sqlite3",
+                    "NAME": ":memory:",
+                }
+            },
+            INSTALLED_APPS=[
+                "django.contrib.sessions",
+                "django.contrib.contenttypes",
+                "tracker",
+            ],
+            MIDDLEWARE=[
+                "django.contrib.sessions.middleware.SessionMiddleware",
+            ],
+            SECRET_KEY="test-secret-key-for-tests-only",
+            ROOT_URLCONF="tracker.urls",
+            TEMPLATES=[
+                {
+                    "BACKEND": "django.template.backends.django.DjangoTemplates",
+                    "DIRS": [],
+                    "APP_DIRS": True,
+                },
+            ],
+        )
+        import django
+        django.setup()
     return settings
 
 
