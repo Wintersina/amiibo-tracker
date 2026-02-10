@@ -12,6 +12,8 @@ from tracker.views import (
     PrivacyPolicyView,
     AmiiboDatabaseView,
     DemoView,
+    BlogListView,
+    BlogPostView,
 )
 
 urlpatterns = [
@@ -30,4 +32,6 @@ urlpatterns = [
     path("logout/", LogoutView.as_view(), name="logout"),
     path("privacy/", PrivacyPolicyView.as_view(), name="privacy"),
     path("api/amiibo/", AmiiboDatabaseView.as_view(), name="amiibo_database"),
+    path("blog/", BlogListView.as_view(), name="blog_list"),
+    path("blog/<slug:slug>/", BlogPostView.as_view(), name="blog_post"),
 ]

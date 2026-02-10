@@ -37,6 +37,157 @@ from tracker.exceptions import (
 os.environ.setdefault("OAUTHLIB_RELAX_TOKEN_SCOPE", "1")
 
 
+BLOG_POSTS = [
+    {
+        "slug": "how-it-works",
+        "title": "How it Works",
+        "date": "2026-02-10",
+        "excerpt": "Learn about the NFC technology that powers Amiibo figurines and how they communicate with Nintendo consoles.",
+        "content": """
+<h2>What are Amiibo?</h2>
+<p>Amiibo work by using embedded NFC (Near Field Communication) technology in figurines or cards to wirelessly communicate with compatible Nintendo consoles (Switch, Wii U, 3DS), unlocking digital content like new characters, special items, or game modes by tapping them to the console's NFC reader, effectively acting as physical DLC. The specific effect depends on the game, ranging from boosting a character's abilities in Super Smash Bros. to unlocking unique gear in Zelda or inviting villagers in Animal Crossing.</p>
+
+<h2>How the Technology Works</h2>
+
+<h3>NFC Chip</h3>
+<p>Each amiibo figure or card contains a small NFC chip that stores data.</p>
+
+<h3>Scanning</h3>
+<p>When tapped against the NFC touchpoint on a Nintendo Switch (right Joy-Con, Pro Controller, or Switch Lite's right stick), the console reads the chip's data.</p>
+
+<h3>In-Game Activation</h3>
+<p>The game interprets the data to trigger an event, such as:</p>
+<ul>
+    <li><strong>Unlocking Content:</strong> Getting new weapons, outfits, or modes.</li>
+    <li><strong>Character Interaction:</strong> Making an amiibo character appear as a fighter, support, or partner.</li>
+    <li><strong>Saving Data:</strong> In some games, they save data (like a character's level or outfit) back to the figure.</li>
+</ul>
+
+<h2>Examples of Use</h2>
+<ul>
+    <li><strong>The Legend of Zelda:</strong> Scan for rare materials, weapons, or unique paraglider fabrics.</li>
+    <li><strong>Super Smash Bros.:</strong> Train your amiibo as a fighter or a formidable foe.</li>
+    <li><strong>Animal Crossing:</strong> Invite specific villagers to your campsite to live on your island or get special items.</li>
+    <li><strong>Mario Party Superstars:</strong> Use Mario-themed amiibo for custom game boards or bonuses.</li>
+</ul>
+""",
+    },
+    {
+        "slug": "pronunciation",
+        "title": "How to Pronounce Amiibo",
+        "date": "2026-02-10",
+        "excerpt": 'Ever wondered how to correctly pronounce "amiibo"? Learn the proper pronunciation and what the name actually means.',
+        "content": """
+<h2>The Correct Pronunciation</h2>
+<p>The word "amiibo" is pronounced:</p>
+<p style="font-size: 2rem; text-align: center; margin: 2rem 0; color: var(--saffron); font-weight: 600;">uh · mee · bow</p>
+<p>Break it down into three syllables: "ah-MEE-bo". The emphasis is on the middle syllable "MEE".</p>
+
+<h2>Origin of the Name</h2>
+<p>The name "amiibo" is a blend of two concepts:</p>
+<ul>
+    <li><strong>Ami:</strong> The Japanese word for "friend" (友, pronounced "tomo" but using the French "ami" for international appeal)</li>
+    <li><strong>Aibo:</strong> A reference to Sony's robotic companion dog, suggesting a friendly, interactive companion</li>
+</ul>
+
+<h2>Common Mispronunciations</h2>
+<p>Many people initially mispronounce amiibo as:</p>
+<ul>
+    <li>"uh-MEE-boh" (too harsh on the last syllable)</li>
+    <li>"AM-ee-boh" (emphasis on wrong syllable)</li>
+    <li>"ah-mee-BOH" (emphasis on last syllable instead of middle)</li>
+</ul>
+
+<h2>Why It Matters</h2>
+<p>While there's no wrong way to enjoy your collection, knowing the correct pronunciation can help when:</p>
+<ul>
+    <li>Discussing amiibo with other collectors</li>
+    <li>Shopping at game stores</li>
+    <li>Watching Nintendo Direct presentations</li>
+    <li>Participating in online communities</li>
+</ul>
+
+<p>Now you can confidently say "amiibo" like a true collector!</p>
+""",
+    },
+    {
+        "slug": "number-released",
+        "title": "All Released Amiibo",
+        "date": "2026-02-10",
+        "excerpt": "A complete, always up-to-date list of every amiibo ever released, sorted by newest to oldest.",
+        "content": "dynamic",  # Special marker for dynamic content
+    },
+    {
+        "slug": "history-of-amiibo",
+        "title": "History of Amiibo",
+        "date": "2026-02-10",
+        "excerpt": "Explore the journey of Amiibo from its 2014 launch to becoming Nintendo's beloved toys-to-life platform.",
+        "content": """
+<h2>Pre-Announcement: March 2014</h2>
+<p>The story of amiibo began in March 2014, when Nintendo revealed during their financial briefing that they were developing an NFC (Near Field Communication) figurine platform, codenamed "NFP" which stood for either "Nintendo Figure Platform" or "NFC Featured Platform." This announcement hinted at Nintendo's entry into the growing toys-to-life market.</p>
+
+<h2>Official Announcement: E3 2014</h2>
+<p>On June 10, 2014, during Nintendo's E3 presentation, the company made its official announcement of "amiibo" - its answer to competing toys-to-life platforms like Activision's Skylanders (launched 2011), Disney Infinity (launched 2013), and what would later be LEGO Dimensions. Nintendo of America chief Reggie Fils-Aimé revealed that amiibo figures would be priced comparably to these competitors, positioning Nintendo firmly in the toys-to-life market.</p>
+
+<h2>Launch: November-December 2014</h2>
+<p>Amiibo officially launched alongside Super Smash Bros. for Wii U with staggered regional releases:</p>
+<ul>
+    <li><strong>North America:</strong> November 21, 2014</li>
+    <li><strong>Europe:</strong> November 28, 2014</li>
+    <li><strong>Japan:</strong> December 6, 2014</li>
+</ul>
+<p>The first wave featured 12 characters from the Super Smash Bros. series, each beautifully sculpted figure containing an NFC chip that could interact with compatible games on Wii U and 3DS (with NFC reader adapter).</p>
+
+<h2>The Technology</h2>
+<p>Using Near Field Communication (NFC) technology, amiibo figures could be tapped against compatible Nintendo consoles to unlock special content, characters, or gameplay features. This innovative approach bridged the gap between physical collectibles and digital gaming experiences. Unlike competitors, amiibo figures could work across multiple games, with each game developer choosing how to implement amiibo functionality.</p>
+
+<h2>The "Holy Trinity" Crisis: Late 2014-2015</h2>
+<p>Within weeks of launch, amiibo faced an unexpected crisis. Three figures—Marth (Fire Emblem), Villager (Animal Crossing), and Wii Fit Trainer—quickly sold out across retailers and became known as the "Holy Trinity" or "unicorns" among collectors. In December 2014, Nintendo announced that some figures were "unlikely to get second shipments" due to shelf space constraints.</p>
+
+<p>The shortage became legendary:</p>
+<ul>
+    <li>Toys "R" Us announced they would no longer stock the Holy Trinity under their current SKUs</li>
+    <li>GameStop confirmed these three figures were "no longer in the system country-wide"</li>
+    <li>Marth figures routinely sold for $130+ on secondary markets (compared to $12.99-$15.99 MSRP)</li>
+    <li>Villager figures approached similar resale prices</li>
+    <li>Nintendo's messaging was inconsistent—first claiming discontinuation, then denying it, creating confusion</li>
+</ul>
+
+<p>This scarcity created a passionate collector community, with enthusiasts camping outside stores for new releases and tracking restocks online. The "Amiibogeddon" shortage dominated gaming news throughout 2015.</p>
+
+<h2>Evolution and Expansion</h2>
+<p>Over the years, amiibo evolved beyond traditional figures:</p>
+<ul>
+    <li><strong>Amiibo Cards:</strong> More affordable, portable alternatives featuring the same NFC functionality, launched with Animal Crossing series</li>
+    <li><strong>Various Series:</strong> Expanded from Super Smash Bros. to include Animal Crossing, The Legend of Zelda, Splatoon, Super Mario, Metroid, Pokémon, and many more franchises</li>
+    <li><strong>Special Editions:</strong> Limited edition designs, exclusive colors, and commemorative releases (like gold and silver variants)</li>
+    <li><strong>Cross-Platform Support:</strong> Compatibility expanded from Wii U to 3DS (with NFC adapter) and Nintendo Switch (with built-in NFC support)</li>
+    <li><strong>Yarn and Pixel Variants:</strong> Unique materials and styles like Yarn Yoshi figures and pixel art designs</li>
+</ul>
+
+<h2>Massive Success: 77 Million and Counting</h2>
+<p>As of September 30, 2022, Nintendo had shipped over 77 million amiibo figures worldwide, spanning franchises like Mario, Donkey Kong, Splatoon, Super Smash Bros., and more. This remarkable achievement solidified amiibo as one of the most successful toys-to-life platforms ever created.</p>
+
+<h2>Surviving the Toys-to-Life Decline</h2>
+<p>While competitors like Disney Infinity (discontinued 2016), LEGO Dimensions (discontinued 2017), and Skylanders (last release 2017) gradually exited the market, amiibo continued thriving. Nintendo's strategy of:</p>
+<ul>
+    <li>Using beloved first-party characters with built-in fanbases</li>
+    <li>Offering optional enhancement rather than required purchases</li>
+    <li>Maintaining high-quality figure sculpts appealing to collectors</li>
+    <li>Ensuring cross-game compatibility</li>
+</ul>
+<p>...allowed amiibo to outlast and outperform its competitors.</p>
+
+<h2>Ongoing Platform</h2>
+<p>Today, amiibo remains a popular and ongoing platform for Nintendo enthusiasts. New figures continue to be released alongside major game launches, and the library of compatible games keeps growing. Whether you're a dedicated collector or a casual gamer, amiibo offers a unique way to enhance your Nintendo experience and own physical representations of your favorite characters.</p>
+
+<h2>The Legacy</h2>
+<p>Amiibo has successfully carved out its place in gaming history as the most enduring toys-to-life platform. From the chaotic "Holy Trinity" shortage to shipping 77+ million units globally, amiibo proved that combining quality figures, beloved characters, and meaningful (but optional) gameplay integration creates lasting value. Nintendo's amiibo stands as a testament to how physical collectibles can meaningfully enhance digital entertainment without becoming a required expense—a balance that helped it survive when competitors could not.</p>
+""",
+    },
+]
+
+
 def is_rate_limit_error(error: Exception) -> bool:
     return isinstance(error, APIError) and getattr(error, "code", None) == 429
 
@@ -155,7 +306,9 @@ def logout_user(request, log_action=None):
     user_email = request.session.get("user_email")
 
     if log_action:
-        log_action("logout-requested", request, user_name=user_name, user_email=user_email)
+        log_action(
+            "logout-requested", request, user_name=user_name, user_email=user_email
+        )
 
     creds = request.session.get("credentials")
     if creds:
@@ -602,7 +755,9 @@ class AmiiboListView(View, LoggingMixin, AmiiboRemoteFetchMixin):
         user_name = request.session.get("user_name", "User")
 
         try:
-            google_sheet_client_manager = build_sheet_client_manager(request, creds_json)
+            google_sheet_client_manager = build_sheet_client_manager(
+                request, creds_json
+            )
             ensure_spreadsheet_session(request, google_sheet_client_manager)
         except GoogleSheetsError as error:
             # Handle errors that occur during spreadsheet initialization
@@ -688,7 +843,9 @@ class AmiiboListView(View, LoggingMixin, AmiiboRemoteFetchMixin):
             # Handle any remaining APIError exceptions
             if is_rate_limit_error(error):
                 # Convert to our custom exception for consistent handling
-                rate_limit_error = RateLimitError(retry_after=retry_after_seconds(error))
+                rate_limit_error = RateLimitError(
+                    retry_after=retry_after_seconds(error)
+                )
                 return self._render_error_view(request, rate_limit_error, user_name)
 
             # For other API errors, re-raise to let Django handle them
@@ -813,7 +970,9 @@ class ToggleTypeFilterView(View, LoggingMixin):
             )
             ensure_spreadsheet_session(request, google_sheet_client_manager)
         except GoogleSheetsError as error:
-            self.log_error("Google Sheets error during type filter toggle: %s", str(error))
+            self.log_error(
+                "Google Sheets error during type filter toggle: %s", str(error)
+            )
             status_code = 429 if isinstance(error, RateLimitError) else 503
             return JsonResponse(
                 {
@@ -1034,3 +1193,97 @@ class AmiiboDatabaseView(
             enriched.append(amiibo_with_usage)
 
         return enriched
+
+
+class BlogListView(View, LoggingMixin):
+    def get(self, request):
+        self.log_action(
+            "blog-list-view",
+            request,
+            total_posts=len(BLOG_POSTS),
+        )
+        return render(request, "tracker/blog_list.html", {"posts": BLOG_POSTS})
+
+
+class BlogPostView(View, LoggingMixin, AmiiboRemoteFetchMixin):
+    def get(self, request, slug):
+        post = next((p for p in BLOG_POSTS if p["slug"] == slug), None)
+        if not post:
+            from django.http import Http404
+
+            self.log_action(
+                "blog-post-not-found",
+                request,
+                level="warning",
+                slug=slug,
+            )
+            raise Http404("Blog post not found")
+
+        self.log_action(
+            "blog-post-view",
+            request,
+            slug=slug,
+            title=post["title"],
+        )
+
+        context = {"post": post}
+
+        # Handle dynamic content for number-released post
+        if slug == "number-released" and post.get("content") == "dynamic":
+            try:
+                amiibos = self._fetch_remote_amiibos()
+
+                # Add formatted release date for each amiibo
+                for amiibo in amiibos:
+                    amiibo["display_release"] = AmiiboService._format_release_date(
+                        amiibo.get("release")
+                    )
+                    # Extract the earliest release date for sorting
+                    release_dates = amiibo.get("release", {})
+                    earliest_date = None
+                    for region in ["na", "jp", "eu", "au"]:
+                        date_str = release_dates.get(region)
+                        if date_str:
+                            try:
+                                from datetime import datetime
+
+                                date_obj = datetime.strptime(date_str, "%Y-%m-%d")
+                                if earliest_date is None or date_obj < earliest_date:
+                                    earliest_date = date_obj
+                            except (ValueError, TypeError):
+                                pass
+                    amiibo["earliest_release"] = earliest_date
+
+                # Sort by earliest release date (newest first), then by name
+                sorted_amiibos = sorted(
+                    amiibos,
+                    key=lambda x: (
+                        x["earliest_release"] is None,  # Put None dates at end
+                        x["earliest_release"] if x["earliest_release"] else "",
+                        x.get("name", ""),
+                    ),
+                    reverse=True,  # Newest first
+                )
+
+                context["amiibos"] = sorted_amiibos
+                context["total_count"] = len(sorted_amiibos)
+
+                self.log_action(
+                    "blog-dynamic-content-loaded",
+                    request,
+                    slug=slug,
+                    amiibo_count=len(sorted_amiibos),
+                )
+            except Exception as e:
+                self.log_action(
+                    "blog-dynamic-content-error",
+                    request,
+                    level="error",
+                    slug=slug,
+                    error=str(e),
+                )
+                context["amiibos"] = []
+                context["total_count"] = 0
+                context["error"] = True
+
+        return render(request, "tracker/blog_post.html", context)
