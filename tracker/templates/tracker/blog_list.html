@@ -1,0 +1,194 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Amiibo Blog - Amiibo Tracker</title>
+    <link rel="icon" href="{% static 'images/favicon.png' %}">
+    <meta name="google-adsense-account" content="ca-pub-6947554333794592">
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6947554333794592" crossorigin="anonymous"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600&display=swap');
+
+        :root {
+            --emerald: #0f766e;
+            --saffron: #f3c969;
+            --cream: #fdf7e3;
+            --ink: #0f172a;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Vazirmatn', system-ui, sans-serif;
+            background: linear-gradient(180deg, rgba(6, 10, 14, 0.95), rgba(12, 18, 24, 0.9)),
+            url('{% static "images/amiibo_bg.png" %}') center/420px repeat;
+            background-attachment: fixed;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--cream);
+            padding: 2rem 1rem;
+        }
+
+        .canvas {
+            position: relative;
+            padding: 3rem;
+            width: min(1100px, 90vw);
+            border-radius: 28px;
+            background: rgba(15, 23, 42, 0.72);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(243, 201, 105, 0.35);
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.45);
+            overflow: hidden;
+        }
+
+        .canvas::before,
+        .canvas::after {
+            content: "";
+            position: absolute;
+            inset: 18px;
+            border-radius: 20px;
+            background-image: radial-gradient(circle at 12px 12px, rgba(243, 201, 105, 0.35) 2px, transparent 0),
+            radial-gradient(circle at 42px 42px, rgba(255, 255, 255, 0.15) 1.5px, transparent 0);
+            background-size: 120px 120px, 160px 160px;
+            opacity: 0.4;
+            pointer-events: none;
+        }
+
+        .canvas::after {
+            inset: 0;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 28px;
+            background: radial-gradient(circle at 25% 20%, rgba(243, 201, 105, 0.08), transparent 30%),
+            radial-gradient(circle at 80% 60%, rgba(15, 118, 110, 0.08), transparent 35%);
+        }
+
+        .content {
+            position: relative;
+            z-index: 1;
+        }
+
+        h1 {
+            margin: 0 0 0.5em 0;
+            font-size: clamp(2.1rem, 3vw, 2.8rem);
+            letter-spacing: 0.01em;
+        }
+
+        .subtitle {
+            margin: 0 0 2rem 0;
+            color: rgba(253, 247, 227, 0.85);
+            font-size: 1.05rem;
+            line-height: 1.6;
+        }
+
+        .blog-posts {
+            display: flex;
+            flex-direction: column;
+            gap: 1.2rem;
+            margin-bottom: 2rem;
+        }
+
+        .post-card {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(243, 201, 105, 0.4);
+            border-radius: 18px;
+            padding: 1.75rem;
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            text-decoration: none;
+            color: var(--cream);
+            display: block;
+        }
+
+        .post-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 18px 32px rgba(0, 0, 0, 0.35);
+        }
+
+        .post-card h2 {
+            margin: 0 0 0.35rem 0;
+            font-size: 1.5rem;
+            color: var(--cream);
+        }
+
+        .post-date {
+            color: rgba(253, 247, 227, 0.7);
+            font-size: 0.9rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .post-excerpt {
+            margin: 0;
+            line-height: 1.65;
+            color: rgba(253, 247, 227, 0.88);
+            font-size: 1rem;
+        }
+
+        .action-btn {
+            text-decoration: none;
+            border: none;
+            cursor: pointer;
+            border-radius: 12px;
+            padding: 0.95rem 1.4rem;
+            font-size: 1.05rem;
+            font-weight: 700;
+            letter-spacing: 0.01em;
+            box-shadow: 0 14px 28px rgba(0, 0, 0, 0.28);
+            transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.6rem;
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--cream);
+            border: 1px solid rgba(243, 201, 105, 0.4);
+        }
+
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 18px 32px rgba(0, 0, 0, 0.35);
+        }
+
+        @media (max-width: 720px) {
+            .canvas {
+                padding: 2rem;
+            }
+
+            h1 {
+                font-size: 1.8rem;
+            }
+
+            .post-card {
+                padding: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="canvas">
+    <div class="content">
+        <h1>📚 Amiibo Blog</h1>
+        <p class="subtitle">
+            Learn about Amiibo technology, collecting tips, and how these figurines bring your favorite Nintendo characters to life.
+        </p>
+
+        <div class="blog-posts">
+            {% for post in posts %}
+            <a href="{% url 'blog_post' post.slug %}" class="post-card">
+                <h2>{{ post.title }}</h2>
+                <div class="post-date">{{ post.date }}</div>
+                <p class="post-excerpt">{{ post.excerpt }}</p>
+            </a>
+            {% endfor %}
+        </div>
+
+        <a href="{% url 'index' %}" class="action-btn">← Back to Home</a>
+    </div>
+</div>
+</body>
+</html>
