@@ -61,8 +61,23 @@ jobs:
           echo "Pushing images to Artifact Registry..."
           docker push "$IMAGE_BASE:latest"
           docker push "$IMAGE_BASE:${GITHUB_SHA}"
-          echo "✅ Successfully pushed:"
+          echo "Successfully pushed:"
           echo "   - $IMAGE_BASE:latest"
           echo "   - $IMAGE_BASE:${GITHUB_SHA}"
-          echo ""
-          echo "📦 Next: Terraform will deploy this image to Cloud Run"
+
+      - name: Deploy new Cloud Run revision
+        run: |
+          IMAGE_BASE="$REGION-docker.pkg.dev/$PROJECT_ID/$SERVICE_NAME/$SERVICE_NAME"
+          echo "Deploying image to Cloud Run..."
+          gcloud run services update "$SERVICE_NAME" \
+            --image "$IMAGE_BASE:${GITHUB_SHA}" \
+            --region "$REGION" \
+            --project "$PROJECT_ID" \
+            --quiet
+          echo "Cloud Run deployment complete!"
+          SERVICE_URL=$(gcloud run services describe "$SERVICE_NAME" \
+            --region "$REGION" \
+            --format="value(status.url)" 2>/dev/null || echo "")
+          if [ -n "$SERVICE_URL" ]; then
+            echo "Service URL: $SERVICE_URL"
+          fi
