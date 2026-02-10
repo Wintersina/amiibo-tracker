@@ -1399,9 +1399,10 @@ class AmiiboDetailView(View, LoggingMixin, AmiiboRemoteFetchMixin):
 
     def _get_character_description(self, amiibo):
         """
-        Get character description. First tries to load from JSON file,
-        then falls back to template-based description.
+        Get character description. First tries to load from JSON file using amiibo name,
+        then falls back to character name, then template-based description.
         """
+        amiibo_name = amiibo.get("name", "")
         character_name = amiibo.get("character", "")
         game_series = amiibo.get("gameSeries", "")
 
@@ -1411,6 +1412,10 @@ class AmiiboDetailView(View, LoggingMixin, AmiiboRemoteFetchMixin):
             try:
                 with open(descriptions_path, 'r', encoding='utf-8') as f:
                     descriptions = json.load(f)
+                    # Try amiibo name first (for variant-specific descriptions)
+                    if amiibo_name in descriptions:
+                        return descriptions[amiibo_name]
+                    # Fall back to character name
                     if character_name in descriptions:
                         return descriptions[character_name]
             except Exception:
