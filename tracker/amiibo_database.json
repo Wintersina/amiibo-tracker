@@ -562,11 +562,11 @@
     },
     {
       "amiiboSeries": "Yu-Gi-Oh!",
-      "character": "Tatsuhisa \u201cLuke\u201d Kamij\u014d",
+      "character": "Tatsuhisa “Luke” Kamijō",
       "gameSeries": "Yu-Gi-Oh!",
       "head": "38410001",
       "image": "https://raw.githubusercontent.com/8bitDream/AmiiboAPI/master/images/icon_38410001-04251902.png",
-      "name": "Tatsuhisa \u201cLuke\u201d Kamij\u014d",
+      "name": "Tatsuhisa “Luke” Kamijō",
       "release": {
         "au": null,
         "eu": null,
@@ -642,11 +642,11 @@
     },
     {
       "amiiboSeries": "Animal Crossing",
-      "character": "Ren\u00e9e",
+      "character": "Renée",
       "gameSeries": "Animal Crossing",
       "head": "04ba0001",
       "image": "https://raw.githubusercontent.com/8bitDream/AmiiboAPI/master/images/icon_04ba0001-005d0502.png",
-      "name": "Ren\u00e9e",
+      "name": "Renée",
       "release": {
         "au": "2015-10-03",
         "eu": "2015-10-02",
@@ -3522,11 +3522,11 @@
     },
     {
       "amiiboSeries": "Yu-Gi-Oh!",
-      "character": "Gakuto S\u014dgetsu",
+      "character": "Gakuto Sōgetsu",
       "gameSeries": "Yu-Gi-Oh!",
       "head": "38420001",
       "image": "https://raw.githubusercontent.com/8bitDream/AmiiboAPI/master/images/icon_38420001-04261902.png",
-      "name": "Gakuto S\u014dgetsu",
+      "name": "Gakuto Sōgetsu",
       "release": {
         "au": null,
         "eu": null,
@@ -3906,11 +3906,11 @@
     },
     {
       "amiiboSeries": "Animal Crossing",
-      "character": "\u00c9toile",
+      "character": "Étoile",
       "gameSeries": "Animal Crossing",
       "head": "04d30101",
       "image": "https://raw.githubusercontent.com/8bitDream/AmiiboAPI/master/images/icon_04d30101-031b0502.png",
-      "name": "\u00c9toile",
+      "name": "Étoile",
       "release": {
         "au": null,
         "eu": "2016-11-25",
