@@ -10,7 +10,8 @@ from gspread.exceptions import APIError
 from google.auth.transport.requests import Request as GoogleAuthRequest
 from google.oauth2.credentials import Credentials
 from django.contrib.auth import logout as django_logout
-from django.http import JsonResponse
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from django.http import JsonResponse, Http404
 from django.shortcuts import redirect, render
 from django.utils.decorators import method_decorator
 from django.views import View
@@ -1209,8 +1210,6 @@ class BlogPostView(View, LoggingMixin, AmiiboRemoteFetchMixin):
     def get(self, request, slug):
         post = next((p for p in BLOG_POSTS if p["slug"] == slug), None)
         if not post:
-            from django.http import Http404
-
             self.log_action(
                 "blog-post-not-found",
                 request,
@@ -1233,11 +1232,14 @@ class BlogPostView(View, LoggingMixin, AmiiboRemoteFetchMixin):
             try:
                 amiibos = self._fetch_remote_amiibos()
 
-                # Add formatted release date for each amiibo
+                # Add formatted release date and amiibo_id for each amiibo
                 for amiibo in amiibos:
                     amiibo["display_release"] = AmiiboService._format_release_date(
                         amiibo.get("release")
                     )
+                    # Create amiibo_id in head-tail format for URL
+                    amiibo["amiibo_id"] = f"{amiibo.get('head', '')}-{amiibo.get('tail', '')}"
+
                     # Extract the earliest release date for sorting
                     release_dates = amiibo.get("release", {})
                     earliest_date = None
@@ -1265,7 +1267,18 @@ class BlogPostView(View, LoggingMixin, AmiiboRemoteFetchMixin):
                     reverse=True,  # Newest first
                 )
 
-                context["amiibos"] = sorted_amiibos
+                # Implement pagination (50 items per page)
+                page = request.GET.get('page', 1)
+                paginator = Paginator(sorted_amiibos, 50)
+
+                try:
+                    amiibos_page = paginator.page(page)
+                except PageNotAnInteger:
+                    amiibos_page = paginator.page(1)
+                except EmptyPage:
+                    amiibos_page = paginator.page(paginator.num_pages)
+
+                context["amiibos"] = amiibos_page
                 context["total_count"] = len(sorted_amiibos)
 
                 self.log_action(
@@ -1287,3 +1300,131 @@ class BlogPostView(View, LoggingMixin, AmiiboRemoteFetchMixin):
                 context["error"] = True
 
         return render(request, "tracker/blog_post.html", context)
+
+
+class AmiiboDetailView(View, LoggingMixin, AmiiboRemoteFetchMixin):
+    """
+    View for displaying individual amiibo details.
+    URL pattern: /blog/number-released/amiibo/<head>-<tail>/
+    """
+
+    def get(self, request, amiibo_id):
+        # Parse amiibo_id (format: head-tail)
+        try:
+            head, tail = amiibo_id.split('-')
+            if len(head) != 8 or len(tail) != 8:
+                raise ValueError("Invalid amiibo ID format")
+        except (ValueError, AttributeError):
+            self.log_action(
+                "amiibo-detail-invalid-id",
+                request,
+                level="warning",
+                amiibo_id=amiibo_id,
+            )
+            raise Http404("Invalid amiibo ID")
+
+        # Fetch all amiibos and find the matching one
+        try:
+            amiibos = self._fetch_remote_amiibos()
+            amiibo = next(
+                (a for a in amiibos if a.get('head') == head and a.get('tail') == tail),
+                None
+            )
+
+            if not amiibo:
+                self.log_action(
+                    "amiibo-detail-not-found",
+                    request,
+                    level="warning",
+                    amiibo_id=amiibo_id,
+                )
+                raise Http404("Amiibo not found")
+
+            # Add formatted release dates
+            amiibo["display_release"] = AmiiboService._format_release_date(
+                amiibo.get("release")
+            )
+
+            # Format regional release dates
+            release_dates = amiibo.get("release", {})
+            regional_releases = []
+            region_names = {
+                "na": "North America",
+                "jp": "Japan",
+                "eu": "Europe",
+                "au": "Australia"
+            }
+
+            for region_code, region_name in region_names.items():
+                date_str = release_dates.get(region_code)
+                if date_str:
+                    try:
+                        from datetime import datetime
+                        date_obj = datetime.strptime(date_str, "%Y-%m-%d")
+                        formatted_date = date_obj.strftime("%B %d, %Y")
+                        regional_releases.append({
+                            "region": region_name,
+                            "date": formatted_date
+                        })
+                    except (ValueError, TypeError):
+                        pass
+
+            # Get character description
+            description = self._get_character_description(amiibo)
+
+            context = {
+                "amiibo": amiibo,
+                "regional_releases": regional_releases,
+                "description": description,
+            }
+
+            self.log_action(
+                "amiibo-detail-view",
+                request,
+                amiibo_id=amiibo_id,
+                amiibo_name=amiibo.get("name"),
+            )
+
+            return render(request, "tracker/amiibo_detail.html", context)
+
+        except Exception as e:
+            self.log_action(
+                "amiibo-detail-error",
+                request,
+                level="error",
+                amiibo_id=amiibo_id,
+                error=str(e),
+            )
+            raise
+
+    def _get_character_description(self, amiibo):
+        """
+        Get character description. First tries to load from JSON file using amiibo name,
+        then falls back to character name, then template-based description.
+        """
+        amiibo_name = amiibo.get("name", "")
+        character_name = amiibo.get("character", "")
+        game_series = amiibo.get("gameSeries", "")
+
+        # Try to load custom descriptions from JSON file
+        descriptions_path = Path(__file__).parent / "character_descriptions.json"
+        if descriptions_path.exists():
+            try:
+                with open(descriptions_path, 'r', encoding='utf-8') as f:
+                    descriptions = json.load(f)
+                    # Try amiibo name first (for variant-specific descriptions)
+                    if amiibo_name in descriptions:
+                        return descriptions[amiibo_name]
+                    # Fall back to character name
+                    if character_name in descriptions:
+                        return descriptions[character_name]
+            except Exception:
+                pass  # Fall back to template description
+
+        # Template-based description (fallback)
+        if character_name and game_series:
+            return f"{character_name} is a character from the {game_series} series."
+        elif character_name:
+            return f"{character_name} is featured in this amiibo."
+        else:
+            return "This amiibo features a character from Nintendo's gaming universe."

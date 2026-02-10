@@ -164,13 +164,23 @@
             color: var(--cream);
         }
 
-        .amiibo-table tbody tr {
-            border-bottom: 1px solid rgba(243, 201, 105, 0.15);
-            transition: background 0.2s ease;
+        .amiibo-table th.img-col {
+            width: 70px;
+            text-align: center;
         }
 
-        .amiibo-table tbody tr:hover {
-            background: rgba(255, 255, 255, 0.03);
+        .amiibo-table tbody tr {
+            border-bottom: 1px solid rgba(243, 201, 105, 0.15);
+            transition: background 0.2s ease, transform 0.1s ease;
+        }
+
+        .amiibo-table tbody tr.clickable-row {
+            cursor: pointer;
+        }
+
+        .amiibo-table tbody tr.clickable-row:hover {
+            background: rgba(243, 201, 105, 0.08);
+            transform: scale(1.01);
         }
 
         .amiibo-table td {
@@ -178,13 +188,103 @@
             color: rgba(253, 247, 227, 0.88);
         }
 
-        .amiibo-table td:first-child {
+        .amiibo-table td.img-col {
+            text-align: center;
+            position: relative;
+            padding: 0.5rem;
+        }
+
+        .amiibo-thumbnail {
+            width: 48px;
+            height: 48px;
+            object-fit: contain;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 2px;
+        }
+
+        .img-fallback {
+            display: none;
+            width: 48px;
+            height: 48px;
+            line-height: 48px;
+            background: rgba(243, 201, 105, 0.15);
+            border-radius: 6px;
+            color: rgba(243, 201, 105, 0.6);
+            font-size: 1.5rem;
+            font-weight: bold;
+            text-align: center;
+            margin: 0 auto;
+        }
+
+        .amiibo-table td.name-col {
             font-weight: 600;
             color: var(--cream);
         }
 
         .amiibo-table td:last-child {
             color: rgba(253, 247, 227, 0.7);
+            font-size: 0.9rem;
+        }
+
+        /* Pagination Styles */
+        .pagination {
+            margin: 2rem 0;
+            padding: 1.5rem;
+            background: rgba(15, 118, 110, 0.1);
+            border: 1px solid rgba(243, 201, 105, 0.3);
+            border-radius: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .pagination-info {
+            color: rgba(253, 247, 227, 0.8);
+            font-size: 0.95rem;
+        }
+
+        .pagination-controls {
+            display: flex;
+            gap: 0.6rem;
+            align-items: center;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .page-btn {
+            padding: 0.6rem 1rem;
+            background: rgba(243, 201, 105, 0.15);
+            border: 1px solid rgba(243, 201, 105, 0.4);
+            border-radius: 8px;
+            color: var(--cream);
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .page-btn:hover {
+            background: rgba(243, 201, 105, 0.25);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .page-btn.disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        .page-current {
+            padding: 0.6rem 1rem;
+            background: rgba(15, 118, 110, 0.3);
+            border: 1px solid rgba(243, 201, 105, 0.6);
+            border-radius: 8px;
+            color: var(--saffron);
+            font-weight: 700;
             font-size: 0.9rem;
         }
 
@@ -250,6 +350,41 @@
             .post-content h3 {
                 font-size: 1.2rem;
             }
+
+            .amiibo-table {
+                font-size: 0.85rem;
+            }
+
+            .amiibo-table th,
+            .amiibo-table td {
+                padding: 0.6rem 0.5rem;
+            }
+
+            .amiibo-thumbnail {
+                width: 40px;
+                height: 40px;
+            }
+
+            .img-fallback {
+                width: 40px;
+                height: 40px;
+                line-height: 40px;
+                font-size: 1.2rem;
+            }
+
+            .pagination {
+                padding: 1rem;
+            }
+
+            .pagination-controls {
+                gap: 0.4rem;
+            }
+
+            .page-btn,
+            .page-current {
+                padding: 0.5rem 0.75rem;
+                font-size: 0.85rem;
+            }
         }
     </style>
 </head>
@@ -275,19 +410,62 @@
                     <table class="amiibo-table">
                         <thead>
                             <tr>
+                                <th class="img-col">Image</th>
                                 <th>Name</th>
+                                <th>Game Series</th>
+                                <th>Amiibo Series</th>
+                                <th>Type</th>
                                 <th>Release Date</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for amiibo in amiibos %}
-                            <tr>
-                                <td>{{ amiibo.name }}</td>
+                            <tr class="clickable-row" onclick="window.location='{% url 'amiibo_detail' amiibo.amiibo_id %}'">
+                                <td class="img-col">
+                                    <img src="{{ amiibo.image }}"
+                                         alt="{{ amiibo.name }}"
+                                         class="amiibo-thumbnail"
+                                         loading="lazy"
+                                         onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                                    <div class="img-fallback">?</div>
+                                </td>
+                                <td class="name-col">{{ amiibo.name }}</td>
+                                <td>{{ amiibo.gameSeries|default:"N/A" }}</td>
+                                <td>{{ amiibo.amiiboSeries|default:"N/A" }}</td>
+                                <td>{{ amiibo.type|default:"N/A" }}</td>
                                 <td>{{ amiibo.display_release|default:"TBA" }}</td>
                             </tr>
                             {% endfor %}
                         </tbody>
                     </table>
+
+                    {% if amiibos.has_other_pages %}
+                    <div class="pagination">
+                        <div class="pagination-info">
+                            Page {{ amiibos.number }} of {{ amiibos.paginator.num_pages }}
+                            ({{ amiibos.start_index }}–{{ amiibos.end_index }} of {{ total_count }})
+                        </div>
+                        <div class="pagination-controls">
+                            {% if amiibos.has_previous %}
+                                <a href="?page=1" class="page-btn">« First</a>
+                                <a href="?page={{ amiibos.previous_page_number }}" class="page-btn">‹ Prev</a>
+                            {% else %}
+                                <span class="page-btn disabled">« First</span>
+                                <span class="page-btn disabled">‹ Prev</span>
+                            {% endif %}
+
+                            <span class="page-current">Page {{ amiibos.number }}</span>
+
+                            {% if amiibos.has_next %}
+                                <a href="?page={{ amiibos.next_page_number }}" class="page-btn">Next ›</a>
+                                <a href="?page={{ amiibos.paginator.num_pages }}" class="page-btn">Last »</a>
+                            {% else %}
+                                <span class="page-btn disabled">Next ›</span>
+                                <span class="page-btn disabled">Last »</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
                 {% endif %}
             {% else %}
                 {{ post.content|safe }}

@@ -42,12 +42,21 @@
             box-sizing: border-box;
         }
 
+        html {
+            background-color: #f7f2e7;
+        }
+
+        html.dark {
+            background-color: #0e141b;
+        }
+
         body {
             font-family: 'Vazirmatn', system-ui, sans-serif;
             margin: 0;
             padding: 0 1.2rem 3rem;
             background: linear-gradient(135deg, rgba(15, 118, 110, 0.12), rgba(243, 201, 105, 0.12)),
                         url('/static/images/amiibo_bg.png') center/600px repeat;
+            background-attachment: fixed;
             color: var(--text);
             transition: background-color 0.3s ease, color 0.3s ease;
         }
@@ -55,6 +64,7 @@
         body.dark {
             background: linear-gradient(160deg, rgba(6, 10, 14, 0.9), rgba(12, 18, 24, 0.88)),
                         url('/static/images/amiibo_bg.png') center/520px repeat;
+            background-attachment: fixed;
         }
 
         main {
