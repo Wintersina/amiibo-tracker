@@ -1,0 +1,258 @@
+{% extends "tracker/base.html" %}
+{% load static %}
+
+{% block title %}About Amiibo Tracker{% endblock %}
+
+{% block meta_description %}Learn about Amiibo Tracker's features, Google Sheets integration, privacy practices, and how we help collectors manage their Amiibo collections.{% endblock %}
+
+{% block head_extra %}
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600&display=swap');
+
+    :root {
+        --emerald: #0f766e;
+        --saffron: #f3c969;
+        --cream: #fdf7e3;
+        --ink: #0f172a;
+    }
+
+    * {
+        box-sizing: border-box;
+    }
+
+    body {
+        margin: 0;
+        padding: 0;
+        font-family: 'Vazirmatn', system-ui, sans-serif;
+        background: linear-gradient(180deg, rgba(6, 10, 14, 0.95), rgba(12, 18, 24, 0.9)),
+        url('{% static "images/amiibo_bg.png" %}') center/420px repeat;
+        background-attachment: fixed;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        color: var(--cream);
+    }
+
+    .container {
+        max-width: 900px;
+        margin: 2rem auto;
+        padding: 2.5rem;
+        border-radius: 28px;
+        background: rgba(15, 23, 42, 0.72);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(243, 201, 105, 0.35);
+        box-shadow: 0 25px 60px rgba(0, 0, 0, 0.45);
+    }
+
+    h1 {
+        margin-top: 0;
+        font-size: clamp(2rem, 4vw, 2.5rem);
+        text-align: center;
+        color: var(--saffron);
+    }
+
+    h2 {
+        font-size: 1.4rem;
+        margin-top: 2rem;
+        margin-bottom: 0.75rem;
+        color: var(--saffron);
+    }
+
+    p, li {
+        line-height: 1.7;
+        color: rgba(253, 247, 227, 0.9);
+        font-size: 1.05rem;
+    }
+
+    .feature-list {
+        list-style: none;
+        padding: 0;
+        margin: 1.5rem 0;
+    }
+
+    .feature-list li {
+        padding: 0.75rem 0;
+        border-bottom: 1px solid rgba(243, 201, 105, 0.2);
+    }
+
+    .feature-list li:last-child {
+        border-bottom: none;
+    }
+
+    .feature-list strong {
+        color: var(--saffron);
+    }
+
+    .back-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        text-decoration: none;
+        color: var(--cream);
+        padding: 0.75rem 1.5rem;
+        border-radius: 12px;
+        background: linear-gradient(135deg, var(--emerald), rgba(15, 118, 110, 0.8));
+        border: 1px solid rgba(243, 201, 105, 0.3);
+        font-weight: 600;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        margin-top: 2rem;
+    }
+
+    .back-link:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+    }
+
+    .cta-section {
+        text-align: center;
+        margin-top: 2.5rem;
+        padding-top: 2rem;
+        border-top: 1px solid rgba(243, 201, 105, 0.3);
+    }
+
+    .cta-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.6rem;
+        text-decoration: none;
+        padding: 0.95rem 1.5rem;
+        border-radius: 12px;
+        background: linear-gradient(135deg, var(--saffron), #ffd37a);
+        color: var(--ink);
+        font-weight: 700;
+        font-size: 1.05rem;
+        box-shadow: 0 14px 28px rgba(0, 0, 0, 0.28);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .cta-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 18px 32px rgba(0, 0, 0, 0.35);
+    }
+
+    .cta-btn img {
+        width: 20px;
+        height: 20px;
+    }
+
+    @media (max-width: 720px) {
+        body {
+            padding: 1rem;
+        }
+
+        .container {
+            padding: 1.75rem 1.5rem;
+            margin: 1rem auto;
+        }
+
+        h1 {
+            font-size: 1.75rem;
+        }
+
+        h2 {
+            font-size: 1.2rem;
+        }
+
+        p, li {
+            font-size: 0.95rem;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .container {
+            padding: 1.5rem 1.25rem;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+        }
+
+        h2 {
+            font-size: 1.1rem;
+        }
+
+        p, li {
+            font-size: 0.9rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <a href="{% url 'index' %}" class="back-link">← Back to Home</a>
+
+    <h1>About Amiibo Tracker</h1>
+
+    <p>
+        Amiibo Tracker is a comprehensive tool for Nintendo Amiibo collectors to manage their collections,
+        learn about NFC technology, and browse the complete catalog of released figures.
+    </p>
+
+    <h2>What We Offer</h2>
+    <ul class="feature-list">
+        <li><strong>Collection Tracking:</strong> Create and maintain a complete Amiibo inventory using your own Google Sheet. Mark what you own, filter by series and type, and keep everything organized.</li>
+        <li><strong>Complete Catalog:</strong> Browse an always-updated database of all released Amiibo figures with high-quality images, release dates, and series information.</li>
+        <li><strong>Educational Blog:</strong> Learn about NFC technology, Amiibo history, pronunciation guides, compatibility with games, and collecting tips.</li>
+        <li><strong>Privacy-First Design:</strong> Your data stays in your Google Drive. No shared databases, no tracking beyond basic analytics.</li>
+        <li><strong>Dark Mode:</strong> Easy on the eyes with automatic dark mode support across the entire app.</li>
+        <li><strong>Mobile Friendly:</strong> Fully responsive design that works seamlessly on phones, tablets, and desktops.</li>
+    </ul>
+
+    <h2>How It Works</h2>
+    <p>
+        <strong>1. Sign in with Google:</strong> We use Google authentication to securely access your Google Sheets.
+    </p>
+    <p>
+        <strong>2. Create or Select a Sheet:</strong> Choose an existing Google Sheet or let us create a new one for your collection.
+    </p>
+    <p>
+        <strong>3. Start Tracking:</strong> Browse the catalog, mark Amiibo as collected, and your Google Sheet updates automatically.
+    </p>
+    <p>
+        <strong>4. Stay Organized:</strong> Filter by series, search by name or date, and track your progress with real-time collection counts.
+    </p>
+
+    <h2>Why Google Sheets?</h2>
+    <p>
+        We use Google Sheets because it gives you complete control over your data. You can:
+    </p>
+    <ul>
+        <li>View and edit your collection directly in Google Sheets anytime</li>
+        <li>Export your data in any format (CSV, Excel, PDF)</li>
+        <li>Share your collection with friends or fellow collectors</li>
+        <li>Keep offline backups automatically through Google Drive</li>
+        <li>Revoke app access anytime from your Google account settings</li>
+    </ul>
+
+    <h2>Privacy & Permissions</h2>
+    <p>
+        Amiibo Tracker requests minimal permissions:
+    </p>
+    <ul>
+        <li><strong>View and manage Google Sheets:</strong> Required to read and update your Amiibo collection data</li>
+        <li><strong>See your email address:</strong> Used only to identify your Google account</li>
+    </ul>
+    <p>
+        We do NOT access your emails, other Drive files, or any personal information beyond what's necessary to manage your collection.
+        Review our <a href="{% url 'privacy' %}" style="color: var(--saffron); text-decoration: underline;">Privacy Policy</a> for complete details.
+    </p>
+
+    <h2>Open Source & Free</h2>
+    <p>
+        Amiibo Tracker is free to use with no hidden fees, premium tiers, or subscriptions.
+        The project is built with transparency in mind to help the Amiibo collecting community.
+    </p>
+
+    <div class="cta-section">
+        <p style="font-size: 1.1rem; margin-bottom: 1.5rem;">Ready to start tracking your collection?</p>
+        <a href="{% url 'oauth_login' %}" class="cta-btn">
+            <img src="{% static 'images/google-logo.svg' %}" alt="Google logo">
+            Login with Google
+        </a>
+        <p style="margin-top: 1.5rem; font-size: 0.95rem;">
+            or <a href="{% url 'demo' %}" style="color: var(--saffron); text-decoration: underline;">view the demo</a>
+        </p>
+    </div>
+</div>
+{% endblock %}

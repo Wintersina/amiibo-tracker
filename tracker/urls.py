@@ -22,6 +22,7 @@ from tracker.views import (
 urlpatterns = [
     path("", IndexView.as_view(), name="index"),
     path("robots.txt", RobotsTxtView.as_view(), name="robots"),
+    path("about/", TemplateView.as_view(template_name="tracker/about.html"), name="about"),
     path("demo/", DemoView.as_view(), name="demo"),
     path("tracker/", AmiiboListView.as_view(), name="amiibo_list"),
     path("toggle/", ToggleCollectedView.as_view(), name="toggle_collected"),

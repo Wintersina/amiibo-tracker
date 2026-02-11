@@ -104,61 +104,67 @@
 
     .actions {
         display: flex;
-        flex-wrap: wrap;
-        gap: 0.8rem;
-        margin-top: 1.2rem;
+        flex-direction: column;
+        gap: 0.85rem;
+        margin-top: 1.5rem;
     }
 
     .action-btn {
         text-decoration: none;
         border: none;
         cursor: pointer;
-        border-radius: 12px;
-        padding: 0.95rem 1.4rem;
-        font-size: 1.05rem;
+        border-radius: 14px;
+        padding: 1rem 1.5rem;
+        font-size: 1.08rem;
         font-weight: 700;
         letter-spacing: 0.01em;
-        box-shadow: 0 14px 28px rgba(0, 0, 0, 0.28);
-        transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
-        display: inline-flex;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        display: flex;
         align-items: center;
-        gap: 0.6rem;
+        justify-content: center;
+        gap: 0.65rem;
+        text-align: center;
     }
 
     .action-btn.primary {
-        background: linear-gradient(135deg, var(--saffron), #ffd37a);
-        color: var(--ink);
+        background: #ffffff;
+        color: #3c4043;
+        border: 2px solid rgba(243, 201, 105, 0.4);
     }
 
-    .action-btn.secondary {
-        background: rgba(255, 255, 255, 0.08);
+    .action-btn.primary img {
+        width: 22px;
+        height: 22px;
+    }
+
+    .action-btn.blog {
+        background: linear-gradient(135deg, var(--saffron), #ffd37a);
+        color: var(--ink);
+        border: 2px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .action-btn.demo {
+        background: linear-gradient(135deg, rgba(15, 118, 110, 0.85), rgba(15, 118, 110, 0.7));
         color: var(--cream);
-        border: 1px solid rgba(243, 201, 105, 0.4);
+        border: 2px solid rgba(243, 201, 105, 0.3);
     }
 
     .action-btn:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 18px 32px rgba(0, 0, 0, 0.35);
+        transform: translateY(-3px);
+        box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
     }
 
-    .google-btn {
-        background: #ffffff;
-        color: #3c4043;
-        border: 1px solid #dadce0;
-        box-shadow: none;
-        font-weight: 600;
-        gap: 0.75rem;
-        padding: 0.85rem 1.3rem;
+    .action-btn.primary:hover {
+        background: #f8f9fa;
     }
 
-    .google-btn:hover {
-        box-shadow: 0 10px 22px rgba(0, 0, 0, 0.18);
+    .action-btn.blog:hover {
+        background: linear-gradient(135deg, #ffd37a, var(--saffron));
     }
 
-    .google-btn img {
-        width: 20px;
-        height: 20px;
-        margin: -1px 0;
+    .action-btn.demo:hover {
+        background: linear-gradient(135deg, rgba(15, 118, 110, 0.95), rgba(15, 118, 110, 0.8));
     }
 
     .footer-link {
@@ -178,57 +184,32 @@
     .info-list {
         position: relative;
         z-index: 1;
-        margin-top: 1.5rem;
+        margin-top: 2rem;
         padding: 0;
         list-style: none;
         display: flex;
         flex-direction: column;
-        gap: 0.85rem;
+        gap: 0.75rem;
     }
 
-    .info-item {
-        background: rgba(255, 255, 255, 0.03);
-        border: 1px solid rgba(243, 201, 105, 0.3);
-        border-radius: 14px;
-        padding: 1.1rem 1.2rem;
-        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
-    }
-
-    .info-heading {
+    .info-list h2 {
+        margin: 0;
+        font-size: 1.05rem;
+        font-weight: 600;
+        color: rgba(253, 247, 227, 0.95);
         display: flex;
         align-items: center;
-        justify-content: space-between;
-        gap: 0.85rem;
-        margin-bottom: 0.35rem;
+        gap: 0.5rem;
     }
 
-    .info-heading h2 {
-        margin: 0;
-        font-size: 1.08rem;
-    }
-
-    .info-item p {
-        margin: 0;
-        line-height: 1.65;
-        color: rgba(253, 247, 227, 0.88);
-        font-size: 0.98rem;
-    }
-
-    .info-btn {
-        text-decoration: none;
-        background: rgba(255, 255, 255, 0.1);
-        color: var(--cream);
-        border: 1px solid rgba(243, 201, 105, 0.45);
-        border-radius: 10px;
-        padding: 0.55rem 0.9rem;
-        font-weight: 700;
-        font-size: 0.95rem;
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
-    }
-
-    .info-btn:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.28);
+    .footer-links {
+        position: relative;
+        z-index: 1;
+        margin-top: 2rem;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        justify-content: center;
     }
 
     @media (max-width: 720px) {
@@ -258,41 +239,27 @@
         }
 
         .actions {
-            justify-content: flex-start;
-            flex-direction: column;
-            gap: 0.7rem;
+            gap: 0.75rem;
+            margin-top: 1.25rem;
         }
 
         .action-btn {
-            width: 100%;
-            justify-content: center;
-            padding: 0.85rem 1.2rem;
+            padding: 0.9rem 1.25rem;
             font-size: 1rem;
-        }
-
-        .google-btn {
-            padding: 0.8rem 1.2rem;
         }
 
         .info-list {
+            gap: 0.65rem;
+            margin-top: 1.5rem;
+        }
+
+        .info-list h2 {
+            font-size: 0.95rem;
+        }
+
+        .footer-links {
+            margin-top: 1.5rem;
             gap: 0.75rem;
-        }
-
-        .info-item {
-            padding: 1rem;
-        }
-
-        .info-heading h2 {
-            font-size: 1rem;
-        }
-
-        .info-item p {
-            font-size: 0.92rem;
-        }
-
-        .info-btn {
-            padding: 0.5rem 0.85rem;
-            font-size: 0.9rem;
         }
 
         .footer-link {
@@ -326,23 +293,21 @@
         }
 
         .action-btn {
-            padding: 0.8rem 1rem;
+            padding: 0.85rem 1.1rem;
             font-size: 0.95rem;
         }
 
-        .info-item {
-            padding: 0.9rem;
+        .actions {
+            gap: 0.7rem;
         }
 
-        .info-heading {
+        .info-list h2 {
+            font-size: 0.9rem;
+        }
+
+        .footer-links {
             flex-direction: column;
-            align-items: flex-start;
-            gap: 0.5rem;
-        }
-
-        .info-btn {
-            width: 100%;
-            text-align: center;
+            align-items: center;
         }
     }
 </style>
@@ -352,68 +317,35 @@
 <div class="canvas">
     <div class="hero">
         <div class="hero-copy">
-            <h1>Your one-stop shop for everything Amiibo</h1>
-            <p>
-                Whether you're tracking your collection, learning about NFC technology, or exploring Amiibo history—we've got you covered.
-            </p>
+            <h1>Track Your Amiibo Collection</h1>
             <p class="subtext">
-                Amiibo Tracker is more than just a collection manager. Discover informative blogs about how Amiibo works, browse the complete catalog of released figures, and track your personal collection using Google Sheets—all in one place. Your data stays private in a spreadsheet you control, while our resources help you become an Amiibo expert.
+                Manage your Amiibo collection with Google Sheets integration. Browse released figures and learn about NFC technology—all in one place.
             </p>
 
             <div class="actions">
-                <a href="{% url 'oauth_login' %}" class="action-btn google-btn">
+                <a href="{% url 'oauth_login' %}" class="action-btn primary">
                     <img src="{% static 'images/google-logo.svg' %}" alt="Google logo">
-                    Login with Google
+                    Start Tracking
                 </a>
-                <a href="{% url 'demo' %}" class="action-btn secondary">
-                    View Demo
+                <a href="{% url 'blog_list' %}" class="action-btn blog">
+                    📚 Browse Amiibo Catalog
+                </a>
+                <a href="{% url 'demo' %}" class="action-btn demo">
+                    Try Demo
                 </a>
             </div>
 
             <div class="info-list">
-                <div class="info-item">
-                    <div class="info-heading">
-                        <h2>What we offer</h2>
-                    </div>
-                    <p>
-                        <strong>Collection Tracking:</strong> Create and maintain a complete Amiibo inventory using your own Google Sheet—mark what you own, filter by series, and keep everything organized.
-                        <br><br>
-                        <strong>Educational Blog:</strong> Learn about NFC technology, Amiibo history, pronunciation, and browse an always-updated catalog of all released figures.
-                        <br><br>
-                        Everything you need to collect, track, and understand Amiibo—all in one friendly place.
-                    </p>
-                </div>
-                <div class="info-item">
-                    <div class="info-heading">
-                        <h2>Why Amiibo Tracker asks for Google access</h2>
-                    </div>
-                    <p>
-                        Google authentication is used to let you pick the specific Sheet you want to sync. Amiibo
-                        Tracker requests permission to view and edit that Sheet so the app can populate and update your
-                        collection data.
-                        The Amiibo Tracker app does not read emails or any other Drive files, and you can revoke access
-                        at any time from your Google account settings.
-                    </p>
-                </div>
-                <div class="info-item">
-                    <div class="info-heading">
-                        <h2>Privacy and transparency</h2>
-                        <a href="{% url 'privacy' %}" class="info-btn">Privacy details</a>
-                    </div>
-                    <p>
-                        Your Amiibo list lives in your Google Drive—there are no shared databases or hidden third
-                        parties. Review the Privacy Policy to learn exactly how data is handled before you sign in.
-                    </p>
-                </div>
-                <div class="info-item">
-                    <div class="info-heading">
-                        <h2>📚 Learn about Amiibo</h2>
-                        <a href="{% url 'blog_list' %}" class="info-btn">Read Blog</a>
-                    </div>
-                    <p>
-                        Discover how Amiibo works, the technology behind it, and tips for collectors.
-                    </p>
-                </div>
+                <h2>✓ Track your collection with Google Sheets</h2>
+                <h2>✓ Browse all released Amiibo figures</h2>
+                <h2>✓ Learn about NFC technology</h2>
+                <h2>✓ Your data stays private in your Drive</h2>
+            </div>
+
+            <div class="footer-links">
+                <a href="{% url 'about' %}" class="footer-link">Learn More →</a>
+                <a href="{% url 'blog_list' %}" class="footer-link">📚 Blog</a>
+                <a href="{% url 'privacy' %}" class="footer-link">Privacy Policy</a>
             </div>
         </div>
     </div>
