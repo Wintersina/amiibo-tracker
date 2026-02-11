@@ -75,6 +75,15 @@
             position: relative;
             z-index: 1;
             padding-top: 4rem;
+            /* Reserve space for absolutely positioned nav buttons on desktop */
+            padding-right: 0;
+        }
+
+        /* On larger screens, add padding to prevent title collision with nav buttons */
+        @media (min-width: 721px) {
+            .content {
+                padding-right: 200px;
+            }
         }
 
         h1 {
@@ -187,8 +196,9 @@
             top: 1.5rem;
             right: 1.5rem;
             display: flex;
-            flex-wrap: wrap;
+            flex-direction: column;
             gap: 0.5rem;
+            align-items: flex-end;
         }
 
         .action-btn {

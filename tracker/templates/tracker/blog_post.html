@@ -70,6 +70,15 @@
         .content {
             position: relative;
             z-index: 1;
+            /* Reserve space for absolutely positioned nav buttons on desktop */
+            padding-right: 0;
+        }
+
+        /* On larger screens, add padding to prevent title collision with nav buttons */
+        @media (min-width: 721px) {
+            .content {
+                padding-right: 200px;
+            }
         }
 
         h1 {
@@ -315,9 +324,9 @@
             top: 1.5rem;
             right: 1.5rem;
             display: flex;
-            flex-wrap: wrap;
+            flex-direction: column;
             gap: 0.5rem;
-            align-items: center;
+            align-items: flex-end;
         }
 
         .action-btn {
@@ -543,7 +552,7 @@
 {% block content %}
 <div class="canvas">
     <div class="nav-buttons">
-        <a href="{% url 'blog_list' %}" class="action-btn">← Blog</a>
+        <a href="javascript:history.back()" class="action-btn">← Back</a>
         <a href="{% url 'index' %}" class="action-btn">← Home</a>
     </div>
     <div class="content">
