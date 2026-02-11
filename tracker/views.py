@@ -206,6 +206,13 @@ BLOG_POSTS = [
 
 <p>The Animal Crossing amiibo ecosystem includes over 500 compatible figures and cards spanning multiple series, from the original Animal Crossing amiibo card series (Series 1-5) to Sanrio Collaboration cards and Super Smash Bros. Isabelle and Villager figures. Understanding what each amiibo unlocks can save you time, bells, and frustration when building your dream island.</p>
 
+<div style="text-align: center; margin: 2rem 0;">
+    <img src="{% static 'images/blog/animal-crossing-amiibo-cards.jpg' %}"
+         alt="Animal Crossing amiibo cards spread out showing various villagers"
+         style="max-width: 100%; height: auto; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
+    <p style="font-size: 0.9rem; color: rgba(253, 247, 227, 0.7); margin-top: 0.5rem; font-style: italic;">Animal Crossing amiibo cards feature hundreds of unique villagers</p>
+</div>
+
 <h2>How Amiibo Work in New Horizons</h2>
 <p>To use amiibo in Animal Crossing: New Horizons, you must first unlock the campsite facility by progressing through Tom Nook's story missions. Once the campsite is built (typically after your 5th-6th resident moves in), you can scan amiibo at the Resident Services terminal using the "Invite a Camper" option.</p>
 
@@ -298,6 +305,13 @@ BLOG_POSTS = [
 <p>The Legend of Zelda: Tears of the Kingdom (released May 12, 2023) features extensive amiibo support, building upon the foundation established in Breath of the Wild. Unlike many games where amiibo provide minor cosmetic bonuses, TOTK amiibo drop valuable weapons, materials, and exclusive paraglider fabrics that cannot be obtained through normal gameplay.</p>
 
 <p>Each amiibo can be scanned once per day (real-world time, not in-game time). Scanning creates a glowing pillar of light that drops items from the sky, containing a random selection of materials and, occasionally, exclusive equipment. The drops scale with your game progress, providing stronger weapons and rarer materials as you advance through Hyrule.</p>
+
+<div style="text-align: center; margin: 2rem 0;">
+    <img src="{% static 'images/blog/zelda-totk-amiibo.jpg' %}"
+         alt="Link amiibo being scanned on Nintendo Switch for Tears of the Kingdom"
+         style="max-width: 100%; height: auto; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
+    <p style="font-size: 0.9rem; color: rgba(253, 247, 227, 0.7); margin-top: 0.5rem; font-style: italic;">Scan Link amiibo to unlock exclusive gear and paraglider fabrics</p>
+</div>
 
 <h3>How to Scan Amiibo</h3>
 <p>After completing the tutorial on the Great Sky Island (approximately 2-3 hours of gameplay), the amiibo feature unlocks automatically. Press up on the D-pad to open the quick menu, navigate to the amiibo icon (rightmost option), and hold your amiibo figure or card to the NFC touchpoint on your right Joy-Con or Pro Controller. A brief loading screen confirms the scan, and items drop near Link's location.</p>
@@ -470,6 +484,13 @@ BLOG_POSTS = [
 
 <p>This universal compatibility made business sense: Nintendo had sold millions of amiibo by 2017, and collectors had invested hundreds or thousands of dollars in their collections. Breaking compatibility would have alienated this dedicated fanbase while providing no technical benefit. The Switch's NFC reader (built into the right Joy-Con) used the same NFC Type 2 Tag technology as its predecessors, ensuring effortless continuity.</p>
 
+<div style="text-align: center; margin: 2rem 0;">
+    <img src="{% static 'images/blog/amiibo-collection-lineup.jpg' %}"
+         alt="Collection of various amiibo figures lined up"
+         style="max-width: 100%; height: auto; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
+    <p style="font-size: 0.9rem; color: rgba(253, 247, 227, 0.7); margin-top: 0.5rem; font-style: italic;">Your existing amiibo collection will work with Switch 2</p>
+</div>
+
 <p style="font-size: 1.15rem; color: var(--saffron); margin: 1.5rem 0;">Key insight: Nintendo has never discontinued amiibo compatibility across console generations, suggesting Switch 2 will follow this pattern.</p>
 
 <h2>NFC Technology in Switch 2</h2>
@@ -611,6 +632,13 @@ BLOG_POSTS = [
 
 <p>Prices reflect "New in Box" (NIB) condition. Out-of-box (OOB) figures typically sell for 30-50% less.</p>
 
+<div style="text-align: center; margin: 2rem 0;">
+    <img src="{% static 'images/blog/rare-amiibo-collection.jpg' %}"
+         alt="Rare amiibo figures in protective display cases"
+         style="max-width: 100%; height: auto; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
+    <p style="font-size: 0.9rem; color: rgba(253, 247, 227, 0.7); margin-top: 0.5rem; font-style: italic;">Rare amiibo command premium prices on secondary markets</p>
+</div>
+
 <h2>Tier 1: Unicorn Status</h2>
 <p>Unicorn amiibo represent the holy grail of collecting—figures so rare that finding them at reasonable prices requires patience, luck, and often significant financial investment.</p>
 
@@ -735,7 +763,7 @@ BLOG_POSTS = [
 <h2>Collecting Strategies</h2>
 
 <h3>The Patient Collector</h3>
-<p>Set up alerts on tracking websites like AmiiboAlerts.com or follow @AmiiboNews on Twitter. Most "rare" amiibo get restocked eventually, allowing you to buy at MSRP instead of paying premiums.</p>
+<p>Check retailer websites regularly for restocks (GameStop, Best Buy, Target, Amazon). Most "rare" amiibo get restocked eventually, allowing you to buy at MSRP instead of paying premiums. Nintendo's official website and store pages often announce upcoming releases.</p>
 
 <h3>The Completionist</h3>
 <p>Budget $2,000-$5,000 to complete a full NIB collection as of 2026, accounting for unicorns and rare figures. Prioritize unicorns first, as their prices only increase over time.</p>
@@ -770,6 +798,13 @@ BLOG_POSTS = [
 </ul>
 
 <p>However, NIB collecting has drawbacks: you cannot inspect the figure closely for paint defects without opening, and boxes require significant display space (each amiibo box measures approximately 7" x 5.5" x 3").</p>
+
+<div style="text-align: center; margin: 2rem 0;">
+    <img src="{% static 'images/blog/nib-vs-oob-comparison.jpg' %}"
+         alt="Side by side comparison of NIB and OOB amiibo"
+         style="max-width: 100%; height: auto; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
+    <p style="font-size: 0.9rem; color: rgba(253, 247, 227, 0.7); margin-top: 0.5rem; font-style: italic;">NIB (left) vs OOB (right) - condition affects value significantly</p>
+</div>
 
 <h3>Out of Box (OOB)</h3>
 <p>OOB collectors remove figures from packaging to display them freely or use their NFC functionality. OOB collecting offers:</p>
@@ -1043,6 +1078,13 @@ BLOG_POSTS = [
     <li>Rare or expensive amiibo (save these for when you're experienced)</li>
 </ul>
 
+<div style="text-align: center; margin: 2rem 0;">
+    <img src="{% static 'images/blog/custom-painted-amiibo.jpg' %}"
+         alt="Custom painted amiibo with unique colors and details"
+         style="max-width: 100%; height: auto; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
+    <p style="font-size: 0.9rem; color: rgba(253, 247, 227, 0.7); margin-top: 0.5rem; font-style: italic;">Custom amiibo transform figures into unique art pieces</p>
+</div>
+
 <h2>Essential Materials and Tools</h2>
 
 <h3>Paint</h3>
@@ -1260,9 +1302,9 @@ BLOG_POSTS = [
 <p>Connect with fellow custom amiibo artists:</p>
 <ul>
     <li><strong>r/amiibo (Reddit):</strong> "Custom" flair for sharing work and getting feedback</li>
-    <li><strong>Instagram:</strong> Search #customamiibo for inspiration (100,000+ posts)</li>
-    <li><strong>YouTube:</strong> Channels like "ChaseYama Customs" and "GandaKris" offer video tutorials</li>
-    <li><strong>Discord Servers:</strong> Amiibo collecting servers often have custom channels</li>
+    <li><strong>Instagram:</strong> Search #customamiibo for inspiration and technique examples</li>
+    <li><strong>YouTube:</strong> Search "custom amiibo tutorial" for step-by-step video guides</li>
+    <li><strong>Online Forums:</strong> Many amiibo collecting communities have dedicated custom sections</li>
 </ul>
 
 <h2>Conclusion</h2>
@@ -1280,10 +1322,18 @@ BLOG_POSTS = [
 
 <p>This guide explores display solutions across every budget, space constraint, and aesthetic preference, from college dorm shelves to dedicated collector rooms.</p>
 
+<div style="text-align: center; margin: 2rem 0;">
+    <img src="{% static 'images/blog/amiibo-display-shelf.jpg' %}"
+         alt="Organized amiibo display on IKEA shelving"
+         style="max-width: 100%; height: auto; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
+    <p style="font-size: 0.9rem; color: rgba(253, 247, 227, 0.7); margin-top: 0.5rem; font-style: italic;">Proper display showcases your collection beautifully</p>
+</div>
+
 <h2>Budget-Friendly Solutions ($0-50)</h2>
 
 <h3>IKEA MOSSLANDA Picture Ledge</h3>
 <p><strong>Price:</strong> $9.99-14.99 depending on length (23", 30", or 45")</p>
+<p><strong>Where to Buy:</strong> <a href="https://www.ikea.com/us/en/cat/picture-ledges-18630/" target="_blank" rel="noopener" style="color: var(--saffron);">IKEA.com</a> or in-store</p>
 <p><strong>Capacity:</strong> 12-20 amiibo per shelf (NIB or OOB)</p>
 <p><strong>Pros:</strong></p>
 <ul>
@@ -1355,6 +1405,7 @@ BLOG_POSTS = [
 
 <h3>IKEA DETOLF Glass Cabinet</h3>
 <p><strong>Price:</strong> $69.99 (as of 2026)</p>
+<p><strong>Where to Buy:</strong> <a href="https://www.ikea.com/us/en/p/detolf-glass-door-cabinet-black-brown-10119206/" target="_blank" rel="noopener" style="color: var(--saffron);">IKEA.com</a> or in-store</p>
 <p><strong>Capacity:</strong> 60-80 OOB amiibo (4 shelves)</p>
 <p><strong>Pros:</strong></p>
 <ul>
@@ -1377,6 +1428,7 @@ BLOG_POSTS = [
 
 <h3>Baseball Bat Display Cases (Wall-Mounted)</h3>
 <p><strong>Price:</strong> $40-80 each</p>
+<p><strong>Where to Buy:</strong> <a href="https://www.amazon.com/s?k=baseball+bat+display+case" target="_blank" rel="noopener" style="color: var(--saffron);">Amazon</a>, eBay, or specialty display stores</p>
 <p><strong>Capacity:</strong> 15-25 NIB amiibo per case</p>
 <p><strong>Pros:</strong></p>
 <ul>
@@ -1413,6 +1465,7 @@ BLOG_POSTS = [
 
 <h3>Michael's Display Cases</h3>
 <p><strong>Price:</strong> $50-100 per case</p>
+<p><strong>Where to Buy:</strong> <a href="https://www.michaels.com/search?q=display%20case" target="_blank" rel="noopener" style="color: var(--saffron);">Michaels.com</a> or in-store</p>
 <p><strong>Capacity:</strong> 10-30 amiibo depending on size</p>
 <p><strong>Pros:</strong></p>
 <ul>
@@ -1575,7 +1628,14 @@ BLOG_POSTS = [
     <li><strong>TBA:</strong> Confirmed to exist but lacking specific release date</li>
 </ul>
 
-<p style="font-size: 1.15rem; color: var(--saffron); margin: 1.5rem 0;">Set up alerts on AmiiboAlerts.com and follow @AmiiboNews on social media for real-time restocks and announcements.</p>
+<div style="text-align: center; margin: 2rem 0;">
+    <img src="{% static 'images/blog/amiibo-2026-releases.jpg' %}"
+         alt="Calendar showing upcoming 2026 amiibo releases"
+         style="max-width: 100%; height: auto; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
+    <p style="font-size: 0.9rem; color: rgba(253, 247, 227, 0.7); margin-top: 0.5rem; font-style: italic;">Stay informed about upcoming amiibo releases throughout 2026</p>
+</div>
+
+<p style="font-size: 1.15rem; color: var(--saffron); margin: 1.5rem 0;">Check Nintendo's official website and major retailer pages regularly for restocks and announcements of new releases.</p>
 
 <h2>Q1 2026 Releases (January-March)</h2>
 
@@ -1752,7 +1812,7 @@ BLOG_POSTS = [
 <h3>Maximizing Success</h3>
 <ul>
     <li><strong>Multiple Retailers:</strong> Pre-order from 2-3 retailers, cancel duplicates after securing at least one</li>
-    <li><strong>Alerts:</strong> Use AmiiboAlerts.com, NowInStock.net, or follow @Wario64 on Twitter for instant notifications</li>
+    <li><strong>Check Regularly:</strong> Visit retailer websites daily during pre-order windows (Best Buy, GameStop, Target, Amazon)</li>
     <li><strong>In-Store:</strong> Physical stores often have separate stock from online; call ahead to check availability</li>
     <li><strong>Payment Ready:</strong> Save payment info to all retailer accounts for one-click checkout</li>
 </ul>
@@ -1762,15 +1822,15 @@ BLOG_POSTS = [
 <h3>Official Sources</h3>
 <ul>
     <li><strong>Nintendo Direct:</strong> Major announcements happen during Nintendo Direct presentations (typically quarterly)</li>
-    <li><strong>@NintendoAmerica (Twitter/X):</strong> Official announcements and release date confirmations</li>
-    <li><strong>Nintendo's Amiibo Page:</strong> nintendo.com/amiibo lists all official releases</li>
+    <li><strong>Nintendo's Official Website:</strong> nintendo.com features news about upcoming releases</li>
+    <li><strong>Nintendo Store:</strong> store.nintendo.com lists available amiibo and pre-orders</li>
 </ul>
 
 <h3>Community Resources</h3>
 <ul>
-    <li><strong>r/amiibo (Reddit):</strong> Real-time discussions, leak analysis, restock alerts</li>
-    <li><strong>AmiiboAlerts.com:</strong> Automated restock notifications via email, SMS, or app</li>
-    <li><strong>Discord Servers:</strong> Many collector communities have dedicated amiibo channels with bot alerts</li>
+    <li><strong>r/amiibo (Reddit):</strong> Real-time discussions, leak analysis, and community-shared restock information</li>
+    <li><strong>Online Collector Forums:</strong> Many amiibo collecting communities share release information and restocks</li>
+    <li><strong>YouTube Channels:</strong> Nintendo news channels often cover upcoming amiibo releases</li>
 </ul>
 
 <h3>Retailer Emails</h3>
@@ -2677,7 +2737,9 @@ class IndexView(View):
         # Build SEO context
         seo = SEOContext(request)
         seo.set_title("Welcome to Amiibo Tracker", suffix="")
-        seo.set_description("Your one-stop shop for everything Amiibo. Track your collection with Google Sheets, learn about NFC technology, and explore Amiibo history.")
+        seo.set_description(
+            "Your one-stop shop for everything Amiibo. Track your collection with Google Sheets, learn about NFC technology, and explore Amiibo history."
+        )
         seo.set_type("website")
 
         # Add WebSite schema with SearchAction
@@ -2694,7 +2756,9 @@ class DemoView(View):
         # Build SEO context
         seo = SEOContext(request)
         seo.set_title("Demo", suffix="Amiibo Tracker")
-        seo.set_description("Try the Amiibo Tracker demo. See how you can track your collection with Google Sheets integration, filter by series, and manage your Amiibo library.")
+        seo.set_description(
+            "Try the Amiibo Tracker demo. See how you can track your collection with Google Sheets integration, filter by series, and manage your Amiibo library."
+        )
         seo.set_type("website")
 
         return render(request, "tracker/demo.html", seo.build())
@@ -2705,7 +2769,9 @@ class PrivacyPolicyView(View):
         # Build SEO context
         seo = SEOContext(request)
         seo.set_title("Privacy Policy", suffix="Amiibo Tracker")
-        seo.set_description("Learn how Amiibo Tracker handles your data. We use Google authentication and Sheets for collection tracking. Your data stays in your Google Drive.")
+        seo.set_description(
+            "Learn how Amiibo Tracker handles your data. We use Google authentication and Sheets for collection tracking. Your data stays in your Google Drive."
+        )
         seo.set_type("website")
 
         context = {
@@ -2840,7 +2906,9 @@ class BlogListView(View, LoggingMixin):
         # Build SEO context
         seo = SEOContext(request)
         seo.set_title("Amiibo Blog", suffix="Amiibo Tracker")
-        seo.set_description("Learn about Amiibo technology, collecting tips, compatibility guides, and browse the complete catalog of all released Amiibo figures.")
+        seo.set_description(
+            "Learn about Amiibo technology, collecting tips, compatibility guides, and browse the complete catalog of all released Amiibo figures."
+        )
         seo.set_type("website")
 
         # Add Organization schema
@@ -2877,7 +2945,9 @@ class BlogPostView(View, LoggingMixin, AmiiboRemoteFetchMixin):
 
         # Generate description from excerpt or content
         description = post.get("excerpt") or generate_meta_description(
-            post["content"] if post["content"] != "dynamic" else "Browse the complete catalog of all released Amiibo figures, sorted by newest to oldest."
+            post["content"]
+            if post["content"] != "dynamic"
+            else "Browse the complete catalog of all released Amiibo figures, sorted by newest to oldest."
         )
         seo.set_description(description)
         seo.set_type("article")
@@ -2918,7 +2988,9 @@ class BlogPostView(View, LoggingMixin, AmiiboRemoteFetchMixin):
                         amiibo.get("release")
                     )
                     # Create amiibo_id in head-tail format for URL
-                    amiibo["amiibo_id"] = f"{amiibo.get('head', '')}-{amiibo.get('tail', '')}"
+                    amiibo["amiibo_id"] = (
+                        f"{amiibo.get('head', '')}-{amiibo.get('tail', '')}"
+                    )
 
                     # Extract the earliest release date for sorting
                     release_dates = amiibo.get("release", {})
@@ -2948,7 +3020,7 @@ class BlogPostView(View, LoggingMixin, AmiiboRemoteFetchMixin):
                 )
 
                 # Implement pagination (50 items per page)
-                page = request.GET.get('page', 1)
+                page = request.GET.get("page", 1)
                 paginator = Paginator(sorted_amiibos, 50)
 
                 try:
@@ -2991,7 +3063,7 @@ class AmiiboDetailView(View, LoggingMixin, AmiiboRemoteFetchMixin):
     def get(self, request, amiibo_id):
         # Parse amiibo_id (format: head-tail)
         try:
-            head, tail = amiibo_id.split('-')
+            head, tail = amiibo_id.split("-")
             if len(head) != 8 or len(tail) != 8:
                 raise ValueError("Invalid amiibo ID format")
         except (ValueError, AttributeError):
@@ -3007,8 +3079,8 @@ class AmiiboDetailView(View, LoggingMixin, AmiiboRemoteFetchMixin):
         try:
             amiibos = self._fetch_remote_amiibos()
             amiibo = next(
-                (a for a in amiibos if a.get('head') == head and a.get('tail') == tail),
-                None
+                (a for a in amiibos if a.get("head") == head and a.get("tail") == tail),
+                None,
             )
 
             if not amiibo:
@@ -3032,7 +3104,7 @@ class AmiiboDetailView(View, LoggingMixin, AmiiboRemoteFetchMixin):
                 "na": "North America",
                 "jp": "Japan",
                 "eu": "Europe",
-                "au": "Australia"
+                "au": "Australia",
             }
 
             for region_code, region_name in region_names.items():
@@ -3040,12 +3112,12 @@ class AmiiboDetailView(View, LoggingMixin, AmiiboRemoteFetchMixin):
                 if date_str:
                     try:
                         from datetime import datetime
+
                         date_obj = datetime.strptime(date_str, "%Y-%m-%d")
                         formatted_date = date_obj.strftime("%B %d, %Y")
-                        regional_releases.append({
-                            "region": region_name,
-                            "date": formatted_date
-                        })
+                        regional_releases.append(
+                            {"region": region_name, "date": formatted_date}
+                        )
                     except (ValueError, TypeError):
                         pass
 
@@ -3141,7 +3213,7 @@ class AmiiboDetailView(View, LoggingMixin, AmiiboRemoteFetchMixin):
         descriptions_path = Path(__file__).parent / "character_descriptions.json"
         if descriptions_path.exists():
             try:
-                with open(descriptions_path, 'r', encoding='utf-8') as f:
+                with open(descriptions_path, "r", encoding="utf-8") as f:
                     descriptions = json.load(f)
                     # Try amiibo name first (for variant-specific descriptions)
                     if amiibo_name in descriptions:
