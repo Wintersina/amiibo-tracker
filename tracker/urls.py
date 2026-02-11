@@ -22,6 +22,9 @@ from tracker.views import (
 urlpatterns = [
     path("", IndexView.as_view(), name="index"),
     path("robots.txt", RobotsTxtView.as_view(), name="robots"),
+    path(
+        "about/", TemplateView.as_view(template_name="tracker/about.html"), name="about"
+    ),
     path("demo/", DemoView.as_view(), name="demo"),
     path("tracker/", AmiiboListView.as_view(), name="amiibo_list"),
     path("toggle/", ToggleCollectedView.as_view(), name="toggle_collected"),
@@ -37,6 +40,10 @@ urlpatterns = [
     path("privacy/", PrivacyPolicyView.as_view(), name="privacy"),
     path("api/amiibo/", AmiiboDatabaseView.as_view(), name="amiibo_database"),
     path("blog/", BlogListView.as_view(), name="blog_list"),
-    path("blog/number-released/amiibo/<str:amiibo_id>/", AmiiboDetailView.as_view(), name="amiibo_detail"),
+    path(
+        "blog/number-released/amiibo/<str:amiibo_id>/",
+        AmiiboDetailView.as_view(),
+        name="amiibo_detail",
+    ),
     path("blog/<slug:slug>/", BlogPostView.as_view(), name="blog_post"),
 ]
