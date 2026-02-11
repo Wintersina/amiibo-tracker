@@ -337,7 +337,7 @@ class NintendoAmiiboScraper(LoggingMixin):
 
         if best_match:
             self.log_info(
-                f"✓ Match found: '{scraped_name}' -> '{best_match.get('name')}' "
+                f"Match found: '{scraped_name}' -> '{best_match.get('name')}' "
                 f"(score: {best_score:.2f})"
             )
         else:

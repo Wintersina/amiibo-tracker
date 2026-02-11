@@ -82,7 +82,7 @@ class Command(BaseCommand):
                     self.stdout.write(f"  ... and {len(updates) - 20} more")
 
             self.stdout.write(
-                self.style.WARNING("\n✓ Dry run complete - no changes saved")
+                self.style.WARNING("\nDry run complete - no changes saved")
             )
         else:
             # For actual run, use the scraper's run() method (includes backfilling)
@@ -97,9 +97,7 @@ class Command(BaseCommand):
                     self.style.SUCCESS(f"Backfilled: {result['backfilled']}")
                 )
                 self.stdout.write("=" * 60 + "\n")
-                self.stdout.write(
-                    self.style.SUCCESS(f"✓ Scraper completed successfully")
-                )
+                self.stdout.write(self.style.SUCCESS(f"Scraper completed successfully"))
             elif result["status"] == "skipped":
                 self.stdout.write(
                     self.style.WARNING(

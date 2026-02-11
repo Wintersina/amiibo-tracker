@@ -2,7 +2,7 @@
 {% load static %}
 {% load amiibo_filters %}
 
-{% block title %}Amiibodex - Complete Amiibo Database{% endblock %}
+{% block title %}AmiiboDex - Complete Amiibo Database{% endblock %}
 
 {% block meta_description %}Browse the complete catalog of all released Amiibo figures, sorted by newest to oldest. A comprehensive, always up-to-date database of every amiibo ever released.{% endblock %}
 
@@ -597,16 +597,12 @@
         <a href="{% url 'index' %}" class="action-btn">← Back</a>
     </div>
     <div class="content">
-        <h1>Amiibodex</h1>
-        <p class="page-subtitle">A comprehensive, always up-to-date database of every amiibo ever released.</p>
-
-        <div class="amiibo-list-intro">
-            <p><strong>📊 Live Data:</strong> This list is automatically updated with the latest amiibo releases sourced directly from our backend database. No manual updates needed—whenever Nintendo releases new amiibo, they'll appear here sorted by release date (newest first).</p>
-        </div>
+        <h1>AmiiboDex</h1>
+        <p class="page-subtitle">AmiiboDex scrapes the web daily to find new amiibos to share here!</p>
 
         {% if error %}
             <div class="error-message">
-                <p><strong>⚠️ Error:</strong> Unable to load amiibo data. Please try again later.</p>
+                <p><strong>Error:</strong> Unable to load amiibo data. Please try again later.</p>
             </div>
         {% else %}
             <form method="get" class="search-form">

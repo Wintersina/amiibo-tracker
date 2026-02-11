@@ -31,7 +31,7 @@ if [ -z "$SERVICE_URL" ]; then
 fi
 
 SCRAPER_URL="$SERVICE_URL/api/scrape-nintendo/"
-echo "✅ Service URL: $SERVICE_URL"
+echo "Service URL: $SERVICE_URL"
 echo "📡 Scraper endpoint: $SCRAPER_URL"
 
 # Get the default compute service account
@@ -60,7 +60,7 @@ JOB_EXISTS=$(gcloud scheduler jobs describe "$JOB_NAME" \
   --format="value(name)" 2>/dev/null || echo "")
 
 if [ -n "$JOB_EXISTS" ]; then
-  echo "♻️  Updating existing scheduler job..."
+  echo "Updating existing scheduler job..."
   gcloud scheduler jobs update http "$JOB_NAME" \
     --location "$REGION" \
     --project "$PROJECT_ID" \
@@ -72,14 +72,14 @@ if [ -n "$JOB_EXISTS" ]; then
     --description "Auto-scrape Nintendo amiibo lineup twice daily" \
     --quiet
 
-  echo "✅ Scheduler job updated successfully!"
+  echo "Scheduler job updated successfully!"
 else
   echo "➕ Creating new scheduler job..."
 
   # Ensure the App Engine app exists (required for Cloud Scheduler in some regions)
   APP_ENGINE_REGION=$(gcloud app describe --project "$PROJECT_ID" --format="value(locationId)" 2>/dev/null || echo "")
   if [ -z "$APP_ENGINE_REGION" ]; then
-    echo "ℹ️  Cloud Scheduler requires App Engine app (no compute resources)..."
+    echo "Note: Cloud Scheduler requires App Engine app (no compute resources)..."
     echo "   Creating App Engine app in region: $REGION"
     gcloud app create --region="$REGION" --project "$PROJECT_ID" 2>/dev/null || true
   fi
@@ -95,7 +95,7 @@ else
     --description "Auto-scrape Nintendo amiibo lineup twice daily" \
     --quiet
 
-  echo "✅ Scheduler job created successfully!"
+  echo "Scheduler job created successfully!"
 fi
 
 # Verify the job
@@ -107,11 +107,11 @@ gcloud scheduler jobs describe "$JOB_NAME" \
   --format="table(name, schedule, state, httpTarget.uri)"
 
 echo ""
-echo "✨ Setup complete! The scraper will run twice daily (2 AM and 2 PM) automatically."
+echo "Setup complete! The scraper will run twice daily (2 AM and 2 PM) automatically."
 echo ""
-echo "🧪 To test the job manually, run:"
+echo "To test the job manually, run:"
 echo "   gcloud scheduler jobs run $JOB_NAME --location=$REGION --project=$PROJECT_ID"
 echo ""
-echo "📊 To view job history and logs:"
+echo "To view job history and logs:"
 echo "   gcloud scheduler jobs describe $JOB_NAME --location=$REGION --project=$PROJECT_ID"
 echo ""

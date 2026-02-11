@@ -26,10 +26,10 @@ ALLOWED_DOMAINS = {
 try:
     print("Loading rembg model: u2net_human_seg...")
     _session = new_session("u2net_human_seg")
-    print("✓ Rembg model loaded successfully")
+    print("Rembg model loaded successfully")
 except Exception as e:
-    print(f"⚠ Warning: Failed to pre-load rembg model: {e}")
-    print("  Model will be loaded on first request")
+    print(f"Warning: Failed to pre-load rembg model: {e}")
+    print("Model will be loaded on first request")
     _session = None
 
 

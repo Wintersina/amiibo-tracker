@@ -566,13 +566,9 @@
 
         <div class="post-content">
             {% if amiibos %}
-                <div class="amiibo-list-intro">
-                    <p><strong>📊 Live Data:</strong> This list is automatically updated with the latest amiibo releases sourced directly from our backend database. No manual updates needed—whenever Nintendo releases new amiibo, they'll appear here sorted by release date (newest first).</p>
-                </div>
-
                 {% if error %}
                     <div class="error-message">
-                        <p><strong>⚠️ Error:</strong> Unable to load amiibo data. Please try again later.</p>
+                        <p><strong>Error:</strong> Unable to load amiibo data. Please try again later.</p>
                     </div>
                 {% else %}
                     <p class="total-count">Total Amiibo Released: {{ total_count }}</p>
