@@ -6,10 +6,6 @@
 {% block meta_description %}Your one-stop shop for everything Amiibo. Track your collection with Google Sheets, learn about NFC technology, and explore Amiibo history all in one place.{% endblock %}
 
 {% block head_extra %}
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Geologica:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-
 <style>
     :root {
         --emerald: #0f766e;
@@ -23,168 +19,12 @@
     }
 
     body {
-        margin: 0;
-        padding: 0;
-        padding-top: 70px;
         font-family: 'Geologica', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
         background: linear-gradient(180deg, rgba(6, 10, 14, 0.95), rgba(12, 18, 24, 0.9)),
         url('{% static "images/amiibo_bg.png" %}') center/420px repeat;
         background-attachment: fixed;
         min-height: 100vh;
         color: var(--cream);
-    }
-
-    /* Top Navigation Bar */
-    .top-nav {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        z-index: 1000;
-        background: linear-gradient(135deg, rgba(15, 23, 42, 0.92), rgba(14, 20, 27, 0.88));
-        backdrop-filter: blur(12px);
-        border-bottom: 1px solid rgba(243, 201, 105, 0.25);
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-    }
-
-    .nav-container {
-        max-width: 1400px;
-        margin: 0 auto;
-        padding: 0 2rem;
-        height: 70px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 2rem;
-    }
-
-    .nav-section {
-        display: flex;
-        align-items: center;
-    }
-
-    .nav-left {
-        display: flex;
-        align-items: center;
-        gap: 2.5rem;
-    }
-
-    .nav-links {
-        display: flex;
-        align-items: center;
-        gap: 1.5rem;
-    }
-
-    .nav-right {
-        margin-left: auto;
-    }
-
-    .logo-link {
-        display: flex;
-        align-items: center;
-    }
-
-    .logo {
-        height: 55px;
-        width: auto;
-        transition: opacity 0.2s ease;
-    }
-
-    .logo:hover {
-        opacity: 0.8;
-    }
-
-    .nav-link {
-        color: var(--cream);
-        text-decoration: none;
-        font-weight: 600;
-        font-size: 1rem;
-        padding: 0.5rem 1rem;
-        border-radius: 8px;
-        transition: background 0.2s ease, color 0.2s ease;
-    }
-
-    .nav-link:hover {
-        background: rgba(243, 201, 105, 0.15);
-        color: var(--saffron);
-    }
-
-    .login-btn {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.6rem;
-        padding: 0.65rem 1.5rem;
-        background: #ffffff;
-        color: #3c4043;
-        text-decoration: none;
-        font-weight: 700;
-        font-size: 1rem;
-        border-radius: 10px;
-        border: 2px solid rgba(243, 201, 105, 0.3);
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-    }
-
-    .login-btn:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
-    }
-
-    .login-btn img {
-        width: 20px;
-        height: 20px;
-    }
-
-    .mobile-menu-btn {
-        display: none;
-        background: none;
-        border: none;
-        color: var(--cream);
-        font-size: 1.8rem;
-        cursor: pointer;
-        padding: 0.5rem;
-        line-height: 1;
-    }
-
-    .mobile-nav {
-        display: none;
-        flex-direction: column;
-        background: rgba(15, 23, 42, 0.98);
-        border-top: 1px solid rgba(243, 201, 105, 0.2);
-        padding: 1rem;
-        gap: 0.5rem;
-    }
-
-    .mobile-nav.active {
-        display: flex;
-    }
-
-    .mobile-nav-link {
-        color: var(--cream);
-        text-decoration: none;
-        font-weight: 600;
-        padding: 0.85rem 1rem;
-        border-radius: 8px;
-        transition: background 0.2s ease;
-        display: flex;
-        align-items: center;
-        gap: 0.6rem;
-    }
-
-    .mobile-nav-link:hover {
-        background: rgba(243, 201, 105, 0.15);
-    }
-
-    .mobile-nav-link.login {
-        background: #ffffff;
-        color: #3c4043;
-        font-weight: 700;
-        margin-top: 0.5rem;
-    }
-
-    .mobile-nav-link.login img {
-        width: 20px;
-        height: 20px;
     }
 
     /* Hero Section */
@@ -266,32 +106,6 @@
     }
 
     @media (max-width: 720px) {
-        body {
-            padding-top: 60px;
-        }
-
-        .nav-container {
-            height: 60px;
-            padding: 0 1rem;
-        }
-
-        .nav-links,
-        .nav-right {
-            display: none;
-        }
-
-        .nav-left {
-            gap: 1rem;
-        }
-
-        .mobile-menu-btn {
-            display: block;
-        }
-
-        .logo {
-            height: 48px;
-        }
-
         .hero-section {
             margin: 2rem auto;
             padding: 0 1rem;
@@ -324,14 +138,6 @@
     }
 
     @media (max-width: 480px) {
-        .nav-container {
-            padding: 0 0.75rem;
-        }
-
-        .logo {
-            height: 42px;
-        }
-
         .hero-section {
             margin: 1.5rem auto;
             padding: 0 0.75rem;
@@ -359,42 +165,6 @@
 {% endblock %}
 
 {% block content %}
-<nav class="top-nav">
-    <div class="nav-container">
-        <div class="nav-section nav-left">
-            <a href="{% url 'index' %}" class="logo-link">
-                <img src="{% static 'images/top_bar_logo.png' %}" alt="Amiibo Tracker" class="logo">
-            </a>
-            <div class="nav-links">
-                <a href="{% url 'about' %}" class="nav-link">About</a>
-                <a href="{% url 'blog_list' %}" class="nav-link">Blog</a>
-                <a href="{% url 'privacy' %}" class="nav-link">Privacy</a>
-            </div>
-        </div>
-
-        <div class="nav-section nav-right">
-            <a href="{% url 'oauth_login' %}" class="login-btn">
-                <img src="{% static 'images/google-logo.svg' %}" alt="Google logo">
-                Login
-            </a>
-        </div>
-
-        <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Toggle Menu">
-            <span class="hamburger-icon">☰</span>
-        </button>
-    </div>
-
-    <div class="mobile-nav" id="mobileNav">
-        <a href="{% url 'about' %}" class="mobile-nav-link">About</a>
-        <a href="{% url 'blog_list' %}" class="mobile-nav-link">Blog</a>
-        <a href="{% url 'privacy' %}" class="mobile-nav-link">Privacy</a>
-        <a href="{% url 'oauth_login' %}" class="mobile-nav-link login">
-            <img src="{% static 'images/google-logo.svg' %}" alt="Google logo">
-            Login with Google
-        </a>
-    </div>
-</nav>
-
 <div class="hero-section">
     <div class="hero-image-container">
         <img src="{% static 'images/amiibo-lineup-img.avif' %}" alt="Amiibo Collection" class="hero-image">
@@ -406,16 +176,8 @@
         </p>
         <div class="hero-actions">
             <a href="{% url 'demo' %}" class="hero-btn demo-btn">Try Demo</a>
+            <a href="{% url 'amiibodex' %}" class="hero-btn catalog-btn">Amiibodex</a>
         </div>
     </div>
 </div>
-
-<script>
-    document.getElementById('mobileMenuBtn').addEventListener('click', () => {
-        const mobileNav = document.getElementById('mobileNav');
-        const hamburger = document.querySelector('.hamburger-icon');
-        mobileNav.classList.toggle('active');
-        hamburger.textContent = mobileNav.classList.contains('active') ? '✕' : '☰';
-    });
-</script>
 {% endblock %}

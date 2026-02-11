@@ -5,8 +5,14 @@
 
 {% block meta_description %}Track your Nintendo Amiibo collection with ease. View our demo to see how Amiibo Tracker helps you organize your figures, cards, and plushes.{% endblock %}
 
+{% block header_styles %}{% endblock %}
+{% block navigation %}{% endblock %}
+
 {% block head_extra %}
 <style>
+        body {
+            padding-top: 0 !important;
+        }
         @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600;700&display=swap');
 
         :root {
@@ -361,6 +367,13 @@
             color: var(--text);
             padding: 0.35em 0.65em;
             border-radius: 10px;
+            cursor: pointer;
+            transition: transform 0.2s ease, background 0.2s ease;
+        }
+
+        .toggle-btn:hover {
+            background: linear-gradient(135deg, rgba(243, 201, 105, 0.5), rgba(243, 201, 105, 0.3));
+            transform: scale(1.05);
         }
 
         .toggle-btn.rotate {
@@ -372,13 +385,13 @@
             border-radius: 14px;
             margin-bottom: 2em;
             padding: 1em;
-            background: linear-gradient(135deg, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.85));
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.5));
             transition: background-color 0.3s ease, border-color 0.3s ease;
             box-shadow: 0 16px 30px rgba(0, 0, 0, 0.1);
         }
 
         body.dark .game-series-group {
-            background: linear-gradient(135deg, rgba(31, 41, 55, 0.8), rgba(17, 24, 39, 0.9));
+            background: linear-gradient(135deg, rgba(31, 41, 55, 0.6), rgba(17, 24, 39, 0.7));
         }
 
         .amiibo-grid {
@@ -591,6 +604,18 @@
 
             .game-series-header {
                 font-size: 1.05em;
+                margin-bottom: 0.8em;
+            }
+
+            .toggle-btn {
+                font-size: 1.4em;
+                margin-right: 0.4em;
+                padding: 0.2em 0.5em;
+                min-width: 32px;
+                min-height: 32px;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
             }
 
             .amiibo-card {
@@ -678,6 +703,13 @@
 
             .game-series-header {
                 font-size: 1rem;
+                margin-bottom: 0.7em;
+            }
+
+            .toggle-btn {
+                font-size: 1.5em;
+                margin-right: 0.3em;
+                padding: 0.15em 0.45em;
             }
 
             .group-count {

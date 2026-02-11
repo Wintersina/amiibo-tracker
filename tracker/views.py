@@ -3084,6 +3084,107 @@ class BlogPostView(View, LoggingMixin, AmiiboRemoteFetchMixin):
         return render(request, "tracker/blog_post.html", context)
 
 
+class AmiibodexView(View, LoggingMixin, AmiiboRemoteFetchMixin):
+    """View for the Amiibodex page - a comprehensive list of all released amiibo."""
+
+    def get(self, request):
+        self.log_action(
+            "amiibodex-view",
+            request,
+        )
+
+        # Build SEO context
+        seo = SEOContext(request)
+        seo.set_title("Amiibodex", suffix="Complete Amiibo Database")
+
+        description = "Browse the complete catalog of all released Amiibo figures, sorted by newest to oldest. A comprehensive, always up-to-date database of every amiibo ever released."
+        seo.set_description(description)
+        seo.set_type("website")
+
+        # Add BreadcrumbList schema
+        amiibodex_url = request.build_absolute_uri()
+        breadcrumbs = [
+            ("Home", request.build_absolute_uri("/")),
+            ("Amiibodex", amiibodex_url),
+        ]
+        seo.add_schema("BreadcrumbList", generate_breadcrumb_schema(breadcrumbs))
+
+        context = {}
+        context.update(seo.build())
+
+        try:
+            amiibos = self._fetch_remote_amiibos()
+
+            # Add formatted release date and amiibo_id for each amiibo
+            for amiibo in amiibos:
+                amiibo["display_release"] = AmiiboService._format_release_date(
+                    amiibo.get("release")
+                )
+                # Create amiibo_id in head-tail format for URL
+                amiibo["amiibo_id"] = (
+                    f"{amiibo.get('head', '')}-{amiibo.get('tail', '')}"
+                )
+
+                # Extract the earliest release date for sorting
+                release_dates = amiibo.get("release", {})
+                earliest_date = None
+                for region in ["na", "jp", "eu", "au"]:
+                    date_str = release_dates.get(region)
+                    if date_str:
+                        try:
+                            from datetime import datetime
+
+                            date_obj = datetime.strptime(date_str, "%Y-%m-%d")
+                            if earliest_date is None or date_obj < earliest_date:
+                                earliest_date = date_obj
+                        except (ValueError, TypeError):
+                            pass
+                amiibo["earliest_release"] = earliest_date
+
+            # Sort by earliest release date (newest first), then by name
+            sorted_amiibos = sorted(
+                amiibos,
+                key=lambda x: (
+                    x["earliest_release"] is None,  # Put None dates at end
+                    x["earliest_release"] if x["earliest_release"] else "",
+                    x.get("name", ""),
+                ),
+                reverse=True,  # Newest first
+            )
+
+            # Implement pagination (50 items per page)
+            page = request.GET.get("page", 1)
+            paginator = Paginator(sorted_amiibos, 50)
+
+            try:
+                amiibos_page = paginator.page(page)
+            except PageNotAnInteger:
+                amiibos_page = paginator.page(1)
+            except EmptyPage:
+                amiibos_page = paginator.page(paginator.num_pages)
+
+            context["amiibos"] = amiibos_page
+            context["total_count"] = len(sorted_amiibos)
+
+            self.log_action(
+                "amiibodex-content-loaded",
+                request,
+                amiibo_count=len(sorted_amiibos),
+            )
+        except Exception as e:
+            self.log_action(
+                "amiibodex-content-error",
+                request,
+                level="error",
+                error=str(e),
+            )
+            context["amiibos"] = []
+            context["total_count"] = 0
+            context["error"] = True
+
+        return render(request, "tracker/amiibodex.html", context)
+
+
 class AmiiboDetailView(View, LoggingMixin, AmiiboRemoteFetchMixin):
     """
     View for displaying individual amiibo details.

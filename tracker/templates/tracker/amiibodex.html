@@ -1,0 +1,565 @@
+{% extends "tracker/base.html" %}
+{% load static %}
+
+{% block title %}Amiibodex - Complete Amiibo Database{% endblock %}
+
+{% block meta_description %}Browse the complete catalog of all released Amiibo figures, sorted by newest to oldest. A comprehensive, always up-to-date database of every amiibo ever released.{% endblock %}
+
+{% block head_extra %}
+<style>
+        @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600&display=swap');
+
+        :root {
+            --emerald: #0f766e;
+            --saffron: #f3c969;
+            --cream: #fdf7e3;
+            --ink: #0f172a;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Vazirmatn', system-ui, sans-serif;
+            background: linear-gradient(180deg, rgba(6, 10, 14, 0.95), rgba(12, 18, 24, 0.9)),
+            url('{% static "images/amiibo_bg.png" %}') center/420px repeat;
+            background-attachment: fixed;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--cream);
+            padding: 2rem 1rem;
+        }
+
+        .canvas {
+            position: relative;
+            padding: 3rem;
+            width: min(1100px, 90vw);
+            border-radius: 28px;
+            background: rgba(15, 23, 42, 0.72);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(243, 201, 105, 0.35);
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.45);
+            overflow: hidden;
+            margin: 2rem auto;
+        }
+
+        .canvas::before,
+        .canvas::after {
+            content: "";
+            position: absolute;
+            inset: 18px;
+            border-radius: 20px;
+            background-image: radial-gradient(circle at 12px 12px, rgba(243, 201, 105, 0.35) 2px, transparent 0),
+            radial-gradient(circle at 42px 42px, rgba(255, 255, 255, 0.15) 1.5px, transparent 0);
+            background-size: 120px 120px, 160px 160px;
+            opacity: 0.4;
+            pointer-events: none;
+        }
+
+        .canvas::after {
+            inset: 0;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 28px;
+            background: radial-gradient(circle at 25% 20%, rgba(243, 201, 105, 0.08), transparent 30%),
+            radial-gradient(circle at 80% 60%, rgba(15, 118, 110, 0.08), transparent 35%);
+        }
+
+        .content {
+            position: relative;
+            z-index: 1;
+        }
+
+        h1 {
+            margin: 0 0 0.35em 0;
+            font-size: clamp(2.1rem, 3vw, 2.8rem);
+            letter-spacing: 0.01em;
+            color: var(--saffron);
+        }
+
+        .page-subtitle {
+            color: rgba(253, 247, 227, 0.8);
+            font-size: 1.1rem;
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+
+        .amiibo-list-intro {
+            background: rgba(243, 201, 105, 0.1);
+            border: 1px solid rgba(243, 201, 105, 0.3);
+            border-radius: 14px;
+            padding: 1.25rem;
+            margin: 1.5rem 0;
+        }
+
+        .amiibo-list-intro p {
+            margin: 0;
+            color: rgba(253, 247, 227, 0.95);
+        }
+
+        .total-count {
+            font-size: 1.15rem;
+            font-weight: 600;
+            color: var(--saffron);
+            margin: 1.5rem 0 1rem 0;
+        }
+
+        .amiibo-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.5rem 0;
+            font-size: 0.95rem;
+        }
+
+        .amiibo-table thead {
+            background: rgba(15, 118, 110, 0.2);
+            border-bottom: 2px solid rgba(243, 201, 105, 0.4);
+        }
+
+        .amiibo-table th {
+            padding: 0.9rem;
+            text-align: left;
+            font-weight: 600;
+            color: var(--cream);
+        }
+
+        .amiibo-table th.img-col {
+            width: 70px;
+            text-align: center;
+        }
+
+        .amiibo-table tbody tr {
+            border-bottom: 1px solid rgba(243, 201, 105, 0.15);
+            transition: background 0.2s ease, transform 0.1s ease;
+        }
+
+        .amiibo-table tbody tr.clickable-row {
+            cursor: pointer;
+        }
+
+        .amiibo-table tbody tr.clickable-row:hover {
+            background: rgba(243, 201, 105, 0.08);
+            transform: scale(1.01);
+        }
+
+        .amiibo-table td {
+            padding: 0.75rem 0.9rem;
+            color: rgba(253, 247, 227, 0.88);
+        }
+
+        .amiibo-table td.img-col {
+            text-align: center;
+            position: relative;
+            padding: 0.5rem;
+        }
+
+        .amiibo-thumbnail {
+            width: 48px;
+            height: 48px;
+            object-fit: contain;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 2px;
+        }
+
+        .img-fallback {
+            display: none;
+            width: 48px;
+            height: 48px;
+            line-height: 48px;
+            background: rgba(243, 201, 105, 0.15);
+            border-radius: 6px;
+            color: rgba(243, 201, 105, 0.6);
+            font-size: 1.5rem;
+            font-weight: bold;
+            text-align: center;
+            margin: 0 auto;
+        }
+
+        .amiibo-table td.name-col {
+            font-weight: 600;
+            color: var(--cream);
+        }
+
+        .amiibo-table td:last-child {
+            color: rgba(253, 247, 227, 0.7);
+            font-size: 0.9rem;
+        }
+
+        /* Pagination Styles */
+        .pagination {
+            margin: 2rem 0;
+            padding: 1.5rem;
+            background: rgba(15, 118, 110, 0.1);
+            border: 1px solid rgba(243, 201, 105, 0.3);
+            border-radius: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .pagination-info {
+            color: rgba(253, 247, 227, 0.8);
+            font-size: 0.95rem;
+        }
+
+        .pagination-controls {
+            display: flex;
+            gap: 0.6rem;
+            align-items: center;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .page-btn {
+            padding: 0.65rem 1.2rem;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(243, 201, 105, 0.4);
+            border-radius: 12px;
+            color: var(--cream);
+            text-decoration: none;
+            font-size: 0.95rem;
+            font-weight: 700;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+        }
+
+        .page-btn:hover {
+            background: rgba(255, 255, 255, 0.12);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.18);
+        }
+
+        .page-btn.disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        .page-current {
+            padding: 0.65rem 1.2rem;
+            background: linear-gradient(135deg, rgba(15, 118, 110, 0.3), rgba(243, 201, 105, 0.2));
+            border: 1px solid rgba(243, 201, 105, 0.5);
+            border-radius: 12px;
+            color: var(--saffron);
+            font-weight: 700;
+            font-size: 0.95rem;
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+        }
+
+        .error-message {
+            background: rgba(220, 38, 38, 0.15);
+            border: 1px solid rgba(220, 38, 38, 0.4);
+            border-radius: 14px;
+            padding: 1.25rem;
+            margin: 1.5rem 0;
+            color: rgba(253, 247, 227, 0.95);
+        }
+
+        .nav-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.8rem;
+            margin-top: 2.5rem;
+            padding-top: 2rem;
+            border-top: 1px solid rgba(243, 201, 105, 0.3);
+        }
+
+        .action-btn {
+            text-decoration: none;
+            border: none;
+            cursor: pointer;
+            border-radius: 12px;
+            padding: 0.95rem 1.4rem;
+            font-size: 1.05rem;
+            font-weight: 700;
+            letter-spacing: 0.01em;
+            box-shadow: 0 14px 28px rgba(0, 0, 0, 0.28);
+            transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.6rem;
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--cream);
+            border: 1px solid rgba(243, 201, 105, 0.4);
+        }
+
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 18px 32px rgba(0, 0, 0, 0.35);
+        }
+
+        @media (max-width: 720px) {
+            body {
+                padding: 1.5rem 0.75rem;
+            }
+
+            .canvas {
+                padding: 1.75rem 1.5rem;
+                width: 95vw;
+            }
+
+            h1 {
+                font-size: 1.8rem;
+            }
+
+            .page-subtitle {
+                font-size: 1rem;
+            }
+
+            .amiibo-list-intro {
+                padding: 1rem;
+                font-size: 0.95rem;
+            }
+
+            .total-count {
+                font-size: 1.05rem;
+            }
+
+            .amiibo-table {
+                font-size: 0.8rem;
+                display: block;
+                overflow-x: auto;
+            }
+
+            .amiibo-table thead {
+                display: none;
+            }
+
+            .amiibo-table tbody {
+                display: block;
+            }
+
+            .amiibo-table tbody tr {
+                display: block;
+                margin-bottom: 1rem;
+                border: 1px solid rgba(243, 201, 105, 0.3);
+                border-radius: 12px;
+                padding: 0.75rem;
+                background: rgba(255, 255, 255, 0.03);
+            }
+
+            .amiibo-table td {
+                display: block;
+                padding: 0.4rem 0;
+                text-align: left !important;
+            }
+
+            .amiibo-table td::before {
+                content: attr(data-label);
+                font-weight: 600;
+                color: var(--cream);
+                margin-right: 0.5rem;
+            }
+
+            .amiibo-table td.img-col {
+                text-align: center !important;
+                padding: 0.5rem 0;
+            }
+
+            .amiibo-table td.img-col::before {
+                display: none;
+            }
+
+            .amiibo-thumbnail {
+                width: 60px;
+                height: 60px;
+            }
+
+            .img-fallback {
+                width: 60px;
+                height: 60px;
+                line-height: 60px;
+                font-size: 1.5rem;
+            }
+
+            .pagination {
+                padding: 1rem;
+            }
+
+            .pagination-info {
+                font-size: 0.85rem;
+            }
+
+            .pagination-controls {
+                gap: 0.4rem;
+            }
+
+            .page-btn,
+            .page-current {
+                padding: 0.5rem 0.85rem;
+                font-size: 0.85rem;
+            }
+
+            .nav-buttons {
+                flex-direction: column;
+                gap: 0.6rem;
+            }
+
+            .action-btn {
+                width: 100%;
+                justify-content: center;
+                padding: 0.85rem 1.2rem;
+                font-size: 1rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 1rem 0.5rem;
+            }
+
+            .canvas {
+                padding: 1.5rem 1.25rem;
+            }
+
+            h1 {
+                font-size: 1.6rem;
+            }
+
+            .page-subtitle {
+                font-size: 0.95rem;
+            }
+
+            .amiibo-table {
+                font-size: 0.75rem;
+            }
+
+            .amiibo-thumbnail {
+                width: 50px;
+                height: 50px;
+            }
+
+            .img-fallback {
+                width: 50px;
+                height: 50px;
+                line-height: 50px;
+                font-size: 1.3rem;
+            }
+
+            .page-btn,
+            .page-current {
+                padding: 0.45rem 0.7rem;
+                font-size: 0.8rem;
+            }
+
+            .action-btn {
+                padding: 0.8rem 1rem;
+                font-size: 0.95rem;
+            }
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+<div class="canvas">
+    <div class="content">
+        <h1>Amiibodex</h1>
+        <p class="page-subtitle">A comprehensive, always up-to-date database of every amiibo ever released.</p>
+
+        <div class="amiibo-list-intro">
+            <p><strong>📊 Live Data:</strong> This list is automatically updated with the latest amiibo releases sourced directly from our backend database. No manual updates needed—whenever Nintendo releases new amiibo, they'll appear here sorted by release date (newest first).</p>
+        </div>
+
+        {% if error %}
+            <div class="error-message">
+                <p><strong>⚠️ Error:</strong> Unable to load amiibo data. Please try again later.</p>
+            </div>
+        {% else %}
+            <p class="total-count">Total Amiibo Released: {{ total_count }}</p>
+
+            <table class="amiibo-table">
+                <thead>
+                    <tr>
+                        <th class="img-col">Image</th>
+                        <th>Name</th>
+                        <th>Game Series</th>
+                        <th>Amiibo Series</th>
+                        <th>Type</th>
+                        <th>Release Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for amiibo in amiibos %}
+                    <tr class="clickable-row" onclick="navigateToAmiibo('{{ amiibo.amiibo_id }}', '{{ amiibo.name|escapejs }}')">
+                        <td class="img-col">
+                            <img src="{{ amiibo.image }}"
+                                 alt="{{ amiibo.name }}"
+                                 class="amiibo-thumbnail"
+                                 loading="lazy"
+                                 onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                            <div class="img-fallback">?</div>
+                        </td>
+                        <td class="name-col" data-label="Name:">{{ amiibo.name }}</td>
+                        <td data-label="Game Series:">{{ amiibo.gameSeries|default:"N/A" }}</td>
+                        <td data-label="Amiibo Series:">{{ amiibo.amiiboSeries|default:"N/A" }}</td>
+                        <td data-label="Type:">{{ amiibo.type|default:"N/A" }}</td>
+                        <td data-label="Release Date:">{{ amiibo.display_release|default:"TBA" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            {% if amiibos.has_other_pages %}
+            <div class="pagination">
+                <div class="pagination-info">
+                    Page {{ amiibos.number }} of {{ amiibos.paginator.num_pages }}
+                    ({{ amiibos.start_index }}–{{ amiibos.end_index }} of {{ total_count }})
+                </div>
+                <div class="pagination-controls">
+                    {% if amiibos.has_previous %}
+                        <a href="?page=1" class="page-btn">« First</a>
+                        <a href="?page={{ amiibos.previous_page_number }}" class="page-btn">‹ Prev</a>
+                    {% else %}
+                        <span class="page-btn disabled">« First</span>
+                        <span class="page-btn disabled">‹ Prev</span>
+                    {% endif %}
+
+                    <span class="page-current">Page {{ amiibos.number }}</span>
+
+                    {% if amiibos.has_next %}
+                        <a href="?page={{ amiibos.next_page_number }}" class="page-btn">Next ›</a>
+                        <a href="?page={{ amiibos.paginator.num_pages }}" class="page-btn">Last »</a>
+                    {% else %}
+                        <span class="page-btn disabled">Next ›</span>
+                        <span class="page-btn disabled">Last »</span>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        {% endif %}
+
+        <div class="nav-buttons">
+            <a href="{% url 'index' %}" class="action-btn">← Back to Home</a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function navigateToAmiibo(amiiboId, amiiboName) {
+        // Track with Google Ads (gtag)
+        if (typeof gtag !== 'undefined') {
+            gtag('event', 'amiibo_click', {
+                'event_category': 'engagement',
+                'event_label': amiiboName,
+                'amiibo_id': amiiboId,
+                'page_location': 'amiibodex'
+            });
+        }
+
+        // Navigate to detail page
+        window.location.href = `/blog/number-released/amiibo/${amiiboId}/`;
+    }
+</script>
+{% endblock %}
