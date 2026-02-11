@@ -410,6 +410,38 @@
             color: var(--muted);
         }
 
+        .no-results {
+            display: none;
+            text-align: center;
+            padding: 3rem 2rem;
+            margin: 2rem auto;
+            max-width: 600px;
+            background: var(--card-bg);
+            border: 2px solid var(--card-border);
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .no-results.active {
+            display: block;
+        }
+
+        .no-results-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .no-results h2 {
+            margin: 0 0 0.5rem 0;
+            color: var(--text);
+        }
+
+        .no-results p {
+            margin: 0;
+            color: var(--muted);
+            line-height: 1.6;
+        }
+
         .hamburger-btn {
             display: none;
             background: rgba(255, 255, 255, 0.75);
@@ -675,6 +707,11 @@
 
 <main>
     <div id="loading" class="loading">Loading Amiibo collection...</div>
+    <div id="no-results" class="no-results">
+        <div class="no-results-icon">🔍</div>
+        <h2>No Amiibo Found</h2>
+        <p>Try adjusting your search terms or filters to find what you're looking for.</p>
+    </div>
     <div id="amiibo-list" style="display: none;"></div>
 </main>
 {% endblock %}
@@ -887,6 +924,7 @@
         const value = document.getElementById('filterSelect').value;
         const searchTerm = document.getElementById('searchInput').value.toLowerCase();
         const groups = document.querySelectorAll('.game-series-group');
+        let totalVisibleGroups = 0;
 
         groups.forEach(group => {
             const cards = group.querySelectorAll('.amiibo-card');
@@ -913,8 +951,18 @@
                 if (shouldDisplay) visibleCount++;
             });
 
-            group.style.display = visibleCount > 0 ? 'block' : 'none';
+            const groupVisible = visibleCount > 0;
+            group.style.display = groupVisible ? 'block' : 'none';
+            if (groupVisible) totalVisibleGroups++;
         });
+
+        // Show/hide no results message
+        const noResults = document.getElementById('no-results');
+        if (totalVisibleGroups === 0) {
+            noResults.classList.add('active');
+        } else {
+            noResults.classList.remove('active');
+        }
 
         updateCollectedCount();
     }
