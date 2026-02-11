@@ -1,14 +1,6 @@
 {
   "posts": [
     {
-      "slug": "number-released",
-      "title": "All Released Amiibo",
-      "date": "2026-02-10",
-      "excerpt": "A complete, always up-to-date list of every amiibo ever released, sorted by newest to oldest.",
-      "content": "dynamic",
-      "featured_image": "images/blog/number-released.png"
-    },
-    {
       "slug": "how-it-works",
       "title": "How it Works",
       "date": "2026-02-10",

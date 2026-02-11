@@ -1,9 +1,9 @@
 {% extends "tracker/base.html" %}
 {% load static %}
 
-{% block title %}{{ post.title }} - Amiibo Blog{% endblock %}
+{% block title %}Amiibodex - Complete Amiibo Database{% endblock %}
 
-{% block meta_description %}{{ post.excerpt|truncatewords:20 }}{% endblock %}
+{% block meta_description %}Browse the complete catalog of all released Amiibo figures, sorted by newest to oldest. A comprehensive, always up-to-date database of every amiibo ever released.{% endblock %}
 
 {% block head_extra %}
 <style>
@@ -78,61 +78,14 @@
             margin: 0 0 0.35em 0;
             font-size: clamp(2.1rem, 3vw, 2.8rem);
             letter-spacing: 0.01em;
+            color: var(--saffron);
         }
 
-        .post-date {
-            color: rgba(253, 247, 227, 0.7);
-            font-size: 0.95rem;
+        .page-subtitle {
+            color: rgba(253, 247, 227, 0.8);
+            font-size: 1.1rem;
             margin-bottom: 2rem;
-        }
-
-        .featured-image {
-            width: 100%;
-            max-width: 800px;
-            height: auto;
-            border-radius: 16px;
-            margin: 1.5rem auto 2rem;
-            display: block;
-            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
-            border: 2px solid rgba(243, 201, 105, 0.3);
-        }
-
-        .post-content {
-            line-height: 1.7;
-            color: rgba(253, 247, 227, 0.9);
-            font-size: 1.05rem;
-        }
-
-        .post-content h2 {
-            margin-top: 2rem;
-            margin-bottom: 0.75rem;
-            font-size: 1.75rem;
-            color: var(--cream);
-        }
-
-        .post-content h3 {
-            margin-top: 1.5rem;
-            margin-bottom: 0.5rem;
-            font-size: 1.35rem;
-            color: var(--cream);
-        }
-
-        .post-content p {
-            margin: 1rem 0;
-        }
-
-        .post-content ul {
-            margin: 1rem 0;
-            padding-left: 1.5rem;
-        }
-
-        .post-content li {
-            margin: 0.5rem 0;
-        }
-
-        .post-content strong {
-            color: var(--cream);
-            font-weight: 600;
+            line-height: 1.6;
         }
 
         .amiibo-list-intro {
@@ -359,27 +312,8 @@
                 font-size: 1.8rem;
             }
 
-            .post-date {
-                font-size: 0.85rem;
-            }
-
-            .featured-image {
-                margin: 1rem auto 1.5rem;
-                border-radius: 12px;
-            }
-
-            .post-content {
+            .page-subtitle {
                 font-size: 1rem;
-            }
-
-            .post-content h2 {
-                font-size: 1.5rem;
-                margin-top: 1.5rem;
-            }
-
-            .post-content h3 {
-                font-size: 1.2rem;
-                margin-top: 1.2rem;
             }
 
             .amiibo-list-intro {
@@ -492,16 +426,8 @@
                 font-size: 1.6rem;
             }
 
-            .post-content {
+            .page-subtitle {
                 font-size: 0.95rem;
-            }
-
-            .post-content h2 {
-                font-size: 1.35rem;
-            }
-
-            .post-content h3 {
-                font-size: 1.1rem;
             }
 
             .amiibo-table {
@@ -537,93 +463,82 @@
 {% block content %}
 <div class="canvas">
     <div class="content">
-        <h1>{{ post.title }}</h1>
-        <div class="post-date">{{ post.date }}</div>
+        <h1>Amiibodex</h1>
+        <p class="page-subtitle">A comprehensive, always up-to-date database of every amiibo ever released.</p>
 
-        {% if post.featured_image %}
-        <img src="{% static post.featured_image %}" alt="{{ post.title }}" class="featured-image" loading="lazy">
-        {% endif %}
-
-        <div class="post-content">
-            {% if amiibos %}
-                <div class="amiibo-list-intro">
-                    <p><strong>📊 Live Data:</strong> This list is automatically updated with the latest amiibo releases sourced directly from our backend database. No manual updates needed—whenever Nintendo releases new amiibo, they'll appear here sorted by release date (newest first).</p>
-                </div>
-
-                {% if error %}
-                    <div class="error-message">
-                        <p><strong>⚠️ Error:</strong> Unable to load amiibo data. Please try again later.</p>
-                    </div>
-                {% else %}
-                    <p class="total-count">Total Amiibo Released: {{ total_count }}</p>
-
-                    <table class="amiibo-table">
-                        <thead>
-                            <tr>
-                                <th class="img-col">Image</th>
-                                <th>Name</th>
-                                <th>Game Series</th>
-                                <th>Amiibo Series</th>
-                                <th>Type</th>
-                                <th>Release Date</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for amiibo in amiibos %}
-                            <tr class="clickable-row" onclick="navigateToAmiibo('{{ amiibo.amiibo_id }}', '{{ amiibo.name|escapejs }}')">
-                                <td class="img-col">
-                                    <img src="{{ amiibo.image }}"
-                                         alt="{{ amiibo.name }}"
-                                         class="amiibo-thumbnail"
-                                         loading="lazy"
-                                         onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-                                    <div class="img-fallback">?</div>
-                                </td>
-                                <td class="name-col" data-label="Name:">{{ amiibo.name }}</td>
-                                <td data-label="Game Series:">{{ amiibo.gameSeries|default:"N/A" }}</td>
-                                <td data-label="Amiibo Series:">{{ amiibo.amiiboSeries|default:"N/A" }}</td>
-                                <td data-label="Type:">{{ amiibo.type|default:"N/A" }}</td>
-                                <td data-label="Release Date:">{{ amiibo.display_release|default:"TBA" }}</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-
-                    {% if amiibos.has_other_pages %}
-                    <div class="pagination">
-                        <div class="pagination-info">
-                            Page {{ amiibos.number }} of {{ amiibos.paginator.num_pages }}
-                            ({{ amiibos.start_index }}–{{ amiibos.end_index }} of {{ total_count }})
-                        </div>
-                        <div class="pagination-controls">
-                            {% if amiibos.has_previous %}
-                                <a href="?page=1" class="page-btn">« First</a>
-                                <a href="?page={{ amiibos.previous_page_number }}" class="page-btn">‹ Prev</a>
-                            {% else %}
-                                <span class="page-btn disabled">« First</span>
-                                <span class="page-btn disabled">‹ Prev</span>
-                            {% endif %}
-
-                            <span class="page-current">Page {{ amiibos.number }}</span>
-
-                            {% if amiibos.has_next %}
-                                <a href="?page={{ amiibos.next_page_number }}" class="page-btn">Next ›</a>
-                                <a href="?page={{ amiibos.paginator.num_pages }}" class="page-btn">Last »</a>
-                            {% else %}
-                                <span class="page-btn disabled">Next ›</span>
-                                <span class="page-btn disabled">Last »</span>
-                            {% endif %}
-                        </div>
-                    </div>
-                    {% endif %}
-                {% endif %}
-            {% else %}
-                {{ post.content|safe }}
-            {% endif %}
+        <div class="amiibo-list-intro">
+            <p><strong>📊 Live Data:</strong> This list is automatically updated with the latest amiibo releases sourced directly from our backend database. No manual updates needed—whenever Nintendo releases new amiibo, they'll appear here sorted by release date (newest first).</p>
         </div>
 
+        {% if error %}
+            <div class="error-message">
+                <p><strong>⚠️ Error:</strong> Unable to load amiibo data. Please try again later.</p>
+            </div>
+        {% else %}
+            <p class="total-count">Total Amiibo Released: {{ total_count }}</p>
+
+            <table class="amiibo-table">
+                <thead>
+                    <tr>
+                        <th class="img-col">Image</th>
+                        <th>Name</th>
+                        <th>Game Series</th>
+                        <th>Amiibo Series</th>
+                        <th>Type</th>
+                        <th>Release Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for amiibo in amiibos %}
+                    <tr class="clickable-row" onclick="navigateToAmiibo('{{ amiibo.amiibo_id }}', '{{ amiibo.name|escapejs }}')">
+                        <td class="img-col">
+                            <img src="{{ amiibo.image }}"
+                                 alt="{{ amiibo.name }}"
+                                 class="amiibo-thumbnail"
+                                 loading="lazy"
+                                 onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                            <div class="img-fallback">?</div>
+                        </td>
+                        <td class="name-col" data-label="Name:">{{ amiibo.name }}</td>
+                        <td data-label="Game Series:">{{ amiibo.gameSeries|default:"N/A" }}</td>
+                        <td data-label="Amiibo Series:">{{ amiibo.amiiboSeries|default:"N/A" }}</td>
+                        <td data-label="Type:">{{ amiibo.type|default:"N/A" }}</td>
+                        <td data-label="Release Date:">{{ amiibo.display_release|default:"TBA" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            {% if amiibos.has_other_pages %}
+            <div class="pagination">
+                <div class="pagination-info">
+                    Page {{ amiibos.number }} of {{ amiibos.paginator.num_pages }}
+                    ({{ amiibos.start_index }}–{{ amiibos.end_index }} of {{ total_count }})
+                </div>
+                <div class="pagination-controls">
+                    {% if amiibos.has_previous %}
+                        <a href="?page=1" class="page-btn">« First</a>
+                        <a href="?page={{ amiibos.previous_page_number }}" class="page-btn">‹ Prev</a>
+                    {% else %}
+                        <span class="page-btn disabled">« First</span>
+                        <span class="page-btn disabled">‹ Prev</span>
+                    {% endif %}
+
+                    <span class="page-current">Page {{ amiibos.number }}</span>
+
+                    {% if amiibos.has_next %}
+                        <a href="?page={{ amiibos.next_page_number }}" class="page-btn">Next ›</a>
+                        <a href="?page={{ amiibos.paginator.num_pages }}" class="page-btn">Last »</a>
+                    {% else %}
+                        <span class="page-btn disabled">Next ›</span>
+                        <span class="page-btn disabled">Last »</span>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        {% endif %}
+
         <div class="nav-buttons">
-            <a href="{% url 'blog_list' %}" class="action-btn">← Back to Blog</a>
             <a href="{% url 'index' %}" class="action-btn">← Back to Home</a>
         </div>
     </div>
@@ -639,7 +554,7 @@
                 'event_category': 'engagement',
                 'event_label': amiiboName,
                 'amiibo_id': amiiboId,
-                'page_location': 'all_amiibo_list'
+                'page_location': 'amiibodex'
             });
         }
 
