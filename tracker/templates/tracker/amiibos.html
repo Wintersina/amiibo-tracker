@@ -1412,6 +1412,14 @@
     });
 
     window.addEventListener('DOMContentLoaded', () => {
+        // Initialize dark mode from server-side config
+        const darkModeEnabled = {{ dark_mode|yesno:"true,false" }};
+        if (darkModeEnabled) {
+            document.body.classList.add('dark');
+            document.documentElement.classList.add('dark');
+            document.getElementById('darkModeToggle').textContent = '☀️';
+        }
+
         updateCollectedCount();
         initializeButtons();
         if (rateLimitConfig.active) {
