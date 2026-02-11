@@ -197,21 +197,22 @@ The rembg ML model uses approximately 300-400MB of RAM. If memory is constrained
 
 ### Memory Requirements
 
-**Important:** Cloud Run requires **2Gi (2048 MiB)** of memory for this application due to the rembg ML model running with 2 workers.
+**Important:** Cloud Run requires **3Gi (3072 MiB)** of memory for this application due to the rembg ML model running with 2 workers.
 
 The deployment is configured in `.github/workflows/build.yml`:
 
 ```yaml
 gcloud run services update "$SERVICE_NAME" \
-  --memory 2Gi \
+  --memory 3Gi \
   --timeout 300
 ```
 
-**Why 2Gi?**
+**Why 3Gi?**
 - Rembg model per worker: ~300-400 MiB × 2 workers = ~600-800 MiB
 - Django + gunicorn: ~100-200 MiB
 - Request processing overhead: ~100-200 MiB
-- **Total:** ~800-1200 MiB (2Gi provides safe headroom)
+- Peak usage buffer: ~500 MiB
+- **Total:** ~800-1700 MiB (3Gi provides generous headroom)
 
 ### Startup Optimization
 

@@ -73,7 +73,7 @@ jobs:
             --image "$IMAGE_BASE:${GITHUB_SHA}" \
             --region "$REGION" \
             --project "$PROJECT_ID" \
-            --memory 2Gi \
+            --memory 3Gi \
             --timeout 300 \
             --quiet
           echo "Cloud Run deployment complete!"
