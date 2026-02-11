@@ -557,3 +557,46 @@ class TestScraperIntegration:
         luigi = next(a for a in saved_data["amiibo"] if a["name"] == "Luigi")
         assert luigi["is_upcoming"] is True
         assert luigi["head"].startswith("ff")  # Placeholder with unique ID
+
+
+class TestImageURLCleaning:
+    """Tests for Nintendo image URL cleaning."""
+
+    def test_clean_amiibo_image_url(self):
+        """Test cleaning Nintendo amiibo image URLs."""
+        scraper = NintendoAmiiboScraper()
+
+        # Test URL with complex parameters
+        original = "https://assets.nintendo.com/image/upload/ar_16:9,b_auto:border,c_lpad/b_black/f_auto/q_auto/dpr_1.5/amiibo/Kirby%20Air%20RIders/chef-kawasaki-and-hop-star-figure"
+        expected = "https://assets.nintendo.com/image/upload/f_png/q_auto/amiibo/Kirby%20Air%20RIders/chef-kawasaki-and-hop-star-figure"
+
+        result = scraper.clean_amiibo_image_url(original)
+        assert result == expected
+
+    def test_clean_amiibo_image_url_various_params(self):
+        """Test cleaning URLs with different parameter combinations."""
+        scraper = NintendoAmiiboScraper()
+
+        # Different parameters before /amiibo/
+        original = "https://assets.nintendo.com/image/upload/c_fill,w_300,h_300/f_auto/amiibo/mario/figure"
+        expected = (
+            "https://assets.nintendo.com/image/upload/f_png/q_auto/amiibo/mario/figure"
+        )
+
+        result = scraper.clean_amiibo_image_url(original)
+        assert result == expected
+
+    def test_clean_amiibo_image_url_already_clean(self):
+        """Test that already clean URLs pass through correctly."""
+        scraper = NintendoAmiiboScraper()
+
+        # URL already in desired format
+        original = (
+            "https://assets.nintendo.com/image/upload/f_png/q_auto/amiibo/mario/figure"
+        )
+        expected = (
+            "https://assets.nintendo.com/image/upload/f_png/q_auto/amiibo/mario/figure"
+        )
+
+        result = scraper.clean_amiibo_image_url(original)
+        assert result == expected

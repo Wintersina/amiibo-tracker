@@ -103,6 +103,21 @@ class NintendoAmiiboScraper(LoggingMixin):
             self.log_error("Scraper failed", error=str(e))
             return {"status": "error", "message": str(e)}
 
+    @staticmethod
+    def clean_amiibo_image_url(url):
+        """
+        Clean Nintendo amiibo image URLs to get square transparent PNGs.
+
+        Converts URLs like:
+        /image/upload/ar_16:9,b_auto:border,c_lpad/b_black/f_auto/q_auto/dpr_1.5/amiibo/...
+
+        To:
+        /image/upload/f_png/q_auto/amiibo/...
+        """
+        return re.sub(
+            r"/image/upload/.+?/amiibo/", "/image/upload/f_png/q_auto/amiibo/", url
+        )
+
     def scrape_nintendo_amiibos(self):
         """Scrape amiibos from Nintendo's lineup page"""
         url = "https://www.nintendo.com/us/amiibo/line-up/"
@@ -136,6 +151,9 @@ class NintendoAmiiboScraper(LoggingMixin):
                         # Make sure URL is absolute
                         if image_url and not image_url.startswith("http"):
                             image_url = f"https://www.nintendo.com{image_url}"
+                        # Clean URL to get square transparent PNG
+                        if image_url:
+                            image_url = self.clean_amiibo_image_url(image_url)
 
                     # Find all p tags - first one with "series" is the series name
                     p_tags = link.find_all("p")
