@@ -8,7 +8,6 @@ from datetime import datetime
 from django.contrib.sitemaps import Sitemap
 from django.urls import reverse
 from django.core.cache import cache
-import requests
 
 
 class StaticViewSitemap(Sitemap):
@@ -64,8 +63,8 @@ class AmiiboSitemap(Sitemap):
 
     def items(self):
         """
-        Fetch all amiibo from the API and return them.
-        Uses caching to avoid excessive API calls.
+        Fetch all amiibo from the local database and return them.
+        Uses caching to avoid excessive file reads.
         """
         cache_key = "amiibo_sitemap_data"
         cache_timeout = 86400  # 24 hours
@@ -75,17 +74,33 @@ class AmiiboSitemap(Sitemap):
         if cached_amiibos is not None:
             return cached_amiibos
 
-        # Fetch from API
+        # Fetch from local database
+        database_path = Path(__file__).parent / "data" / "amiibo_database.json"
         try:
-            response = requests.get("https://www.amiiboapi.com/api/amiibo/", timeout=10)
-            response.raise_for_status()
-            data = response.json()
-            amiibos = data.get("amiibo", [])
+            with database_path.open(encoding="utf-8") as database_file:
+                data = json.load(database_file)
+                amiibos = data.get("amiibo", [])
 
-            # Cache the results
-            cache.set(cache_key, amiibos, cache_timeout)
+                # Filter out placeholders (upcoming amiibos with ff-prefixed or 00000000 IDs)
+                # We don't want these in the sitemap since they're not real pages yet
+                filtered_amiibos = []
+                for amiibo in amiibos:
+                    head = amiibo.get("head", "")
+                    tail = amiibo.get("tail", "")
+                    is_placeholder = (
+                        head == "00000000"
+                        or tail == "00000000"
+                        or head.startswith("ff")
+                        or tail.startswith("ff")
+                        or amiibo.get("is_upcoming", False)
+                    )
+                    if not is_placeholder:
+                        filtered_amiibos.append(amiibo)
 
-            return amiibos
+                # Cache the results
+                cache.set(cache_key, filtered_amiibos, cache_timeout)
+
+                return filtered_amiibos
         except Exception as e:
             # Log error but return empty list to prevent sitemap generation failure
             print(f"Error fetching amiibo for sitemap: {e}")
