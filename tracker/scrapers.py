@@ -17,7 +17,7 @@ class NintendoAmiiboScraper(LoggingMixin):
     Cloud Run compatible - uses file timestamp for cache checking.
     """
 
-    def __init__(self, min_similarity=0.5, cache_hours=6):
+    def __init__(self, min_similarity=0.6, cache_hours=6):
         self.min_similarity = min_similarity
         self.cache_hours = cache_hours
         self.database_path = Path(__file__).parent / "data" / "amiibo_database.json"
@@ -337,7 +337,9 @@ class NintendoAmiiboScraper(LoggingMixin):
         name = name.lower()
 
         # Remove common variant indicators in parentheses
-        name = re.sub(r"\s*\(.*?\)\s*", " ", name)  # Remove (Side Order), (Alterna), etc.
+        name = re.sub(
+            r"\s*\(.*?\)\s*", " ", name
+        )  # Remove (Side Order), (Alterna), etc.
 
         # Remove common variant suffixes with dashes
         name = re.sub(r"\s*-\s*side order\s*$", "", name, flags=re.IGNORECASE)
