@@ -54,8 +54,19 @@ class AmiiboService(LoggingMixin, AmiiboRemoteFetchMixin, AmiiboLocalFetchMixin)
 
         new_rows = []
         updates: dict[int, list[str]] = {}
+        skipped_placeholders = []
 
         for amiibo in amiibos:
+            # Skip placeholders that haven't been backfilled yet
+            if amiibo.get("_needs_backfill"):
+                skipped_placeholders.append(amiibo.get("name", "Unknown"))
+                continue
+
+            # Skip amiibos with placeholder IDs (00000000)
+            if amiibo.get("head") == "00000000" or amiibo.get("tail") == "00000000":
+                skipped_placeholders.append(amiibo.get("name", "Unknown"))
+                continue
+
             amiibo_id = amiibo["head"] + amiibo["gameSeries"] + amiibo["tail"]
             release_date = self._format_release_date(amiibo.get("release"))
 
@@ -100,6 +111,13 @@ class AmiiboService(LoggingMixin, AmiiboRemoteFetchMixin, AmiiboLocalFetchMixin)
 
         if new_rows:
             self.sheet.append_rows(new_rows, value_input_option="USER_ENTERED")
+
+        # Log skipped placeholders
+        if skipped_placeholders:
+            self.log_info(
+                f"Skipped {len(skipped_placeholders)} placeholder amiibos (not backfilled yet)",
+                placeholders=skipped_placeholders[:5],  # Show first 5
+            )
 
     def get_collected_status(self):
         rows = self.sheet.get_all_values()[1:]

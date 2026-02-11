@@ -332,14 +332,12 @@ class TestNintendoAmiiboScraper:
         mock_response.status_code = 200
         mock_response.content = b"""
         <html>
-            <a href="/us/amiibo/detail/mario/">
-                <h2>Mario</h2>
-                <h3>Super Mario series</h3>
+            <a href="/us/amiibo/detail/mario/" aria-label="Mario">
+                <p>Super Mario series</p>
                 <p>Available 04/02/26</p>
             </a>
-            <a href="/us/amiibo/detail/link/">
-                <h2>Link</h2>
-                <h3>The Legend of Zelda series</h3>
+            <a href="/us/amiibo/detail/link/" aria-label="Link">
+                <p>The Legend of Zelda series</p>
                 <p>2026</p>
             </a>
         </html>
@@ -453,13 +451,11 @@ class TestScraperIntegration:
         mock_response.status_code = 200
         mock_response.content = b"""
         <html>
-            <a href="/us/amiibo/detail/mario/">
-                <h2>Mario</h2>
+            <a href="/us/amiibo/detail/mario/" aria-label="Mario">
                 <p>Super Mario series</p>
                 <p>Available 11/21/2014</p>
             </a>
-            <a href="/us/amiibo/detail/luigi/">
-                <h2>Luigi</h2>
+            <a href="/us/amiibo/detail/luigi/" aria-label="Luigi">
                 <p>Super Mario series</p>
                 <p>2014</p>
             </a>
