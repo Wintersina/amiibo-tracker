@@ -917,7 +917,13 @@
                 card.dataset.series = amiibo.amiiboSeries || 'Unknown';
 
                 const img = document.createElement('img');
-                img.src = amiibo.image;
+                // Only use background removal API for upcoming amiibos (newly scraped from Nintendo)
+                // Official AmiiboAPI images already have transparent backgrounds
+                if (amiibo.is_upcoming && amiibo.image) {
+                    img.src = `/api/remove-bg/?url=${encodeURIComponent(amiibo.image)}`;
+                } else {
+                    img.src = amiibo.image || '';
+                }
                 img.alt = amiibo.name;
                 img.onclick = () => navigateToAmiiboDetail(amiibo);
 
