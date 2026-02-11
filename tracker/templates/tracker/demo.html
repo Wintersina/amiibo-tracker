@@ -1,13 +1,12 @@
+{% extends "tracker/base.html" %}
 {% load static %}
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Amiibo Tracker - Demo</title>
-    <meta name="google-adsense-account" content="ca-pub-6947554333794592">
-    <link rel="icon" href="{% static 'images/favicon.png' %}">
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6947554333794592" crossorigin="anonymous"></script>
-    <meta name="description" content="Track your Nintendo Amiibo collection with ease. View our demo to see how Amiibo Tracker helps you organize your figures, cards, and plushes.">
-    <style>
+
+{% block title %}Amiibo Tracker - Demo{% endblock %}
+
+{% block meta_description %}Track your Nintendo Amiibo collection with ease. View our demo to see how Amiibo Tracker helps you organize your figures, cards, and plushes.{% endblock %}
+
+{% block head_extra %}
+<style>
         @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600;700&display=swap');
 
         :root {
@@ -433,8 +432,9 @@
             }
         }
     </style>
-</head>
-<body>
+{% endblock %}
+
+{% block content %}
 <div class="demo-banner">
     <span class="demo-banner-text">This is a demo version with sample data.</span>
     <a href="{% url 'oauth_login' %}" class="demo-banner-btn">
@@ -468,7 +468,9 @@
     <div id="loading" class="loading">Loading Amiibo collection...</div>
     <div id="amiibo-list" style="display: none;"></div>
 </main>
+{% endblock %}
 
+{% block scripts %}
 <script>
     const STORAGE_KEY = 'amiibo_demo_collected';
     const DARK_MODE_KEY = 'amiibo_demo_dark_mode';
@@ -789,6 +791,4 @@
     loadFromLocalStorage();
     loadAmiibos();
 </script>
-
-</body>
-</html>
+{% endblock %}

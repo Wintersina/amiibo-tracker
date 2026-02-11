@@ -1,11 +1,12 @@
+{% extends "tracker/base.html" %}
 {% load static %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Amiibo Tracker Privacy Policy</title>
-    <link rel="icon" href="{% static 'images/favicon.png' %}">
-    <style>
+
+{% block title %}Amiibo Tracker Privacy Policy{% endblock %}
+
+{% block meta_description %}Privacy Policy for Amiibo Tracker - Learn about how we handle your data, what we collect, and your privacy rights.{% endblock %}
+
+{% block head_extra %}
+<style>
         body {
             font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             margin: 0;
@@ -63,9 +64,10 @@
             border-top: 1px solid #1f2735;
         }
     </style>
-</head>
-<body>
-    <main>
+{% endblock %}
+
+{% block content %}
+<main>
         <h1>Privacy Policy</h1>
         <p>
             Amiibo Tracker relies on Google Sign-In only to authenticate you and to connect to your personal Google Sheet named
@@ -139,5 +141,4 @@
             For privacy questions, email <a href="mailto:codingsina@gmail.com">codingsina@gmail.com</a>. Deleting your data remains under your control via your Google account.
         </p>
     </main>
-</body>
-</html>
+{% endblock %}

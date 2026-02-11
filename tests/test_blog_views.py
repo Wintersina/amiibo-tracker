@@ -45,7 +45,7 @@ class TestBlogListView:
 
         assert len(log_calls) == 1
         assert log_calls[0][0] == "blog-list-view"
-        assert log_calls[0][1]["total_posts"] == 4
+        assert log_calls[0][1]["total_posts"] == 12
 
 
 class TestBlogPostView:
