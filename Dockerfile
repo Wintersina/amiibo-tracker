@@ -16,6 +16,9 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --upgrade pip && pip install -r requirements.txt
 
+# Pre-download rembg model to avoid startup timeout in Cloud Run
+COPY scripts/download-rembg-models.py /tmp/
+RUN python /tmp/download-rembg-models.py && rm /tmp/download-rembg-models.py
 
 COPY . .
 

@@ -23,7 +23,14 @@ ALLOWED_DOMAINS = {
 # Pre-load rembg session for better performance
 # This loads the ML model once instead of on every request
 # u2net_human_seg is optimized for figures/characters (perfect for amiibos!)
-_session = new_session("u2net_human_seg")
+try:
+    print("Loading rembg model: u2net_human_seg...")
+    _session = new_session("u2net_human_seg")
+    print("✓ Rembg model loaded successfully")
+except Exception as e:
+    print(f"⚠ Warning: Failed to pre-load rembg model: {e}")
+    print("  Model will be loaded on first request")
+    _session = None
 
 
 def remove_white_fringe(img, threshold=240):
@@ -101,7 +108,9 @@ def remove_bg(request):
     # Remove background
     try:
         input_img = Image.open(BytesIO(resp.content))
-        output_img = remove(input_img, session=_session)
+        # Lazy-load session if it wasn't pre-loaded
+        session = _session if _session is not None else new_session("u2net_human_seg")
+        output_img = remove(input_img, session=session)
 
         # Remove white fringe artifacts around edges
         output_img = remove_white_fringe(output_img)
