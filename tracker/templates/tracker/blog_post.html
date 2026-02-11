@@ -1,5 +1,6 @@
 {% extends "tracker/base.html" %}
 {% load static %}
+{% load amiibo_filters %}
 
 {% block title %}{{ post.title }} - Amiibo Blog{% endblock %}
 
@@ -591,7 +592,7 @@
                             {% for amiibo in amiibos %}
                             <tr class="clickable-row" onclick="navigateToAmiibo('{{ amiibo.amiibo_id }}', '{{ amiibo.name|escapejs }}')">
                                 <td class="img-col">
-                                    <img src="{{ amiibo.image }}"
+                                    <img src="{{ amiibo|amiibo_image }}"
                                          alt="{{ amiibo.name }}"
                                          class="amiibo-thumbnail"
                                          loading="lazy"

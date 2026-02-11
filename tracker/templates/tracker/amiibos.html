@@ -1,5 +1,6 @@
 {% extends "tracker/base.html" %}
 {% load static %}
+{% load amiibo_filters %}
 
 {% block title %}Amiibo Tracker{% endblock %}
 
@@ -963,7 +964,7 @@
                              data-tail="{{ amiibo.tail }}"
                              data-type="{{ amiibo.type|default:'Unknown' }}"
                              data-series="{{ amiibo.amiiboSeries }}">
-                            <img src="{{ amiibo.image }}"
+                            <img src="{{ amiibo|amiibo_image }}"
                                  alt="{{ amiibo.name }}"
                                  onclick="navigateToAmiiboDetail(this.parentElement)">
                             <p class="amiibo-name" onclick="navigateToAmiiboDetail(this.parentElement)">{{ amiibo.name }}</p>
