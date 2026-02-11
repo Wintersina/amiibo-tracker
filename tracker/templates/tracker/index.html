@@ -6,6 +6,10 @@
 {% block meta_description %}Your one-stop shop for everything Amiibo. Track your collection with Google Sheets, learn about NFC technology, and explore Amiibo history all in one place.{% endblock %}
 
 {% block head_extra %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geologica:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
 <style>
     :root {
         --emerald: #0f766e;
@@ -22,7 +26,7 @@
         margin: 0;
         padding: 0;
         padding-top: 70px;
-        font-family: 'Vazirmatn', system-ui, sans-serif;
+        font-family: 'Geologica', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
         background: linear-gradient(180deg, rgba(6, 10, 14, 0.95), rgba(12, 18, 24, 0.9)),
         url('{% static "images/amiibo_bg.png" %}') center/420px repeat;
         background-attachment: fixed;
@@ -48,10 +52,10 @@
         margin: 0 auto;
         padding: 0 2rem;
         height: 70px;
-        display: grid;
-        grid-template-columns: 1fr 1fr 1fr;
+        display: flex;
+        justify-content: space-between;
         align-items: center;
-        gap: 1rem;
+        gap: 2rem;
     }
 
     .nav-section {
@@ -60,16 +64,19 @@
     }
 
     .nav-left {
-        justify-content: flex-start;
+        display: flex;
+        align-items: center;
+        gap: 2.5rem;
     }
 
-    .nav-center {
-        justify-content: center;
-        gap: 2rem;
+    .nav-links {
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
     }
 
     .nav-right {
-        justify-content: flex-end;
+        margin-left: auto;
     }
 
     .logo-link {
@@ -78,7 +85,7 @@
     }
 
     .logo {
-        height: 40px;
+        height: 55px;
         width: auto;
         transition: opacity 0.2s ease;
     }
@@ -266,12 +273,15 @@
         .nav-container {
             height: 60px;
             padding: 0 1rem;
-            grid-template-columns: 1fr auto;
         }
 
-        .nav-center,
+        .nav-links,
         .nav-right {
             display: none;
+        }
+
+        .nav-left {
+            gap: 1rem;
         }
 
         .mobile-menu-btn {
@@ -279,7 +289,7 @@
         }
 
         .logo {
-            height: 35px;
+            height: 48px;
         }
 
         .hero-section {
@@ -319,7 +329,7 @@
         }
 
         .logo {
-            height: 30px;
+            height: 42px;
         }
 
         .hero-section {
@@ -355,12 +365,11 @@
             <a href="{% url 'index' %}" class="logo-link">
                 <img src="{% static 'images/top_bar_logo.png' %}" alt="Amiibo Tracker" class="logo">
             </a>
-        </div>
-
-        <div class="nav-section nav-center">
-            <a href="{% url 'about' %}" class="nav-link">About</a>
-            <a href="{% url 'blog_list' %}" class="nav-link">Blog</a>
-            <a href="{% url 'privacy' %}" class="nav-link">Privacy</a>
+            <div class="nav-links">
+                <a href="{% url 'about' %}" class="nav-link">About</a>
+                <a href="{% url 'blog_list' %}" class="nav-link">Blog</a>
+                <a href="{% url 'privacy' %}" class="nav-link">Privacy</a>
+            </div>
         </div>
 
         <div class="nav-section nav-right">
@@ -397,7 +406,6 @@
         </p>
         <div class="hero-actions">
             <a href="{% url 'demo' %}" class="hero-btn demo-btn">Try Demo</a>
-            <a href="{% url 'blog_list' %}" class="hero-btn catalog-btn">Browse Catalog</a>
         </div>
     </div>
 </div>
