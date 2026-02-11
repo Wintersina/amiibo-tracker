@@ -1,6 +1,7 @@
 import json
 import re
 from datetime import datetime
+from difflib import SequenceMatcher
 from pathlib import Path
 
 import requests
@@ -63,7 +64,7 @@ class NintendoAmiiboScraper(LoggingMixin):
             updated_amiibos = []
 
             for scraped in scraped_amiibos:
-                match = self.find_best_match(scraped["name"], existing_amiibos)
+                match = self.find_best_match(scraped, existing_amiibos)
 
                 if match:
                     matched_count += 1
@@ -123,6 +124,16 @@ class NintendoAmiiboScraper(LoggingMixin):
                         self.log_warning(f"No aria-label found in link: {link.get('href', 'unknown')}")
                         continue
 
+                    # Extract image from img tag
+                    image_url = ""
+                    img_tag = link.find("img")
+                    if img_tag:
+                        # Try src first, then data-src (for lazy loading)
+                        image_url = img_tag.get("src", "") or img_tag.get("data-src", "")
+                        # Make sure URL is absolute
+                        if image_url and not image_url.startswith("http"):
+                            image_url = f"https://www.nintendo.com{image_url}"
+
                     # Find all p tags - first one with "series" is the series name
                     p_tags = link.find_all("p")
                     series = ""
@@ -147,6 +158,7 @@ class NintendoAmiiboScraper(LoggingMixin):
                             "name": name,
                             "series": self.clean_series(series),
                             "release_date": release_date,
+                            "image": image_url,
                         }
                     )
 
@@ -206,19 +218,53 @@ class NintendoAmiiboScraper(LoggingMixin):
             self.log_warning("Could not load database", error=str(e))
             return []
 
-    def find_best_match(self, scraped_name, existing_amiibos):
-        """Find best matching amiibo using substring matching"""
+    def find_best_match(self, scraped_amiibo, existing_amiibos):
+        """
+        Find best matching amiibo using fuzzy name matching and date comparison.
+
+        Args:
+            scraped_amiibo: Dict with 'name', 'release_date', etc.
+            existing_amiibos: List of existing amiibo dicts
+
+        Returns:
+            Best matching amiibo or None
+        """
+        scraped_name = scraped_amiibo.get("name", "")
+        scraped_date = scraped_amiibo.get("release_date")
+
         scraped_clean = self.normalize_name(scraped_name)
         best_match = None
         best_score = 0
 
         for amiibo in existing_amiibos:
             existing_clean = self.normalize_name(amiibo.get("name", ""))
-            score = self.calculate_similarity(scraped_clean, existing_clean)
 
-            if score > best_score and score >= self.min_similarity:
-                best_score = score
+            # Calculate name similarity
+            name_score = self.calculate_similarity(scraped_clean, existing_clean)
+
+            # Boost score if release dates match
+            date_boost = 0
+            if scraped_date:
+                existing_na_date = amiibo.get("release", {}).get("na")
+                if existing_na_date and existing_na_date == scraped_date:
+                    # Exact date match gives significant boost
+                    date_boost = 0.3
+                elif existing_na_date and self.dates_are_close(scraped_date, existing_na_date):
+                    # Close dates give smaller boost (within 30 days)
+                    date_boost = 0.15
+
+            # Combined score
+            final_score = min(1.0, name_score + date_boost)
+
+            if final_score > best_score and final_score >= self.min_similarity:
+                best_score = final_score
                 best_match = amiibo
+
+        if best_match:
+            self.log_info(
+                f"Match found: '{scraped_name}' -> '{best_match.get('name')}' "
+                f"(score: {best_score:.2f})"
+            )
 
         return best_match
 
@@ -230,20 +276,59 @@ class NintendoAmiiboScraper(LoggingMixin):
         return name
 
     def calculate_similarity(self, name1, name2):
-        """Calculate similarity between two names"""
-        if name1 in name2 or name2 in name1:
-            return 0.9
+        """
+        Calculate fuzzy similarity between two names using multiple methods.
 
+        Uses SequenceMatcher for character-level fuzzy matching plus
+        word-based matching for better results.
+        """
+        if not name1 or not name2:
+            return 0
+
+        # Method 1: SequenceMatcher for character-level fuzzy matching
+        sequence_score = SequenceMatcher(None, name1, name2).ratio()
+
+        # Method 2: Word-based matching (Jaccard similarity)
         words1 = set(name1.split())
         words2 = set(name2.split())
 
-        if not words1 or not words2:
-            return 0
+        if words1 and words2:
+            intersection = words1.intersection(words2)
+            union = words1.union(words2)
+            word_score = len(intersection) / len(union)
+        else:
+            word_score = 0
 
-        intersection = words1.intersection(words2)
-        union = words1.union(words2)
+        # Method 3: Substring bonus
+        substring_bonus = 0
+        if name1 in name2 or name2 in name1:
+            substring_bonus = 0.1
 
-        return len(intersection) / len(union)
+        # Combine scores (weighted average + bonus)
+        # Character-level is more important for fuzzy matching
+        final_score = (sequence_score * 0.6) + (word_score * 0.4) + substring_bonus
+
+        return min(1.0, final_score)
+
+    def dates_are_close(self, date1, date2, days_threshold=30):
+        """
+        Check if two dates are within a threshold of each other.
+
+        Args:
+            date1: Date string in YYYY-MM-DD format
+            date2: Date string in YYYY-MM-DD format
+            days_threshold: Maximum days apart to consider "close"
+
+        Returns:
+            True if dates are within threshold, False otherwise
+        """
+        try:
+            d1 = datetime.strptime(date1, "%Y-%m-%d")
+            d2 = datetime.strptime(date2, "%Y-%m-%d")
+            days_apart = abs((d1 - d2).days)
+            return days_apart <= days_threshold
+        except (ValueError, TypeError):
+            return False
 
     def update_amiibo(self, existing_amiibo, scraped_data):
         """Update existing amiibo with scraped data"""
@@ -258,6 +343,14 @@ class NintendoAmiiboScraper(LoggingMixin):
                 existing_amiibo["release"]["na"] = scraped_data["release_date"]
                 updated = True
 
+        # Update image if scraped image is available and existing is empty or placeholder
+        if scraped_data.get("image"):
+            existing_image = existing_amiibo.get("image", "")
+            # Update if no image or if it's a placeholder/broken URL
+            if not existing_image or existing_image == "" or "00000000" in existing_image:
+                existing_amiibo["image"] = scraped_data["image"]
+                updated = True
+
         return updated
 
     def create_placeholder_amiibo(self, scraped_data):
@@ -269,12 +362,12 @@ class NintendoAmiiboScraper(LoggingMixin):
             "character": scraped_data["name"],
             "gameSeries": scraped_data.get("series", "Unknown"),
             "head": "00000000",
-            "image": "",
+            "image": scraped_data.get("image", ""),
             "name": scraped_data["name"],
             "release": {"na": release_date} if release_date else {},
             "tail": "00000000",
             "type": "Figure",
-            "_needs_backfill": True,
+            "is_upcoming": True,
         }
 
     def save_amiibos(self, amiibos):
@@ -287,7 +380,7 @@ class NintendoAmiiboScraper(LoggingMixin):
     def backfill_from_amiiboapi(self, amiibos):
         """
         Backfill placeholder amiibos with complete data from AmiiboAPI.
-        Prioritizes amiibos with _needs_backfill flag.
+        Prioritizes amiibos with is_upcoming flag.
         """
         try:
             # Fetch all amiibos from AmiiboAPI
@@ -304,7 +397,7 @@ class NintendoAmiiboScraper(LoggingMixin):
             self.log_info(f"Loaded {len(api_amiibos)} amiibos from AmiiboAPI")
 
             # Find all amiibos that need backfilling
-            needs_backfill = [a for a in amiibos if a.get("_needs_backfill")]
+            needs_backfill = [a for a in amiibos if a.get("is_upcoming")]
             if not needs_backfill:
                 self.log_info("No amiibos need backfilling")
                 return 0
@@ -382,6 +475,5 @@ class NintendoAmiiboScraper(LoggingMixin):
             if "na" in api_release and not placeholder["release"].get("na"):
                 placeholder["release"]["na"] = api_release["na"]
 
-        # Remove backfill flag
-        if "_needs_backfill" in placeholder:
-            del placeholder["_needs_backfill"]
+        # Keep is_upcoming flag - will be evaluated in the view based on release dates
+        # No need to delete it here

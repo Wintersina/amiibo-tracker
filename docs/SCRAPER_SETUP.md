@@ -221,7 +221,7 @@ curl https://your-app.run.app/api/scrape-nintendo/
    - Scrapes Nintendo's amiibo lineup page
    - Matches amiibos by name (substring matching)
    - Updates release dates for existing amiibos
-   - Creates placeholders for new amiibos (with `_needs_backfill: true`)
+   - Creates placeholders for new amiibos (with `is_upcoming: true`)
 4. **Updates** the `amiibo_database.json` file
 5. **Returns** JSON response with statistics
 

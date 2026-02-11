@@ -9,7 +9,7 @@ PROJECT_ID="${PROJECT_ID:-}"
 REGION="${REGION:-us-central1}"
 SERVICE_NAME="${SERVICE_NAME:-amiibo-tracker}"
 JOB_NAME="nintendo-amiibo-scraper"
-SCHEDULE="${SCHEDULE:-0 */6 * * *}"  # Every 6 hours (can be overridden)
+SCHEDULE="${SCHEDULE:-0 2,14 * * *}"  # Twice daily at 2 AM and 2 PM (can be overridden)
 TIMEZONE="${TIMEZONE:-America/Los_Angeles}"  # Can be overridden
 
 # Validate required variables
@@ -69,7 +69,7 @@ if [ -n "$JOB_EXISTS" ]; then
     --uri "$SCRAPER_URL" \
     --http-method POST \
     --oidc-service-account-email "$SERVICE_ACCOUNT" \
-    --description "Auto-scrape Nintendo amiibo lineup every 6 hours" \
+    --description "Auto-scrape Nintendo amiibo lineup twice daily" \
     --quiet
 
   echo "✅ Scheduler job updated successfully!"
@@ -92,7 +92,7 @@ else
     --uri "$SCRAPER_URL" \
     --http-method POST \
     --oidc-service-account-email "$SERVICE_ACCOUNT" \
-    --description "Auto-scrape Nintendo amiibo lineup every 6 hours" \
+    --description "Auto-scrape Nintendo amiibo lineup twice daily" \
     --quiet
 
   echo "✅ Scheduler job created successfully!"
@@ -107,7 +107,7 @@ gcloud scheduler jobs describe "$JOB_NAME" \
   --format="table(name, schedule, state, httpTarget.uri)"
 
 echo ""
-echo "✨ Setup complete! The scraper will run every 6 hours automatically."
+echo "✨ Setup complete! The scraper will run twice daily (2 AM and 2 PM) automatically."
 echo ""
 echo "🧪 To test the job manually, run:"
 echo "   gcloud scheduler jobs run $JOB_NAME --location=$REGION --project=$PROJECT_ID"

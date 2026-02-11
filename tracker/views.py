@@ -2346,7 +2346,7 @@ class LogoutView(View, LoggingMixin):
         return redirect("index")
 
 
-class AmiiboListView(View, LoggingMixin, AmiiboRemoteFetchMixin):
+class AmiiboListView(View, LoggingMixin, AmiiboLocalFetchMixin):
     def _render_error_view(self, request, error, user_name):
         """
         Render the amiibo view with an error modal displayed.
@@ -2367,9 +2367,9 @@ class AmiiboListView(View, LoggingMixin, AmiiboRemoteFetchMixin):
             user_email=request.session.get("user_email"),
         )
 
-        # Try to fetch amiibos from the remote API as fallback
+        # Try to fetch amiibos from the local database as fallback
         try:
-            amiibos = self._fetch_remote_amiibos()
+            amiibos = self._fetch_local_amiibos()
             available_types = sorted(
                 {amiibo.get("type", "") for amiibo in amiibos if amiibo.get("type")}
             )
@@ -2966,7 +2966,7 @@ class BlogListView(View, LoggingMixin):
         return render(request, "tracker/blog_list.html", context)
 
 
-class BlogPostView(View, LoggingMixin, AmiiboRemoteFetchMixin):
+class BlogPostView(View, LoggingMixin, AmiiboLocalFetchMixin):
     def get(self, request, slug):
         # Load blog posts from JSON and find by slug
         posts = load_blog_posts()
@@ -3039,7 +3039,7 @@ class BlogPostView(View, LoggingMixin, AmiiboRemoteFetchMixin):
         # Handle dynamic content for posts with content="dynamic"
         if is_dynamic:
             try:
-                amiibos = self._fetch_remote_amiibos()
+                amiibos = self._fetch_local_amiibos()
 
                 # Add formatted release date and amiibo_id for each amiibo
                 for amiibo in amiibos:
@@ -3113,7 +3113,7 @@ class BlogPostView(View, LoggingMixin, AmiiboRemoteFetchMixin):
         return render(request, "tracker/blog_post.html", context)
 
 
-class AmiibodexView(View, LoggingMixin, AmiiboRemoteFetchMixin):
+class AmiibodexView(View, LoggingMixin, AmiiboLocalFetchMixin):
     """View for the Amiibodex page - a comprehensive list of all released amiibo."""
 
     def get(self, request):
@@ -3142,7 +3142,8 @@ class AmiibodexView(View, LoggingMixin, AmiiboRemoteFetchMixin):
         context.update(seo.build())
 
         try:
-            amiibos = self._fetch_remote_amiibos()
+            # Fetch from local database which includes scraped + backfilled amiibos
+            amiibos = self._fetch_local_amiibos()
 
             # Add formatted release date and amiibo_id for each amiibo
             for amiibo in amiibos:
@@ -3170,9 +3171,38 @@ class AmiibodexView(View, LoggingMixin, AmiiboRemoteFetchMixin):
                             pass
                 amiibo["earliest_release"] = earliest_date
 
+                # Determine if amiibo is upcoming
+                from datetime import datetime
+                today = datetime.now().date()
+                is_upcoming = False
+
+                if earliest_date is None:
+                    # No release date = upcoming/TBA
+                    is_upcoming = True
+                elif earliest_date.date() > today:
+                    # Future release date = upcoming
+                    is_upcoming = True
+
+                amiibo["is_upcoming"] = is_upcoming
+
+            # Apply search filter - single query searches across all fields
+            search_query = request.GET.get("q", "").strip().lower()
+
+            filtered_amiibos = amiibos
+            if search_query:
+                filtered_amiibos = [
+                    a for a in filtered_amiibos
+                    if (search_query in a.get("name", "").lower() or
+                        search_query in a.get("type", "").lower() or
+                        search_query in a.get("gameSeries", "").lower() or
+                        search_query in a.get("amiiboSeries", "").lower() or
+                        search_query in a.get("display_release", "").lower() or
+                        search_query in a.get("character", "").lower())
+                ]
+
             # Sort by earliest release date (newest first), then by name
             sorted_amiibos = sorted(
-                amiibos,
+                filtered_amiibos,
                 key=lambda x: (
                     x["earliest_release"] is None,  # Put None dates at end
                     x["earliest_release"] if x["earliest_release"] else "",
@@ -3194,6 +3224,7 @@ class AmiibodexView(View, LoggingMixin, AmiiboRemoteFetchMixin):
 
             context["amiibos"] = amiibos_page
             context["total_count"] = len(sorted_amiibos)
+            context["search_query"] = request.GET.get("q", "")
 
             self.log_action(
                 "amiibodex-content-loaded",
@@ -3214,7 +3245,7 @@ class AmiibodexView(View, LoggingMixin, AmiiboRemoteFetchMixin):
         return render(request, "tracker/amiibodex.html", context)
 
 
-class AmiiboDetailView(View, LoggingMixin, AmiiboRemoteFetchMixin):
+class AmiiboDetailView(View, LoggingMixin, AmiiboLocalFetchMixin):
     """
     View for displaying individual amiibo details.
     URL pattern: /blog/number-released/amiibo/<head>-<tail>/
@@ -3237,7 +3268,7 @@ class AmiiboDetailView(View, LoggingMixin, AmiiboRemoteFetchMixin):
 
         # Fetch all amiibos and find the matching one
         try:
-            amiibos = self._fetch_remote_amiibos()
+            amiibos = self._fetch_local_amiibos()
             amiibo = next(
                 (a for a in amiibos if a.get("head") == head and a.get("tail") == tail),
                 None,

@@ -58,7 +58,7 @@ class AmiiboService(LoggingMixin, AmiiboRemoteFetchMixin, AmiiboLocalFetchMixin)
 
         for amiibo in amiibos:
             # Skip placeholders that haven't been backfilled yet
-            if amiibo.get("_needs_backfill"):
+            if amiibo.get("is_upcoming"):
                 skipped_placeholders.append(amiibo.get("name", "Unknown"))
                 continue
 

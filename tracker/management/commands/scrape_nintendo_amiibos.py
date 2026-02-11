@@ -49,7 +49,7 @@ class Command(BaseCommand):
         updates = []
 
         for scraped in scraped_amiibos:
-            match = scraper.find_best_match(scraped["name"], existing_amiibos)
+            match = scraper.find_best_match(scraped, existing_amiibos)
 
             if match:
                 matched_count += 1

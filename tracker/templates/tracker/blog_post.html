@@ -355,6 +355,10 @@
                 width: 95vw;
             }
 
+            .content {
+                padding-top: 0;
+            }
+
             h1 {
                 font-size: 1.8rem;
             }
@@ -467,6 +471,8 @@
             }
 
             .nav-buttons {
+                position: static;
+                margin-bottom: 1.5rem;
                 flex-direction: column;
                 gap: 0.6rem;
             }
@@ -536,6 +542,10 @@
 
 {% block content %}
 <div class="canvas">
+    <div class="nav-buttons">
+        <a href="{% url 'blog_list' %}" class="action-btn">← Blog</a>
+        <a href="{% url 'index' %}" class="action-btn">← Home</a>
+    </div>
     <div class="content">
         <h1>{{ post.title }}</h1>
         <div class="post-date">{{ post.date }}</div>
@@ -620,11 +630,6 @@
             {% else %}
                 {{ post.content|safe }}
             {% endif %}
-        </div>
-
-        <div class="nav-buttons">
-            <a href="{% url 'blog_list' %}" class="action-btn">← Blog</a>
-            <a href="{% url 'index' %}" class="action-btn">← Home</a>
         </div>
     </div>
 </div>

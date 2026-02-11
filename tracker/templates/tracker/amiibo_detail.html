@@ -233,7 +233,7 @@
             }
 
             .content {
-                padding-top: 3.5rem;
+                padding-top: 1rem;
             }
 
             h1 {
@@ -269,6 +269,12 @@
                 grid-template-columns: 1fr;
             }
 
+            .nav-buttons {
+                position: static;
+                margin-bottom: 2rem;
+                justify-content: center;
+            }
+
             .action-btn {
                 width: 100%;
                 justify-content: center;
@@ -279,6 +285,11 @@
 
 {% block content %}
 <div class="canvas">
+    <div class="nav-buttons">
+        <a href="javascript:history.back()" class="action-btn primary" id="backBtn">← Back</a>
+        <a href="{% url 'blog_list' %}" class="action-btn">← Blog</a>
+        <a href="{% url 'index' %}" class="action-btn">← Home</a>
+    </div>
     <div class="content">
         <div class="amiibo-header">
             <div class="amiibo-image-container">
@@ -329,12 +340,6 @@
             </div>
         </div>
         {% endif %}
-
-        <div class="nav-buttons">
-            <a href="javascript:history.back()" class="action-btn primary" id="backBtn">← Back</a>
-            <a href="{% url 'blog_list' %}" class="action-btn">← Blog</a>
-            <a href="{% url 'index' %}" class="action-btn">← Home</a>
-        </div>
     </div>
 </div>
 {% endblock %}

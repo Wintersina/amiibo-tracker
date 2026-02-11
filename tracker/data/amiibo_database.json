@@ -6101,7 +6101,7 @@
       "character": "Mario",
       "gameSeries": "Super Mario",
       "head": "00000000",
-      "image": "https://raw.githubusercontent.com/8bitDream/AmiiboAPI/master/images/icon_00000000-00340102.png",
+      "image": "https://assets.nintendo.com/image/upload/ar_16:9,b_auto:border,c_lpad/b_white/f_auto/q_auto/dpr_1.5/amiibo/Super%20Mario%20Galaxy%20+%20Super%20Mario%20Galaxy%202/Mario_and_Luma_figure",
       "name": "Mario",
       "release": {
         "au": "2015-03-21",
@@ -14911,62 +14911,6 @@
       },
       "tail": "04c91e03",
       "type": "Figure"
-    },
-    {
-      "amiiboSeries": "STREET FIGHTER 6",
-      "character": "STREET FIGHTER 6 amiibo Card Starter Set",
-      "gameSeries": "STREET FIGHTER 6",
-      "head": "00000000",
-      "image": "",
-      "name": "STREET FIGHTER 6 amiibo Card Starter Set",
-      "release": {
-        "na": "2025-06-05"
-      },
-      "tail": "00000000",
-      "type": "Figure",
-      "_needs_backfill": true
-    },
-    {
-      "amiiboSeries": "",
-      "character": "Power-Up Band",
-      "gameSeries": "",
-      "head": "00000000",
-      "image": "",
-      "name": "Power-Up Band",
-      "release": {
-        "na": "2023-02-17"
-      },
-      "tail": "00000000",
-      "type": "Figure",
-      "_needs_backfill": true
-    },
-    {
-      "amiiboSeries": "Super Smash Bros.",
-      "character": "Pokémon Trainer",
-      "gameSeries": "Super Smash Bros.",
-      "head": "00000000",
-      "image": "",
-      "name": "Pokémon Trainer",
-      "release": {
-        "na": "2019-07-26"
-      },
-      "tail": "00000000",
-      "type": "Figure",
-      "_needs_backfill": true
-    },
-    {
-      "amiiboSeries": "Chibi-Robo",
-      "character": "Chibi-Robo",
-      "gameSeries": "Chibi-Robo",
-      "head": "00000000",
-      "image": "",
-      "name": "Chibi-Robo",
-      "release": {
-        "na": "2015-10-09"
-      },
-      "tail": "00000000",
-      "type": "Figure",
-      "_needs_backfill": true
     }
   ]
 }

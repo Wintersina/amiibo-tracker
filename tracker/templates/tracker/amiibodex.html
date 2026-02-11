@@ -99,6 +99,80 @@
             color: rgba(253, 247, 227, 0.95);
         }
 
+        .search-form {
+            background: rgba(15, 118, 110, 0.1);
+            border: 1px solid rgba(243, 201, 105, 0.3);
+            border-radius: 14px;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+        }
+
+        .search-fields {
+            margin-bottom: 1rem;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(243, 201, 105, 0.3);
+            border-radius: 8px;
+            color: var(--cream);
+            font-size: 0.95rem;
+            font-family: 'Vazirmatn', system-ui, sans-serif;
+            transition: border-color 0.2s ease, background 0.2s ease;
+        }
+
+        .search-input::placeholder {
+            color: rgba(253, 247, 227, 0.4);
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: rgba(243, 201, 105, 0.6);
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .search-actions {
+            display: flex;
+            gap: 0.75rem;
+            justify-content: flex-start;
+        }
+
+        .search-btn, .clear-btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            font-family: 'Vazirmatn', system-ui, sans-serif;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .search-btn {
+            background: linear-gradient(135deg, rgba(15, 118, 110, 0.4), rgba(15, 118, 110, 0.3));
+            border: 1px solid rgba(243, 201, 105, 0.5);
+            color: var(--cream);
+        }
+
+        .search-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+        }
+
+        .clear-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(243, 201, 105, 0.3);
+            color: rgba(253, 247, 227, 0.7);
+        }
+
+        .clear-btn:hover {
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--cream);
+        }
+
         .total-count {
             font-size: 1.15rem;
             font-weight: 600;
@@ -181,6 +255,20 @@
         .amiibo-table td.name-col {
             font-weight: 600;
             color: var(--cream);
+        }
+
+        .upcoming-badge {
+            display: inline-block;
+            margin-left: 0.5rem;
+            padding: 0.25rem 0.6rem;
+            background: linear-gradient(135deg, rgba(243, 201, 105, 0.25), rgba(255, 215, 0, 0.2));
+            border: 1px solid rgba(243, 201, 105, 0.6);
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--saffron);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
 
         .amiibo-table td:last-child {
@@ -307,6 +395,10 @@
                 width: 95vw;
             }
 
+            .content {
+                padding-top: 0;
+            }
+
             h1 {
                 font-size: 1.8rem;
             }
@@ -317,6 +409,27 @@
 
             .amiibo-list-intro {
                 padding: 1rem;
+                font-size: 0.95rem;
+            }
+
+            .search-form {
+                padding: 1.25rem;
+            }
+
+            .search-input {
+                font-size: 1rem;
+                padding: 0.8rem 1rem;
+            }
+
+            .search-actions {
+                flex-direction: row;
+                gap: 0.65rem;
+            }
+
+            .search-btn, .clear-btn {
+                flex: 1;
+                text-align: center;
+                padding: 0.8rem 1.2rem;
                 font-size: 0.95rem;
             }
 
@@ -400,6 +513,8 @@
             }
 
             .nav-buttons {
+                position: static;
+                margin-bottom: 1.5rem;
                 flex-direction: column;
                 gap: 0.6rem;
             }
@@ -409,6 +524,14 @@
                 justify-content: center;
                 padding: 0.85rem 1.2rem;
                 font-size: 1rem;
+            }
+
+            .upcoming-badge {
+                display: block;
+                margin-left: 0;
+                margin-top: 0.35rem;
+                font-size: 0.7rem;
+                width: fit-content;
             }
         }
 
@@ -461,6 +584,9 @@
 
 {% block content %}
 <div class="canvas">
+    <div class="nav-buttons">
+        <a href="{% url 'index' %}" class="action-btn">← Back</a>
+    </div>
     <div class="content">
         <h1>Amiibodex</h1>
         <p class="page-subtitle">A comprehensive, always up-to-date database of every amiibo ever released.</p>
@@ -474,7 +600,17 @@
                 <p><strong>⚠️ Error:</strong> Unable to load amiibo data. Please try again later.</p>
             </div>
         {% else %}
-            <p class="total-count">Total Amiibo Released: {{ total_count }}</p>
+            <form method="get" class="search-form">
+                <div class="search-fields">
+                    <input type="text" name="q" placeholder="Search by name, type, series, or date..." value="{{ search_query }}" class="search-input" autofocus>
+                </div>
+                <div class="search-actions">
+                    <button type="submit" class="search-btn">Search</button>
+                    <a href="{% url 'amiibodex' %}" class="clear-btn">Clear</a>
+                </div>
+            </form>
+
+            <p class="total-count">Total Amiibo: {{ total_count }}</p>
 
             <table class="amiibo-table">
                 <thead>
@@ -498,7 +634,12 @@
                                  onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
                             <div class="img-fallback">?</div>
                         </td>
-                        <td class="name-col" data-label="Name:">{{ amiibo.name }}</td>
+                        <td class="name-col" data-label="Name:">
+                            {{ amiibo.name }}
+                            {% if amiibo.is_upcoming %}
+                                <span class="upcoming-badge">Upcoming</span>
+                            {% endif %}
+                        </td>
                         <td data-label="Game Series:">{{ amiibo.gameSeries|default:"N/A" }}</td>
                         <td data-label="Amiibo Series:">{{ amiibo.amiiboSeries|default:"N/A" }}</td>
                         <td data-label="Type:">{{ amiibo.type|default:"N/A" }}</td>
@@ -536,10 +677,6 @@
             </div>
             {% endif %}
         {% endif %}
-
-        <div class="nav-buttons">
-            <a href="{% url 'index' %}" class="action-btn">← Back</a>
-        </div>
     </div>
 </div>
 {% endblock %}

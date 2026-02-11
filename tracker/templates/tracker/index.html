@@ -135,6 +135,16 @@
             font-size: 1.05rem;
             width: 100%;
         }
+
+        /* Show login button on mobile for index page */
+        .top-nav .nav-right {
+            display: flex !important;
+        }
+
+        /* Hide login from hamburger menu since it's visible in nav */
+        .mobile-nav .mobile-nav-link.login {
+            display: none !important;
+        }
     }
 
     @media (max-width: 480px) {
