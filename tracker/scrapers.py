@@ -109,24 +109,28 @@ class NintendoAmiiboScraper(LoggingMixin):
 
             for link in amiibo_links:
                 try:
-                    # Name is in h2
-                    name_heading = link.find("h2")
-                    if not name_heading:
+                    # Name is in aria-label attribute
+                    name = link.get("aria-label", "").strip()
+                    if not name:
+                        self.log_warning(f"No aria-label found in link: {link.get('href', 'unknown')}")
                         continue
 
-                    name = name_heading.get_text(strip=True)
-
-                    # Series is in h3
-                    series_elem = link.find("h3")
-                    series = series_elem.get_text(strip=True) if series_elem else ""
-
-                    # Release date is in p tag
+                    # Find all p tags - first one with "series" is the series name
+                    p_tags = link.find_all("p")
+                    series = ""
                     date_text = ""
-                    for p in link.find_all("p"):
+
+                    for p in p_tags:
                         text = p.get_text(strip=True)
+                        if not text:
+                            continue
+
+                        # Check if this looks like a date
                         if self.contains_date(text):
                             date_text = text
-                            break
+                        # Otherwise if it contains "series", it's the series name
+                        elif not series and "series" in text.lower():
+                            series = text
 
                     release_date = self.parse_release_date(date_text)
 

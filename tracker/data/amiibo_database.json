@@ -1083,7 +1083,7 @@
         "au": null,
         "eu": null,
         "jp": "2021-02-04",
-        "na": null
+        "na": "2014-11-21"
       },
       "tail": "039dff02",
       "type": "Band"
@@ -9739,7 +9739,7 @@
         "au": null,
         "eu": null,
         "jp": "2021-02-04",
-        "na": null
+        "na": "2015-03-20"
       },
       "tail": "03a0ff02",
       "type": "Band"
@@ -14911,6 +14911,62 @@
       },
       "tail": "04c91e03",
       "type": "Figure"
+    },
+    {
+      "amiiboSeries": "STREET FIGHTER 6",
+      "character": "STREET FIGHTER 6 amiibo Card Starter Set",
+      "gameSeries": "STREET FIGHTER 6",
+      "head": "00000000",
+      "image": "",
+      "name": "STREET FIGHTER 6 amiibo Card Starter Set",
+      "release": {
+        "na": "2025-06-05"
+      },
+      "tail": "00000000",
+      "type": "Figure",
+      "_needs_backfill": true
+    },
+    {
+      "amiiboSeries": "",
+      "character": "Power-Up Band",
+      "gameSeries": "",
+      "head": "00000000",
+      "image": "",
+      "name": "Power-Up Band",
+      "release": {
+        "na": "2023-02-17"
+      },
+      "tail": "00000000",
+      "type": "Figure",
+      "_needs_backfill": true
+    },
+    {
+      "amiiboSeries": "Super Smash Bros.",
+      "character": "Pokémon Trainer",
+      "gameSeries": "Super Smash Bros.",
+      "head": "00000000",
+      "image": "",
+      "name": "Pokémon Trainer",
+      "release": {
+        "na": "2019-07-26"
+      },
+      "tail": "00000000",
+      "type": "Figure",
+      "_needs_backfill": true
+    },
+    {
+      "amiiboSeries": "Chibi-Robo",
+      "character": "Chibi-Robo",
+      "gameSeries": "Chibi-Robo",
+      "head": "00000000",
+      "image": "",
+      "name": "Chibi-Robo",
+      "release": {
+        "na": "2015-10-09"
+      },
+      "tail": "00000000",
+      "type": "Figure",
+      "_needs_backfill": true
     }
   ]
 }
