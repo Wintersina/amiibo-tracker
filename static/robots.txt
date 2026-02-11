@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /oauth-login/
+Disallow: /oauth2callback/
+Disallow: /logout/
+Disallow: /toggle/
+Disallow: /toggle-dark-mode/
+Disallow: /toggle-type-filter/
+
+Sitemap: https://amiibotracker.app/sitemap.xml

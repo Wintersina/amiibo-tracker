@@ -1,13 +1,12 @@
+{% extends "tracker/base.html" %}
 {% load static %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>{{ post.title }} - Amiibo Blog</title>
-    <link rel="icon" href="{% static 'images/favicon.png' %}">
-    <meta name="google-adsense-account" content="ca-pub-6947554333794592">
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6947554333794592" crossorigin="anonymous"></script>
-    <style>
+
+{% block title %}{{ post.title }} - Amiibo Blog{% endblock %}
+
+{% block meta_description %}{{ post.excerpt|truncatewords:20 }}{% endblock %}
+
+{% block head_extra %}
+<style>
         @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600&display=swap');
 
         :root {
@@ -392,8 +391,9 @@
             }
         }
     </style>
-</head>
-<body>
+{% endblock %}
+
+{% block content %}
 <div class="canvas">
     <div class="content">
         <h1>{{ post.title }}</h1>
@@ -483,6 +483,9 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
 <script>
     function navigateToAmiibo(amiiboId, amiiboName) {
         // Track with Google Ads (gtag)
@@ -499,5 +502,4 @@
         window.location.href = `/blog/number-released/amiibo/${amiiboId}/`;
     }
 </script>
-</body>
-</html>
+{% endblock %}

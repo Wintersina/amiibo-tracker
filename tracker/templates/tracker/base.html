@@ -1,0 +1,79 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Essential Meta Tags -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+    <!-- Title and Description -->
+    <title>{% block title %}Amiibo Tracker{% endblock %}</title>
+    <meta name="description" content="{% block meta_description %}Track your Amiibo collection with Google Sheets integration. Browse the complete catalog of released figures, read informative blogs, and manage your collection privately.{% endblock %}">
+
+    <!-- Canonical URL -->
+    <link rel="canonical" href="{% block canonical_url %}{{ canonical_url|default:request.build_absolute_uri }}{% endblock %}">
+
+    <!-- OpenGraph Tags for Social Sharing -->
+    <meta property="og:type" content="{% block og_type %}website{% endblock %}">
+    <meta property="og:title" content="{% block og_title %}{% block title_plain %}Amiibo Tracker{% endblock %}{% endblock %}">
+    <meta property="og:description" content="{% block og_description %}{% block meta_description_plain %}Track your Amiibo collection with Google Sheets integration. Browse the complete catalog of released figures, read informative blogs, and manage your collection privately.{% endblock %}{% endblock %}">
+    <meta property="og:url" content="{% block og_url %}{{ og_url|default:request.build_absolute_uri }}{% endblock %}">
+    <meta property="og:site_name" content="Amiibo Tracker">
+    {% block og_image_block %}
+    {% if og_image %}
+    <meta property="og:image" content="{{ og_image }}">
+    {% else %}
+    <meta property="og:image" content="{% static 'images/favicon.png' %}">
+    {% endif %}
+    {% endblock %}
+
+    <!-- Twitter Card Tags -->
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="{% block twitter_title %}{% block title_plain_2 %}Amiibo Tracker{% endblock %}{% endblock %}">
+    <meta name="twitter:description" content="{% block twitter_description %}{% block meta_description_plain_2 %}Track your Amiibo collection with Google Sheets integration.{% endblock %}{% endblock %}">
+    {% block twitter_image_block %}
+    {% if og_image %}
+    <meta name="twitter:image" content="{{ og_image }}">
+    {% else %}
+    <meta name="twitter:image" content="{% static 'images/favicon.png' %}">
+    {% endif %}
+    {% endblock %}
+
+    <!-- Favicon -->
+    <link rel="icon" href="{% static 'images/favicon.png' %}">
+
+    <!-- Privacy Policy Link -->
+    <link rel="privacy-policy" href="{% url 'privacy' %}">
+
+    <!-- Google AdSense Integration -->
+    <meta name="google-adsense-account" content="ca-pub-6947554333794592">
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6947554333794592" crossorigin="anonymous"></script>
+
+    <!-- JSON-LD Structured Data -->
+    {% block schema %}
+    {% if schemas_json %}
+    {% for schema in schemas_json %}
+    <script type="application/ld+json">
+    {{ schema|safe }}
+    </script>
+    {% endfor %}
+    {% endif %}
+    {% endblock %}
+
+    <!-- Additional Head Content -->
+    {% block head_extra %}{% endblock %}
+
+    <!-- Google Fonts -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600&display=swap');
+    </style>
+</head>
+<body>
+    <!-- Main Content Block -->
+    {% block content %}{% endblock %}
+
+    <!-- Scripts Block -->
+    {% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,13 +1,12 @@
+{% extends "tracker/base.html" %}
 {% load static %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>{{ amiibo.name }} - Amiibo Details</title>
-    <link rel="icon" href="{% static 'images/favicon.png' %}">
-    <meta name="google-adsense-account" content="ca-pub-6947554333794592">
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6947554333794592" crossorigin="anonymous"></script>
-    <style>
+
+{% block title %}{{ amiibo.name }} - Amiibo Details{% endblock %}
+
+{% block meta_description %}Learn about {{ amiibo.name }} Amiibo figure - release date, series, character details and regional information.{% endblock %}
+
+{% block head_extra %}
+<style>
         @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600;700&display=swap');
 
         :root {
@@ -271,8 +270,9 @@
             }
         }
     </style>
-</head>
-<body>
+{% endblock %}
+
+{% block content %}
 <div class="canvas">
     <div class="content">
         <div class="amiibo-header">
@@ -332,6 +332,9 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
 <script>
     // Track page view with Google Ads
     if (typeof gtag !== 'undefined') {
@@ -359,5 +362,4 @@
         }
     });
 </script>
-</body>
-</html>
+{% endblock %}
