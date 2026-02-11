@@ -160,7 +160,7 @@ class TestScraperAPIIntegration:
         <html>
             <a href="/us/amiibo/detail/mario/">
                 <h2>Mario</h2>
-                <p>Super Mario series</p>
+                <h3>Super Mario series</h3>
                 <p>Available 11/21/2014</p>
             </a>
         </html>

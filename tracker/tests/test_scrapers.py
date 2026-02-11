@@ -334,12 +334,12 @@ class TestNintendoAmiiboScraper:
         <html>
             <a href="/us/amiibo/detail/mario/">
                 <h2>Mario</h2>
-                <p>Super Mario series</p>
+                <h3>Super Mario series</h3>
                 <p>Available 04/02/26</p>
             </a>
             <a href="/us/amiibo/detail/link/">
-                <h3>Link</h3>
-                <p>The Legend of Zelda series</p>
+                <h2>Link</h2>
+                <h3>The Legend of Zelda series</h3>
                 <p>2026</p>
             </a>
         </html>
