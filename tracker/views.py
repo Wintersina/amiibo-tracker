@@ -3378,12 +3378,24 @@ class AmiiboDetailView(View, LoggingMixin, AmiiboRemoteFetchMixin):
                     descriptions = json.load(f)
                     # Try amiibo name first (for variant-specific descriptions)
                     if amiibo_name in descriptions:
+                        self.log_info(
+                            f"Found description for amiibo name: {amiibo_name}"
+                        )
                         return descriptions[amiibo_name]
                     # Fall back to character name
                     if character_name in descriptions:
+                        self.log_info(
+                            f"Found description for character name: {character_name}"
+                        )
                         return descriptions[character_name]
-            except Exception:
-                pass  # Fall back to template description
+                    # Log when no match is found
+                    self.log_info(
+                        f"No description found for amiibo_name='{amiibo_name}' or character_name='{character_name}'"
+                    )
+            except Exception as e:
+                self.log_warning(
+                    f"Error loading character descriptions: {e}. Falling back to template description."
+                )
 
         # Template-based description (fallback)
         if character_name and game_series:
