@@ -400,7 +400,7 @@
         .toggle-btn {
             font-size: 1.2em;
             border: none;
-            margin-right: 0.6em;
+            margin-right: 1em;
             vertical-align: middle;
             background: linear-gradient(135deg, rgba(243, 201, 105, 0.4), rgba(243, 201, 105, 0.2));
             color: var(--text);
@@ -891,9 +891,14 @@
             toggleBtn.className = 'toggle-btn';
             toggleBtn.textContent = '-';
 
-            header.innerHTML = `<span class="group-count">(${collectedCount} / ${amiibos.length})</span>`;
-            header.insertBefore(toggleBtn, header.firstChild);
-            header.insertBefore(document.createTextNode(series + ' '), header.firstChild);
+            // Append in correct order: button → title → count
+            header.appendChild(toggleBtn);
+            header.appendChild(document.createTextNode(series + ' '));
+
+            const groupCount = document.createElement('span');
+            groupCount.className = 'group-count';
+            groupCount.textContent = `(${collectedCount} / ${amiibos.length})`;
+            header.appendChild(groupCount);
 
             const amiiboContainer = document.createElement('div');
             amiiboContainer.className = 'amiibo-container';

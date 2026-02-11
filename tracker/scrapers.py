@@ -411,7 +411,7 @@ class NintendoAmiiboScraper(LoggingMixin):
             return False
 
     def update_amiibo(self, existing_amiibo, scraped_data):
-        """Update existing amiibo with scraped data"""
+        """Update existing amiibo with scraped data (release dates only)"""
         updated = False
 
         if scraped_data["release_date"]:
@@ -423,27 +423,8 @@ class NintendoAmiiboScraper(LoggingMixin):
                 existing_amiibo["release"]["na"] = scraped_data["release_date"]
                 updated = True
 
-        # Update image ONLY if this is a placeholder amiibo (has 00000000 IDs)
-        # This prevents overwriting correct images due to bad matches
-        if scraped_data.get("image"):
-            head = existing_amiibo.get("head", "")
-            tail = existing_amiibo.get("tail", "")
-            is_placeholder = (
-                head == "00000000"
-                or tail == "00000000"
-                or head.startswith("ff")
-                or tail.startswith("ff")
-            )
-
-            if is_placeholder:
-                existing_image = existing_amiibo.get("image", "")
-                # Only update if no image or if it's empty/broken
-                if not existing_image or existing_image == "":
-                    existing_amiibo["image"] = scraped_data["image"]
-                    updated = True
-                    self.log_info(
-                        f"Updated image for placeholder: {existing_amiibo.get('name')}"
-                    )
+        # Note: Image updates disabled - we never overwrite existing image data
+        # Images are only set when creating new placeholder amiibos
 
         return updated
 

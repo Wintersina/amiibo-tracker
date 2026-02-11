@@ -1083,7 +1083,7 @@
         "au": null,
         "eu": null,
         "jp": "2021-02-04",
-        "na": "2014-11-21"
+        "na": null
       },
       "tail": "039dff02",
       "type": "Band"
@@ -6101,7 +6101,7 @@
       "character": "Mario",
       "gameSeries": "Super Mario",
       "head": "00000000",
-      "image": "https://assets.nintendo.com/image/upload/ar_16:9,b_auto:border,c_lpad/b_white/f_auto/q_auto/dpr_1.5/amiibo/Super%20Mario%20Galaxy%20+%20Super%20Mario%20Galaxy%202/Mario_and_Luma_figure",
+      "image": "https://raw.githubusercontent.com/8bitDream/AmiiboAPI/master/images/icon_00000000-00340102.png",
       "name": "Mario",
       "release": {
         "au": "2015-03-21",
@@ -7285,7 +7285,7 @@
       "character": "Mario",
       "gameSeries": "Super Mario",
       "head": "00000000",
-      "image": "https://assets.nintendo.com/image/upload/ar_16:9,b_auto:border,c_lpad/b_white/f_auto/q_auto/dpr_1.5/amiibo/Super%20Mario%20Bros.%2030th%20Anniversary/30th-anniversary-mario-modern-color-amiibo-30th-anniversary-series",
+      "image": "https://raw.githubusercontent.com/8bitDream/AmiiboAPI/master/images/icon_00000000-02390602.png",
       "name": "8-Bit Mario Modern Color",
       "release": {
         "au": "2015-10-24",
@@ -8565,7 +8565,7 @@
       "character": "Mario",
       "gameSeries": "Super Mario",
       "head": "00000000",
-      "image": "https://assets.nintendo.com/image/upload/ar_16:9,b_auto:border,c_lpad/b_white/f_auto/q_auto/dpr_1.5/amiibo/Super%20Mario%20Odyssey/mario-wedding-outfit-amiibo-super-mario-odyssey-series",
+      "image": "https://raw.githubusercontent.com/8bitDream/AmiiboAPI/master/images/icon_00000000-03710102.png",
       "name": "Mario - Wedding",
       "release": {
         "au": "2017-10-27",
@@ -9739,7 +9739,7 @@
         "au": null,
         "eu": null,
         "jp": "2021-02-04",
-        "na": "2015-03-20"
+        "na": null
       },
       "tail": "03a0ff02",
       "type": "Band"
@@ -10517,7 +10517,7 @@
       "character": "Mario",
       "gameSeries": "Super Mario",
       "head": "00000000",
-      "image": "https://assets.nintendo.com/image/upload/ar_16:9,b_auto:border,c_lpad/b_white/f_auto/q_auto/dpr_1.5/amiibo/Super%20Mario/mario-gold-edition-amiibo-super-mario-series",
+      "image": "https://raw.githubusercontent.com/8bitDream/AmiiboAPI/master/images/icon_00000000-003c0102.png",
       "name": "Mario - Gold Edition",
       "release": {
         "au": "2015-06-25",
@@ -13349,7 +13349,7 @@
       "character": "Mario",
       "gameSeries": "Super Mario",
       "head": "00000000",
-      "image": "https://assets.nintendo.com/image/upload/ar_16:9,b_auto:border,c_lpad/b_white/f_auto/q_auto/dpr_1.5/amiibo/Super%20Mario/mario-silver-edition-amiibo-super-mario-series",
+      "image": "https://raw.githubusercontent.com/8bitDream/AmiiboAPI/master/images/icon_00000000-003d0102.png",
       "name": "Mario - Silver Edition",
       "release": {
         "au": "2015-05-30",
@@ -13909,7 +13909,7 @@
       "character": "Mario",
       "gameSeries": "Super Mario",
       "head": "00000000",
-      "image": "https://assets.nintendo.com/image/upload/ar_16:9,b_auto:border,c_lpad/b_white/f_auto/q_auto/dpr_1.5/amiibo/Super%20Mario%20Bros.%2030th%20Anniversary/30th-anniversary-mario-classic-color-amiibo-30th-anniversary-series",
+      "image": "https://raw.githubusercontent.com/8bitDream/AmiiboAPI/master/images/icon_00000000-02380602.png",
       "name": "8-Bit Mario Classic Color",
       "release": {
         "au": "2015-09-12",
