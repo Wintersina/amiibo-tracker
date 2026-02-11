@@ -74,6 +74,7 @@
         .content {
             position: relative;
             z-index: 1;
+            padding-top: 4rem;
         }
 
         h1 {
@@ -231,6 +232,10 @@
                 padding: 2rem;
             }
 
+            .content {
+                padding-top: 3.5rem;
+            }
+
             h1 {
                 font-size: 1.8rem;
             }
@@ -325,8 +330,7 @@
         {% endif %}
 
         <div class="nav-buttons">
-            <a href="javascript:history.back()" class="action-btn primary" id="backBtn">← Go Back</a>
-            <a href="{% url 'blog_post' 'number-released' %}" class="action-btn">← All Amiibo</a>
+            <a href="javascript:history.back()" class="action-btn primary" id="backBtn">← Back</a>
             <a href="{% url 'blog_list' %}" class="action-btn">← Blog</a>
             <a href="{% url 'index' %}" class="action-btn">← Home</a>
         </div>
