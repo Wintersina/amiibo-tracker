@@ -24,6 +24,7 @@ from constants import OauthConstants
 from tracker.google_sheet_client_manager import GoogleSheetClientManager
 from tracker.helpers import LoggingMixin, AmiiboRemoteFetchMixin, AmiiboLocalFetchMixin
 from tracker.service_domain import AmiiboService, GoogleSheetConfigManager
+from tracker.scrapers import NintendoAmiiboScraper
 from tracker.seo_helpers import (
     SEOContext,
     generate_meta_description,
@@ -3431,3 +3432,48 @@ class RobotsTxtView(View):
             return HttpResponse(content, content_type="text/plain")
         except FileNotFoundError:
             return HttpResponse("User-agent: *\nAllow: /\n", content_type="text/plain")
+
+
+@method_decorator(csrf_exempt, name="dispatch")
+class NintendoScraperAPIView(View, LoggingMixin):
+    """
+    API endpoint for triggering Nintendo amiibo scraper.
+    Designed for Cloud Scheduler or manual triggering.
+    """
+
+    def post(self, request):
+        """Trigger the scraper"""
+        try:
+            scraper = NintendoAmiiboScraper()
+            result = scraper.run(force=True)
+
+            self.log_action(
+                "scraper-api-triggered",
+                request,
+                level="info",
+                result=result,
+            )
+
+            return JsonResponse(result, status=200)
+
+        except Exception as e:
+            self.log_action(
+                "scraper-api-error",
+                request,
+                level="error",
+                error=str(e),
+            )
+            return JsonResponse(
+                {"status": "error", "message": str(e)},
+                status=500,
+            )
+
+    def get(self, request):
+        """Health check / info endpoint"""
+        return JsonResponse(
+            {
+                "status": "ready",
+                "endpoint": "POST to this URL to trigger scraper",
+                "info": "Designed for Google Cloud Scheduler",
+            }
+        )

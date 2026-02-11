@@ -81,3 +81,12 @@ jobs:
           if [ -n "$SERVICE_URL" ]; then
             echo "Service URL: $SERVICE_URL"
           fi
+
+      - name: Setup Nintendo Scraper Scheduler
+        run: |
+          echo "🤖 Setting up Cloud Scheduler for Nintendo amiibo scraper..."
+          bash scripts/setup-scraper-scheduler.sh
+        env:
+          PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          REGION: ${{ secrets.GCP_REGION }}
+          SERVICE_NAME: ${{ env.SERVICE_NAME }}

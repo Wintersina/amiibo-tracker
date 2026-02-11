@@ -1,0 +1,59 @@
+name: Setup/Update Scraper Scheduler
+
+on:
+  workflow_dispatch:
+    inputs:
+      schedule:
+        description: 'Cron schedule (default: every 6 hours)'
+        required: false
+        default: '0 */6 * * *'
+      timezone:
+        description: 'Timezone for scheduler'
+        required: false
+        default: 'America/Los_Angeles'
+
+env:
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  REGION: ${{ secrets.GCP_REGION }}
+  SERVICE_NAME: amiibo-tracker
+
+jobs:
+  setup-scheduler:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
+
+      - name: Set up Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Setup/Update Nintendo Scraper Scheduler
+        run: |
+          echo "🤖 Setting up Cloud Scheduler for Nintendo amiibo scraper..."
+          bash scripts/setup-scraper-scheduler.sh
+        env:
+          PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          REGION: ${{ secrets.GCP_REGION }}
+          SERVICE_NAME: ${{ env.SERVICE_NAME }}
+          SCHEDULE: ${{ github.event.inputs.schedule }}
+          TIMEZONE: ${{ github.event.inputs.timezone }}
+
+      - name: Test Scheduler Job
+        run: |
+          echo "🧪 Testing scheduler job..."
+          JOB_NAME="nintendo-amiibo-scraper"
+
+          # Trigger the job manually
+          gcloud scheduler jobs run "$JOB_NAME" \
+            --location "$REGION" \
+            --project "$PROJECT_ID"
+
+          echo "✅ Test trigger sent!"
+          echo "📊 Check Cloud Run logs to verify scraper execution:"
+          echo "   https://console.cloud.google.com/run/detail/$REGION/$SERVICE_NAME/logs"
