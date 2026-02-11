@@ -47,6 +47,19 @@ from tracker.exceptions import (
 os.environ.setdefault("OAUTHLIB_RELAX_TOKEN_SCOPE", "1")
 
 
+def load_blog_posts():
+    """Load blog posts from JSON file."""
+    blog_posts_path = Path(__file__).parent / "data" / "blog_posts.json"
+    try:
+        with blog_posts_path.open(encoding="utf-8") as f:
+            data = json.load(f)
+            return data.get("posts", [])
+    except (FileNotFoundError, json.JSONDecodeError) as e:
+        print(f"Error loading blog posts: {e}")
+        return []
+
+
+
 BLOG_POSTS = [
     {
         "slug": "how-it-works",
@@ -2897,10 +2910,15 @@ class AmiiboDatabaseView(
 
 class BlogListView(View, LoggingMixin):
     def get(self, request):
+        # Load blog posts from JSON file
+        posts = load_blog_posts()
+        # Sort by date (newest first)
+        posts = sorted(posts, key=lambda p: p.get("date", ""), reverse=True)
+
         self.log_action(
             "blog-list-view",
             request,
-            total_posts=len(BLOG_POSTS),
+            total_posts=len(posts),
         )
 
         # Build SEO context
@@ -2914,7 +2932,7 @@ class BlogListView(View, LoggingMixin):
         # Add Organization schema
         seo.add_schema("Organization", generate_organization_schema())
 
-        context = {"posts": BLOG_POSTS}
+        context = {"posts": posts}
         context.update(seo.build())
 
         return render(request, "tracker/blog_list.html", context)
@@ -2922,7 +2940,10 @@ class BlogListView(View, LoggingMixin):
 
 class BlogPostView(View, LoggingMixin, AmiiboRemoteFetchMixin):
     def get(self, request, slug):
-        post = next((p for p in BLOG_POSTS if p["slug"] == slug), None)
+        # Load blog posts from JSON and find by slug
+        posts = load_blog_posts()
+        post = next((p for p in posts if p.get("slug") == slug), None)
+
         if not post:
             self.log_action(
                 "blog-post-not-found",
@@ -2936,17 +2957,20 @@ class BlogPostView(View, LoggingMixin, AmiiboRemoteFetchMixin):
             "blog-post-view",
             request,
             slug=slug,
-            title=post["title"],
+            title=post.get("title"),
         )
 
         # Build SEO context
         seo = SEOContext(request)
-        seo.set_title(post["title"], suffix="Amiibo Blog")
+        seo.set_title(post.get("title"), suffix="Amiibo Blog")
+
+        # Check if content is dynamic
+        is_dynamic = post.get("content") == "dynamic"
 
         # Generate description from excerpt or content
         description = post.get("excerpt") or generate_meta_description(
-            post["content"]
-            if post["content"] != "dynamic"
+            post.get("content")
+            if not is_dynamic
             else "Browse the complete catalog of all released Amiibo figures, sorted by newest to oldest."
         )
         seo.set_description(description)
@@ -2957,10 +2981,10 @@ class BlogPostView(View, LoggingMixin, AmiiboRemoteFetchMixin):
         seo.add_schema(
             "Article",
             generate_article_schema(
-                title=post["title"],
+                title=post.get("title"),
                 description=description,
                 url=post_url,
-                date_published=post["date"],
+                date_published=post.get("date"),  # Already in ISO format (YYYY-MM-DD)
                 author="Amiibo Tracker Team",
                 publisher="Amiibo Tracker",
             ),
@@ -2970,15 +2994,15 @@ class BlogPostView(View, LoggingMixin, AmiiboRemoteFetchMixin):
         breadcrumbs = [
             ("Home", request.build_absolute_uri("/")),
             ("Blog", request.build_absolute_uri("/blog/")),
-            (post["title"], post_url),
+            (post.get("title"), post_url),
         ]
         seo.add_schema("BreadcrumbList", generate_breadcrumb_schema(breadcrumbs))
 
         context = {"post": post}
         context.update(seo.build())
 
-        # Handle dynamic content for number-released post
-        if slug == "number-released" and post.get("content") == "dynamic":
+        # Handle dynamic content for posts with content="dynamic"
+        if is_dynamic:
             try:
                 amiibos = self._fetch_remote_amiibos()
 
@@ -3210,7 +3234,7 @@ class AmiiboDetailView(View, LoggingMixin, AmiiboRemoteFetchMixin):
         game_series = amiibo.get("gameSeries", "")
 
         # Try to load custom descriptions from JSON file
-        descriptions_path = Path(__file__).parent / "character_descriptions.json"
+        descriptions_path = Path(__file__).parent / "data" / "character_descriptions.json"
         if descriptions_path.exists():
             try:
                 with open(descriptions_path, "r", encoding="utf-8") as f:
