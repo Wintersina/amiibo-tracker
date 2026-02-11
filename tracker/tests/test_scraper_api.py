@@ -158,9 +158,8 @@ class TestScraperAPIIntegration:
         mock_response.status_code = 200
         mock_response.content = b"""
         <html>
-            <a href="/us/amiibo/detail/mario/">
-                <h2>Mario</h2>
-                <h3>Super Mario series</h3>
+            <a href="/us/amiibo/detail/mario/" aria-label="Mario">
+                <p>Super Mario series</p>
                 <p>Available 11/21/2014</p>
             </a>
         </html>
