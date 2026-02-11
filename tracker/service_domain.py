@@ -62,8 +62,15 @@ class AmiiboService(LoggingMixin, AmiiboRemoteFetchMixin, AmiiboLocalFetchMixin)
                 skipped_placeholders.append(amiibo.get("name", "Unknown"))
                 continue
 
-            # Skip amiibos with placeholder IDs (00000000)
-            if amiibo.get("head") == "00000000" or amiibo.get("tail") == "00000000":
+            # Skip amiibos with placeholder IDs (00000000 or ff-prefixed)
+            head = amiibo.get("head", "")
+            tail = amiibo.get("tail", "")
+            if (
+                head == "00000000"
+                or tail == "00000000"
+                or head.startswith("ff")
+                or tail.startswith("ff")
+            ):
                 skipped_placeholders.append(amiibo.get("name", "Unknown"))
                 continue
 

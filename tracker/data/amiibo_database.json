@@ -14911,6 +14911,76 @@
       },
       "tail": "04c91e03",
       "type": "Figure"
+    },
+    {
+      "amiiboSeries": "Kirby Air Riders",
+      "character": "Chef Kawasaki & Hop Star",
+      "gameSeries": "Kirby Air Riders",
+      "head": "00000000",
+      "image": "https://assets.nintendo.com/image/upload/ar_16:9,b_auto:border,c_lpad/b_white/f_auto/q_auto/dpr_1.5/amiibo/Kirby%20Air%20RIders/chef-kawasaki-and-hop-star-figure",
+      "name": "Chef Kawasaki & Hop Star",
+      "release": {
+        "na": "2026-01-01"
+      },
+      "tail": "00000000",
+      "type": "Figure",
+      "is_upcoming": true
+    },
+    {
+      "amiiboSeries": "Super Mario Galaxy + Super Mario Galaxy 2",
+      "character": "Mario and Luma",
+      "gameSeries": "Super Mario Galaxy + Super Mario Galaxy 2",
+      "head": "00000000",
+      "image": "https://assets.nintendo.com/image/upload/ar_16:9,b_auto:border,c_lpad/b_white/f_auto/q_auto/dpr_1.5/amiibo/Super%20Mario%20Galaxy%20+%20Super%20Mario%20Galaxy%202/Mario_and_Luma_figure",
+      "name": "Mario and Luma",
+      "release": {
+        "na": "2026-04-02"
+      },
+      "tail": "00000000",
+      "type": "Figure",
+      "is_upcoming": true
+    },
+    {
+      "amiiboSeries": "Super Mario Bros. Wonder",
+      "character": "Poplin & Prince Florian",
+      "gameSeries": "Super Mario Bros. Wonder",
+      "head": "00000000",
+      "image": "https://assets.nintendo.com/image/upload/ar_16:9,b_auto:border,c_lpad/b_white/f_auto/q_auto/dpr_1.5/amiibo/Super%20Mario%20Bros%20Wonder/poplin-and-prince-florian-figure",
+      "name": "Poplin & Prince Florian",
+      "release": {
+        "na": "2026-03-26"
+      },
+      "tail": "00000000",
+      "type": "Figure",
+      "is_upcoming": true
+    },
+    {
+      "amiiboSeries": "Super Mario Bros. Wonder",
+      "character": "Captain Toad & Talking Flower",
+      "gameSeries": "Super Mario Bros. Wonder",
+      "head": "00000000",
+      "image": "https://assets.nintendo.com/image/upload/ar_16:9,b_auto:border,c_lpad/b_white/f_auto/q_auto/dpr_1.5/amiibo/Super%20Mario%20Bros%20Wonder/captain-toad-talking-flower-figure",
+      "name": "Captain Toad & Talking Flower",
+      "release": {
+        "na": "2026-03-26"
+      },
+      "tail": "00000000",
+      "type": "Figure",
+      "is_upcoming": true
+    },
+    {
+      "amiiboSeries": "Animal Crossing",
+      "character": "Animal Crossing: New Leaf - Welcome amiibo series",
+      "gameSeries": "Animal Crossing",
+      "head": "00000000",
+      "image": "https://assets.nintendo.com/image/upload/ar_16:9,b_auto:border,c_lpad/b_white/f_auto/q_auto/dpr_1.5/amiibo/Animal%20Crossing/Animal%20Crossing%20Welcome%20amiibo%20Cards/animal-crossing-cards-amiibo-animal-crossing-series",
+      "name": "Animal Crossing: New Leaf - Welcome amiibo series",
+      "release": {
+        "na": "2016-12-02"
+      },
+      "tail": "00000000",
+      "type": "Figure",
+      "is_upcoming": true
     }
   ]
 }

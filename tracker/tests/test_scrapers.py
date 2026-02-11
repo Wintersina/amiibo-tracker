@@ -335,8 +335,13 @@ class TestNintendoAmiiboScraper:
         assert placeholder["amiiboSeries"] == "New Series"
         assert placeholder["gameSeries"] == "New Series"
         assert placeholder["character"] == "New Amiibo"
-        assert placeholder["head"] == "00000000"
-        assert placeholder["tail"] == "00000000"
+        # Check that IDs are generated (not 00000000) and start with 'ff'
+        assert placeholder["head"].startswith("ff")
+        assert placeholder["tail"].startswith("ff")
+        assert len(placeholder["head"]) == 8  # ff + 6 hex chars
+        assert len(placeholder["tail"]) == 8  # ff + 6 hex chars
+        # IDs should be unique based on name
+        assert placeholder["head"] != placeholder["tail"]
         assert placeholder["type"] == "Figure"
         assert placeholder["release"]["na"] == "2026-06-15"
         assert placeholder["is_upcoming"] is True
@@ -550,5 +555,5 @@ class TestScraperIntegration:
 
         # Verify Luigi was added
         luigi = next(a for a in saved_data["amiibo"] if a["name"] == "Luigi")
-        assert luigi["_needs_backfill"] is True
-        assert luigi["head"] == "00000000"  # Placeholder
+        assert luigi["is_upcoming"] is True
+        assert luigi["head"].startswith("ff")  # Placeholder with unique ID

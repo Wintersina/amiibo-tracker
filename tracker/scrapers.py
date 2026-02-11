@@ -1,3 +1,4 @@
+import hashlib
 import json
 import re
 from datetime import datetime
@@ -16,7 +17,7 @@ class NintendoAmiiboScraper(LoggingMixin):
     Cloud Run compatible - uses file timestamp for cache checking.
     """
 
-    def __init__(self, min_similarity=0.6, cache_hours=6):
+    def __init__(self, min_similarity=0.5, cache_hours=6):
         self.min_similarity = min_similarity
         self.cache_hours = cache_hours
         self.database_path = Path(__file__).parent / "data" / "amiibo_database.json"
@@ -244,6 +245,9 @@ class NintendoAmiiboScraper(LoggingMixin):
             "3 pack",
             "multi-pack",
             "multipack",
+            "double pack",
+            "2-pack",
+            "2 pack",
         ]
 
         # Check if any indicator is in the name
@@ -313,17 +317,38 @@ class NintendoAmiiboScraper(LoggingMixin):
 
         if best_match:
             self.log_info(
-                f"Match found: '{scraped_name}' -> '{best_match.get('name')}' "
+                f"✓ Match found: '{scraped_name}' -> '{best_match.get('name')}' "
                 f"(score: {best_score:.2f})"
+            )
+        else:
+            self.log_warning(
+                f"✗ No match for: '{scraped_name}' "
+                f"(best score: {best_score:.2f}, threshold: {self.min_similarity})"
             )
 
         return best_match
 
     def normalize_name(self, name):
-        """Normalize name for comparison"""
+        """
+        Normalize name for comparison.
+
+        Handles variants, parentheses, dashes, and special characters.
+        """
         name = name.lower()
+
+        # Remove common variant indicators in parentheses
+        name = re.sub(r"\s*\(.*?\)\s*", " ", name)  # Remove (Side Order), (Alterna), etc.
+
+        # Remove common variant suffixes with dashes
+        name = re.sub(r"\s*-\s*side order\s*$", "", name, flags=re.IGNORECASE)
+        name = re.sub(r"\s*-\s*alterna\s*$", "", name, flags=re.IGNORECASE)
+
+        # Remove special characters but keep spaces
         name = re.sub(r"[^\w\s]", "", name)
+
+        # Normalize whitespace
         name = re.sub(r"\s+", " ", name).strip()
+
         return name
 
     def calculate_similarity(self, name1, name2):
@@ -394,33 +419,53 @@ class NintendoAmiiboScraper(LoggingMixin):
                 existing_amiibo["release"]["na"] = scraped_data["release_date"]
                 updated = True
 
-        # Update image if scraped image is available and existing is empty or placeholder
+        # Update image ONLY if this is a placeholder amiibo (has 00000000 IDs)
+        # This prevents overwriting correct images due to bad matches
         if scraped_data.get("image"):
-            existing_image = existing_amiibo.get("image", "")
-            # Update if no image or if it's a placeholder/broken URL
-            if (
-                not existing_image
-                or existing_image == ""
-                or "00000000" in existing_image
-            ):
-                existing_amiibo["image"] = scraped_data["image"]
-                updated = True
+            head = existing_amiibo.get("head", "")
+            tail = existing_amiibo.get("tail", "")
+            is_placeholder = (
+                head == "00000000"
+                or tail == "00000000"
+                or head.startswith("ff")
+                or tail.startswith("ff")
+            )
+
+            if is_placeholder:
+                existing_image = existing_amiibo.get("image", "")
+                # Only update if no image or if it's empty/broken
+                if not existing_image or existing_image == "":
+                    existing_amiibo["image"] = scraped_data["image"]
+                    updated = True
+                    self.log_info(
+                        f"Updated image for placeholder: {existing_amiibo.get('name')}"
+                    )
 
         return updated
 
     def create_placeholder_amiibo(self, scraped_data):
-        """Create a placeholder amiibo entry"""
+        """
+        Create a placeholder amiibo entry with unique ID.
+
+        Generates unique head/tail from name hash to prevent URL collisions.
+        """
         release_date = scraped_data["release_date"]
+
+        # Generate unique ID from name to prevent URL collisions
+        # Use first 8 chars of SHA256 hash for head and tail
+        name_hash = hashlib.sha256(scraped_data["name"].encode()).hexdigest()
+        unique_head = f"ff{name_hash[:6]}"  # ff prefix indicates placeholder
+        unique_tail = f"ff{name_hash[6:12]}"
 
         return {
             "amiiboSeries": scraped_data.get("series", "Unknown"),
             "character": scraped_data["name"],
             "gameSeries": scraped_data.get("series", "Unknown"),
-            "head": "00000000",
+            "head": unique_head,
             "image": scraped_data.get("image", ""),
             "name": scraped_data["name"],
             "release": {"na": release_date} if release_date else {},
-            "tail": "00000000",
+            "tail": unique_tail,
             "type": "Figure",
             "is_upcoming": True,
         }
