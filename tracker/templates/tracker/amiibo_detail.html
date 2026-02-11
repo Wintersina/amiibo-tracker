@@ -1,5 +1,6 @@
 {% extends "tracker/base.html" %}
 {% load static %}
+{% load amiibo_filters %}
 
 {% block title %}{{ amiibo.name }} - Amiibo Details{% endblock %}
 
@@ -300,7 +301,7 @@
     <div class="content">
         <div class="amiibo-header">
             <div class="amiibo-image-container">
-                <img src="{{ amiibo.image }}"
+                <img src="{{ amiibo|amiibo_image }}"
                      alt="{{ amiibo.name }}"
                      class="amiibo-image"
                      onerror="this.src='{% static 'images/favicon.png' %}';">

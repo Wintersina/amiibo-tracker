@@ -20,6 +20,7 @@ from tracker.views import (
     RobotsTxtView,
     NintendoScraperAPIView,
 )
+from tracker.views_image import remove_bg
 
 urlpatterns = [
     path("", IndexView.as_view(), name="index"),
@@ -41,6 +42,7 @@ urlpatterns = [
     path("logout/", LogoutView.as_view(), name="logout"),
     path("privacy/", PrivacyPolicyView.as_view(), name="privacy"),
     path("api/amiibo/", AmiiboDatabaseView.as_view(), name="amiibo_database"),
+    path("api/remove-bg/", remove_bg, name="remove_bg"),
     path("amiibodex/", AmiibodexView.as_view(), name="amiibodex"),
     path("blog/", BlogListView.as_view(), name="blog_list"),
     path(
@@ -49,5 +51,7 @@ urlpatterns = [
         name="amiibo_detail",
     ),
     path("blog/<slug:slug>/", BlogPostView.as_view(), name="blog_post"),
-    path("api/scrape-nintendo/", NintendoScraperAPIView.as_view(), name="scrape_nintendo"),
+    path(
+        "api/scrape-nintendo/", NintendoScraperAPIView.as_view(), name="scrape_nintendo"
+    ),
 ]
