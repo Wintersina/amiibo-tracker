@@ -74,14 +74,21 @@ class NintendoAmiiboScraper(LoggingMixin):
                     new_amiibo = self.create_placeholder_amiibo(scraped)
                     existing_amiibos.append(new_amiibo)
 
+            # Backfill placeholders with AmiiboAPI data
+            backfilled_count = 0
+            if new_count > 0:
+                self.log_info("Backfilling new amiibos from AmiiboAPI...")
+                backfilled_count = self.backfill_from_amiiboapi(existing_amiibos)
+
             # Save changes
-            if updated_amiibos or new_count > 0:
+            if updated_amiibos or new_count > 0 or backfilled_count > 0:
                 self.save_amiibos(existing_amiibos)
                 self.log_info(
                     "Scraper completed",
                     matched=matched_count,
                     new=new_count,
                     updated=len(updated_amiibos),
+                    backfilled=backfilled_count,
                 )
 
             return {
@@ -89,6 +96,7 @@ class NintendoAmiiboScraper(LoggingMixin):
                 "matched": matched_count,
                 "new": new_count,
                 "updated": len(updated_amiibos),
+                "backfilled": backfilled_count,
             }
 
         except Exception as e:
@@ -275,3 +283,105 @@ class NintendoAmiiboScraper(LoggingMixin):
 
         with self.database_path.open("w", encoding="utf-8") as f:
             json.dump(data, f, indent=2, ensure_ascii=False)
+
+    def backfill_from_amiiboapi(self, amiibos):
+        """
+        Backfill placeholder amiibos with complete data from AmiiboAPI.
+        Prioritizes amiibos with _needs_backfill flag.
+        """
+        try:
+            # Fetch all amiibos from AmiiboAPI
+            self.log_info("Fetching complete amiibo data from AmiiboAPI...")
+            response = requests.get("https://amiiboapi.org/api/amiibo/", timeout=30)
+            response.raise_for_status()
+            api_data = response.json()
+            api_amiibos = api_data.get("amiibo", [])
+
+            if not api_amiibos:
+                self.log_warning("No amiibos returned from AmiiboAPI")
+                return 0
+
+            self.log_info(f"Loaded {len(api_amiibos)} amiibos from AmiiboAPI")
+
+            # Find all amiibos that need backfilling
+            needs_backfill = [a for a in amiibos if a.get("_needs_backfill")]
+            if not needs_backfill:
+                self.log_info("No amiibos need backfilling")
+                return 0
+
+            self.log_info(f"Found {len(needs_backfill)} amiibos needing backfill")
+
+            backfilled_count = 0
+            for placeholder in needs_backfill:
+                # Try to find a match in AmiiboAPI
+                match = self.find_amiiboapi_match(placeholder, api_amiibos)
+
+                if match:
+                    # Backfill with complete data from AmiiboAPI
+                    self.backfill_amiibo_data(placeholder, match)
+                    backfilled_count += 1
+                    self.log_info(
+                        f"Backfilled: {placeholder['name']}",
+                        head=match.get("head"),
+                        tail=match.get("tail"),
+                    )
+                else:
+                    self.log_warning(
+                        f"Could not find AmiiboAPI match for: {placeholder['name']}"
+                    )
+
+            return backfilled_count
+
+        except requests.RequestException as e:
+            self.log_error("Failed to fetch from AmiiboAPI", error=str(e))
+            return 0
+        except Exception as e:
+            self.log_error("Backfill process failed", error=str(e))
+            return 0
+
+    def find_amiiboapi_match(self, placeholder, api_amiibos):
+        """Find the best match for a placeholder in AmiiboAPI data"""
+        placeholder_name = self.normalize_name(placeholder["name"])
+        best_match = None
+        best_score = 0
+
+        for api_amiibo in api_amiibos:
+            api_name = self.normalize_name(api_amiibo.get("name", ""))
+            score = self.calculate_similarity(placeholder_name, api_name)
+
+            # Higher threshold for API matching to ensure accuracy
+            if score > best_score and score >= 0.7:
+                best_score = score
+                best_match = api_amiibo
+
+        return best_match
+
+    def backfill_amiibo_data(self, placeholder, api_amiibo):
+        """Update placeholder with complete data from AmiiboAPI"""
+        # Update with real IDs
+        placeholder["head"] = api_amiibo.get("head", "00000000")
+        placeholder["tail"] = api_amiibo.get("tail", "00000000")
+
+        # Update with real data
+        placeholder["character"] = api_amiibo.get("character", placeholder["character"])
+        placeholder["gameSeries"] = api_amiibo.get("gameSeries", placeholder["gameSeries"])
+        placeholder["amiiboSeries"] = api_amiibo.get("amiiboSeries", placeholder["amiiboSeries"])
+        placeholder["image"] = api_amiibo.get("image", "")
+        placeholder["type"] = api_amiibo.get("type", placeholder.get("type", "Figure"))
+
+        # Merge release dates (keep Nintendo's NA date if we have it)
+        api_release = api_amiibo.get("release", {})
+        if api_release:
+            if "release" not in placeholder:
+                placeholder["release"] = {}
+            # Keep existing NA date from Nintendo if present
+            for region in ["jp", "eu", "au"]:
+                if region in api_release and region not in placeholder["release"]:
+                    placeholder["release"][region] = api_release[region]
+            # Only use API's NA date if we don't have one from Nintendo
+            if "na" in api_release and not placeholder["release"].get("na"):
+                placeholder["release"]["na"] = api_release["na"]
+
+        # Remove backfill flag
+        if "_needs_backfill" in placeholder:
+            del placeholder["_needs_backfill"]
