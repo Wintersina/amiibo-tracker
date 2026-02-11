@@ -3282,6 +3282,11 @@ class AmiiboDetailView(View, LoggingMixin, AmiiboRemoteFetchMixin):
 
             # Get character description
             description = self._get_character_description(amiibo)
+            self.log_info(
+                f"Description loaded for {amiibo.get('name')}: {description[:100]}..."
+                if len(description) > 100
+                else f"Description loaded for {amiibo.get('name')}: {description}"
+            )
 
             # Build SEO context
             seo = SEOContext(request)
@@ -3339,6 +3344,13 @@ class AmiiboDetailView(View, LoggingMixin, AmiiboRemoteFetchMixin):
                 "description": description,
             }
             context.update(seo.build())
+
+            # Log context description to verify it's correct
+            self.log_info(
+                f"Context description for template: {context['description'][:100]}..."
+                if len(context["description"]) > 100
+                else f"Context description for template: {context['description']}"
+            )
 
             self.log_action(
                 "amiibo-detail-view",
