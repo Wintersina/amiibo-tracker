@@ -109,15 +109,18 @@ class NintendoAmiiboScraper(LoggingMixin):
 
             for link in amiibo_links:
                 try:
-                    heading = link.find(["h2", "h3", "h4"])
-                    if not heading:
+                    # Name is in h2
+                    name_heading = link.find("h2")
+                    if not name_heading:
                         continue
 
-                    name = heading.get_text(strip=True)
+                    name = name_heading.get_text(strip=True)
 
-                    series_elem = link.find("p")
+                    # Series is in h3
+                    series_elem = link.find("h3")
                     series = series_elem.get_text(strip=True) if series_elem else ""
 
+                    # Release date is in p tag
                     date_text = ""
                     for p in link.find_all("p"):
                         text = p.get_text(strip=True)
