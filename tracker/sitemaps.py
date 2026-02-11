@@ -1,10 +1,12 @@
 """
 Sitemap definitions for SEO optimization.
 """
+import json
+from pathlib import Path
+from datetime import datetime
 from django.contrib.sitemaps import Sitemap
 from django.urls import reverse
 from django.core.cache import cache
-from tracker.views import BLOG_POSTS
 import requests
 
 
@@ -30,8 +32,15 @@ class BlogPostSitemap(Sitemap):
     changefreq = "weekly"
 
     def items(self):
-        """Return list of blog posts."""
-        return BLOG_POSTS
+        """Return list of blog posts from JSON file."""
+        blog_posts_path = Path(__file__).parent / "data" / "blog_posts.json"
+        try:
+            with blog_posts_path.open(encoding="utf-8") as f:
+                data = json.load(f)
+                return data.get("posts", [])
+        except (FileNotFoundError, json.JSONDecodeError) as e:
+            print(f"Error loading blog posts for sitemap: {e}")
+            return []
 
     def location(self, item):
         """Return the URL for each blog post."""
@@ -39,7 +48,6 @@ class BlogPostSitemap(Sitemap):
 
     def lastmod(self, item):
         """Return last modification date (publication date for blog posts)."""
-        from datetime import datetime
         try:
             return datetime.strptime(item["date"], "%Y-%m-%d")
         except (ValueError, KeyError):

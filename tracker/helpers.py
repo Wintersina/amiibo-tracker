@@ -112,7 +112,7 @@ class AmiiboRemoteFetchMixin:
 
 class AmiiboLocalFetchMixin:
     def _fetch_local_amiibos(self) -> list[dict]:
-        database_path = Path(__file__).parent / "amiibo_database.json"
+        database_path = Path(__file__).parent / "data" / "amiibo_database.json"
         try:
             with database_path.open(encoding="utf-8") as database_file:
                 data = json.load(database_file)

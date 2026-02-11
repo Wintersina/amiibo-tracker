@@ -40,7 +40,7 @@ The demo loads Amiibo data from the existing API endpoint:
 
 This reuses the `AmiiboDatabaseView` which:
 - Fetches from remote API first (amiiboapi.com)
-- Falls back to local `tracker/amiibo_database.json` if remote unavailable
+- Falls back to local `tracker/data/amiibo_database.json` if remote unavailable
 - No duplicate files needed - single source of truth
 
 ### 4. Entry Points
