@@ -8,4 +8,4 @@ Disallow: /toggle/
 Disallow: /toggle-dark-mode/
 Disallow: /toggle-type-filter/
 
-Sitemap: https://amiibotracker.app/sitemap.xml
+Sitemap: https://goozamiibo.com/sitemap.xml

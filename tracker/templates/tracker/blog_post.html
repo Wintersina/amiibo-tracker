@@ -335,12 +335,21 @@
         }
 
         @media (max-width: 720px) {
+            body {
+                padding: 1.5rem 0.75rem;
+            }
+
             .canvas {
-                padding: 2rem;
+                padding: 1.75rem 1.5rem;
+                width: 95vw;
             }
 
             h1 {
                 font-size: 1.8rem;
+            }
+
+            .post-date {
+                font-size: 0.85rem;
             }
 
             .post-content {
@@ -349,35 +358,86 @@
 
             .post-content h2 {
                 font-size: 1.5rem;
+                margin-top: 1.5rem;
             }
 
             .post-content h3 {
                 font-size: 1.2rem;
+                margin-top: 1.2rem;
+            }
+
+            .amiibo-list-intro {
+                padding: 1rem;
+                font-size: 0.95rem;
+            }
+
+            .total-count {
+                font-size: 1.05rem;
             }
 
             .amiibo-table {
-                font-size: 0.85rem;
+                font-size: 0.8rem;
+                display: block;
+                overflow-x: auto;
             }
 
-            .amiibo-table th,
+            .amiibo-table thead {
+                display: none;
+            }
+
+            .amiibo-table tbody {
+                display: block;
+            }
+
+            .amiibo-table tbody tr {
+                display: block;
+                margin-bottom: 1rem;
+                border: 1px solid rgba(243, 201, 105, 0.3);
+                border-radius: 12px;
+                padding: 0.75rem;
+                background: rgba(255, 255, 255, 0.03);
+            }
+
             .amiibo-table td {
-                padding: 0.6rem 0.5rem;
+                display: block;
+                padding: 0.4rem 0;
+                text-align: left !important;
+            }
+
+            .amiibo-table td::before {
+                content: attr(data-label);
+                font-weight: 600;
+                color: var(--cream);
+                margin-right: 0.5rem;
+            }
+
+            .amiibo-table td.img-col {
+                text-align: center !important;
+                padding: 0.5rem 0;
+            }
+
+            .amiibo-table td.img-col::before {
+                display: none;
             }
 
             .amiibo-thumbnail {
-                width: 40px;
-                height: 40px;
+                width: 60px;
+                height: 60px;
             }
 
             .img-fallback {
-                width: 40px;
-                height: 40px;
-                line-height: 40px;
-                font-size: 1.2rem;
+                width: 60px;
+                height: 60px;
+                line-height: 60px;
+                font-size: 1.5rem;
             }
 
             .pagination {
                 padding: 1rem;
+            }
+
+            .pagination-info {
+                font-size: 0.85rem;
             }
 
             .pagination-controls {
@@ -386,8 +446,73 @@
 
             .page-btn,
             .page-current {
-                padding: 0.5rem 0.75rem;
+                padding: 0.5rem 0.85rem;
                 font-size: 0.85rem;
+            }
+
+            .nav-buttons {
+                flex-direction: column;
+                gap: 0.6rem;
+            }
+
+            .action-btn {
+                width: 100%;
+                justify-content: center;
+                padding: 0.85rem 1.2rem;
+                font-size: 1rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 1rem 0.5rem;
+            }
+
+            .canvas {
+                padding: 1.5rem 1.25rem;
+            }
+
+            h1 {
+                font-size: 1.6rem;
+            }
+
+            .post-content {
+                font-size: 0.95rem;
+            }
+
+            .post-content h2 {
+                font-size: 1.35rem;
+            }
+
+            .post-content h3 {
+                font-size: 1.1rem;
+            }
+
+            .amiibo-table {
+                font-size: 0.75rem;
+            }
+
+            .amiibo-thumbnail {
+                width: 50px;
+                height: 50px;
+            }
+
+            .img-fallback {
+                width: 50px;
+                height: 50px;
+                line-height: 50px;
+                font-size: 1.3rem;
+            }
+
+            .page-btn,
+            .page-current {
+                padding: 0.45rem 0.7rem;
+                font-size: 0.8rem;
+            }
+
+            .action-btn {
+                padding: 0.8rem 1rem;
+                font-size: 0.95rem;
             }
         }
     </style>
@@ -434,11 +559,11 @@
                                          onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
                                     <div class="img-fallback">?</div>
                                 </td>
-                                <td class="name-col">{{ amiibo.name }}</td>
-                                <td>{{ amiibo.gameSeries|default:"N/A" }}</td>
-                                <td>{{ amiibo.amiiboSeries|default:"N/A" }}</td>
-                                <td>{{ amiibo.type|default:"N/A" }}</td>
-                                <td>{{ amiibo.display_release|default:"TBA" }}</td>
+                                <td class="name-col" data-label="Name:">{{ amiibo.name }}</td>
+                                <td data-label="Game Series:">{{ amiibo.gameSeries|default:"N/A" }}</td>
+                                <td data-label="Amiibo Series:">{{ amiibo.amiiboSeries|default:"N/A" }}</td>
+                                <td data-label="Type:">{{ amiibo.type|default:"N/A" }}</td>
+                                <td data-label="Release Date:">{{ amiibo.display_release|default:"TBA" }}</td>
                             </tr>
                             {% endfor %}
                         </tbody>
