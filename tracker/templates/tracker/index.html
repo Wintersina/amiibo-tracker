@@ -21,333 +21,393 @@
     body {
         margin: 0;
         padding: 0;
+        padding-top: 70px;
         font-family: 'Vazirmatn', system-ui, sans-serif;
         background: linear-gradient(180deg, rgba(6, 10, 14, 0.95), rgba(12, 18, 24, 0.9)),
         url('{% static "images/amiibo_bg.png" %}') center/420px repeat;
         background-attachment: fixed;
         min-height: 100vh;
-        display: flex;
-        align-items: center;
-        justify-content: center;
         color: var(--cream);
     }
 
-    .canvas {
-        position: relative;
-        padding: 3rem;
-        width: min(1100px, 90vw);
-        border-radius: 28px;
-        background: rgba(15, 23, 42, 0.72);
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(243, 201, 105, 0.35);
-        box-shadow: 0 25px 60px rgba(0, 0, 0, 0.45);
-        overflow: hidden;
+    /* Top Navigation Bar */
+    .top-nav {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 1000;
+        background: linear-gradient(135deg, rgba(15, 23, 42, 0.92), rgba(14, 20, 27, 0.88));
+        backdrop-filter: blur(12px);
+        border-bottom: 1px solid rgba(243, 201, 105, 0.25);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
     }
 
-    .canvas::before,
-    .canvas::after {
-        content: "";
-        position: absolute;
-        inset: 18px;
-        border-radius: 20px;
-        background-image: radial-gradient(circle at 12px 12px, rgba(243, 201, 105, 0.35) 2px, transparent 0),
-        radial-gradient(circle at 42px 42px, rgba(255, 255, 255, 0.15) 1.5px, transparent 0);
-        background-size: 120px 120px, 160px 160px;
-        opacity: 0.4;
-        pointer-events: none;
-    }
-
-    .canvas::after {
-        inset: 0;
-        border: 1px solid rgba(255, 255, 255, 0.06);
-        border-radius: 28px;
-        background: radial-gradient(circle at 25% 20%, rgba(243, 201, 105, 0.08), transparent 30%),
-        radial-gradient(circle at 80% 60%, rgba(15, 118, 110, 0.08), transparent 35%);
-    }
-
-    .hero {
-        position: relative;
-        z-index: 1;
+    .nav-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 0 2rem;
+        height: 70px;
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-        gap: 1.5rem;
+        grid-template-columns: 1fr 1fr 1fr;
         align-items: center;
+        gap: 1rem;
     }
 
-    .hero-copy {
-        background: rgba(255, 255, 255, 0.04);
-        border: 1px solid rgba(243, 201, 105, 0.4);
-        border-radius: 22px;
-        padding: 1.75rem;
-        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
-    }
-
-    .hero-copy h1 {
-        margin: 0 0 0.6em 0;
-        font-size: clamp(2.1rem, 3vw, 2.8rem);
-        letter-spacing: 0.01em;
-    }
-
-    .hero-copy p {
-        margin: 0;
-        line-height: 1.7;
-        color: rgba(253, 247, 227, 0.9);
-        font-size: 1.05rem;
-    }
-
-    .subtext {
-        margin-top: 0.75rem;
-        color: rgba(253, 247, 227, 0.82);
-        font-size: 0.95rem;
-        line-height: 1.6;
-    }
-
-    .actions {
-        display: flex;
-        flex-direction: column;
-        gap: 0.85rem;
-        margin-top: 1.5rem;
-    }
-
-    .action-btn {
-        text-decoration: none;
-        border: none;
-        cursor: pointer;
-        border-radius: 14px;
-        padding: 1rem 1.5rem;
-        font-size: 1.08rem;
-        font-weight: 700;
-        letter-spacing: 0.01em;
-        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    .nav-section {
         display: flex;
         align-items: center;
+    }
+
+    .nav-left {
+        justify-content: flex-start;
+    }
+
+    .nav-center {
         justify-content: center;
-        gap: 0.65rem;
-        text-align: center;
+        gap: 2rem;
     }
 
-    .action-btn.primary {
+    .nav-right {
+        justify-content: flex-end;
+    }
+
+    .logo-link {
+        display: flex;
+        align-items: center;
+    }
+
+    .logo {
+        height: 40px;
+        width: auto;
+        transition: opacity 0.2s ease;
+    }
+
+    .logo:hover {
+        opacity: 0.8;
+    }
+
+    .nav-link {
+        color: var(--cream);
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 1rem;
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        transition: background 0.2s ease, color 0.2s ease;
+    }
+
+    .nav-link:hover {
+        background: rgba(243, 201, 105, 0.15);
+        color: var(--saffron);
+    }
+
+    .login-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.6rem;
+        padding: 0.65rem 1.5rem;
         background: #ffffff;
         color: #3c4043;
-        border: 2px solid rgba(243, 201, 105, 0.4);
+        text-decoration: none;
+        font-weight: 700;
+        font-size: 1rem;
+        border-radius: 10px;
+        border: 2px solid rgba(243, 201, 105, 0.3);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
     }
 
-    .action-btn.primary img {
-        width: 22px;
-        height: 22px;
+    .login-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
     }
 
-    .action-btn.blog {
-        background: linear-gradient(135deg, var(--saffron), #ffd37a);
-        color: var(--ink);
-        border: 2px solid rgba(255, 255, 255, 0.2);
+    .login-btn img {
+        width: 20px;
+        height: 20px;
     }
 
-    .action-btn.demo {
-        background: linear-gradient(135deg, rgba(15, 118, 110, 0.85), rgba(15, 118, 110, 0.7));
+    .mobile-menu-btn {
+        display: none;
+        background: none;
+        border: none;
+        color: var(--cream);
+        font-size: 1.8rem;
+        cursor: pointer;
+        padding: 0.5rem;
+        line-height: 1;
+    }
+
+    .mobile-nav {
+        display: none;
+        flex-direction: column;
+        background: rgba(15, 23, 42, 0.98);
+        border-top: 1px solid rgba(243, 201, 105, 0.2);
+        padding: 1rem;
+        gap: 0.5rem;
+    }
+
+    .mobile-nav.active {
+        display: flex;
+    }
+
+    .mobile-nav-link {
+        color: var(--cream);
+        text-decoration: none;
+        font-weight: 600;
+        padding: 0.85rem 1rem;
+        border-radius: 8px;
+        transition: background 0.2s ease;
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+    }
+
+    .mobile-nav-link:hover {
+        background: rgba(243, 201, 105, 0.15);
+    }
+
+    .mobile-nav-link.login {
+        background: #ffffff;
+        color: #3c4043;
+        font-weight: 700;
+        margin-top: 0.5rem;
+    }
+
+    .mobile-nav-link.login img {
+        width: 20px;
+        height: 20px;
+    }
+
+    /* Hero Section */
+    .hero-section {
+        max-width: 1200px;
+        margin: 3rem auto;
+        padding: 0 2rem;
+    }
+
+    .hero-image-container {
+        width: 100%;
+        border-radius: 20px;
+        overflow: hidden;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        border: 2px solid rgba(243, 201, 105, 0.3);
+        margin-bottom: 2.5rem;
+    }
+
+    .hero-image {
+        width: 100%;
+        height: auto;
+        display: block;
+    }
+
+    .hero-content {
+        text-align: center;
+        padding: 0 1rem;
+    }
+
+    .hero-content h1 {
+        font-size: clamp(2.2rem, 5vw, 3.5rem);
+        margin: 0 0 1rem 0;
+        color: var(--saffron);
+        letter-spacing: 0.01em;
+    }
+
+    .hero-subtitle {
+        font-size: clamp(1.1rem, 2.5vw, 1.4rem);
+        color: rgba(253, 247, 227, 0.9);
+        line-height: 1.6;
+        margin: 0 0 2rem 0;
+        max-width: 700px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .hero-actions {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+
+    .hero-btn {
+        text-decoration: none;
+        padding: 1rem 2.5rem;
+        border-radius: 12px;
+        font-size: 1.1rem;
+        font-weight: 700;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    .demo-btn {
+        background: linear-gradient(135deg, var(--emerald), rgba(15, 118, 110, 0.8));
         color: var(--cream);
         border: 2px solid rgba(243, 201, 105, 0.3);
     }
 
-    .action-btn:hover {
+    .catalog-btn {
+        background: linear-gradient(135deg, var(--saffron), #ffd37a);
+        color: var(--ink);
+        border: 2px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .hero-btn:hover {
         transform: translateY(-3px);
-        box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
-    }
-
-    .action-btn.primary:hover {
-        background: #f8f9fa;
-    }
-
-    .action-btn.blog:hover {
-        background: linear-gradient(135deg, #ffd37a, var(--saffron));
-    }
-
-    .action-btn.demo:hover {
-        background: linear-gradient(135deg, rgba(15, 118, 110, 0.95), rgba(15, 118, 110, 0.8));
-    }
-
-    .footer-link {
-        margin-top: 1.5rem;
-        display: inline-flex;
-        align-items: center;
-        gap: 0.45rem;
-        color: rgba(253, 247, 227, 0.85);
-        text-decoration: none;
-        font-weight: 600;
-    }
-
-    .footer-link:hover {
-        color: #fff;
-    }
-
-    .info-list {
-        position: relative;
-        z-index: 1;
-        margin-top: 2rem;
-        padding: 0;
-        list-style: none;
-        display: flex;
-        flex-direction: column;
-        gap: 0.75rem;
-    }
-
-    .info-list h2 {
-        margin: 0;
-        font-size: 1.05rem;
-        font-weight: 600;
-        color: rgba(253, 247, 227, 0.95);
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-    }
-
-    .footer-links {
-        position: relative;
-        z-index: 1;
-        margin-top: 2rem;
-        display: flex;
-        flex-wrap: wrap;
-        gap: 1rem;
-        justify-content: center;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
     }
 
     @media (max-width: 720px) {
         body {
-            padding: 1.5rem 0.75rem;
+            padding-top: 60px;
         }
 
-        .canvas {
-            padding: 1.75rem 1.5rem;
-            width: 95vw;
+        .nav-container {
+            height: 60px;
+            padding: 0 1rem;
+            grid-template-columns: 1fr auto;
         }
 
-        .hero-copy {
-            padding: 1.5rem;
+        .nav-center,
+        .nav-right {
+            display: none;
         }
 
-        .hero-copy h1 {
-            font-size: 1.8rem;
+        .mobile-menu-btn {
+            display: block;
         }
 
-        .hero-copy p {
-            font-size: 0.95rem;
+        .logo {
+            height: 35px;
         }
 
-        .subtext {
-            font-size: 0.9rem;
+        .hero-section {
+            margin: 2rem auto;
+            padding: 0 1rem;
         }
 
-        .actions {
-            gap: 0.75rem;
-            margin-top: 1.25rem;
+        .hero-image-container {
+            margin-bottom: 2rem;
+            border-radius: 16px;
         }
 
-        .action-btn {
-            padding: 0.9rem 1.25rem;
-            font-size: 1rem;
+        .hero-content {
+            padding: 0;
         }
 
-        .info-list {
-            gap: 0.65rem;
-            margin-top: 1.5rem;
+        .hero-subtitle {
+            font-size: 1.05rem;
+            margin-bottom: 1.5rem;
         }
 
-        .info-list h2 {
-            font-size: 0.95rem;
+        .hero-actions {
+            flex-direction: column;
+            gap: 0.85rem;
         }
 
-        .footer-links {
-            margin-top: 1.5rem;
-            gap: 0.75rem;
-        }
-
-        .footer-link {
-            font-size: 0.9rem;
+        .hero-btn {
+            padding: 0.9rem 2rem;
+            font-size: 1.05rem;
+            width: 100%;
         }
     }
 
     @media (max-width: 480px) {
-        body {
-            padding: 1rem 0.5rem;
+        .nav-container {
+            padding: 0 0.75rem;
         }
 
-        .canvas {
-            padding: 1.5rem 1.25rem;
+        .logo {
+            height: 30px;
         }
 
-        .hero-copy {
-            padding: 1.25rem;
+        .hero-section {
+            margin: 1.5rem auto;
+            padding: 0 0.75rem;
         }
 
-        .hero-copy h1 {
-            font-size: 1.6rem;
+        .hero-image-container {
+            margin-bottom: 1.5rem;
+            border-radius: 12px;
         }
 
-        .hero-copy p {
-            font-size: 0.9rem;
+        .hero-content h1 {
+            font-size: 2rem;
         }
 
-        .subtext {
-            font-size: 0.85rem;
+        .hero-subtitle {
+            font-size: 1rem;
         }
 
-        .action-btn {
-            padding: 0.85rem 1.1rem;
-            font-size: 0.95rem;
-        }
-
-        .actions {
-            gap: 0.7rem;
-        }
-
-        .info-list h2 {
-            font-size: 0.9rem;
-        }
-
-        .footer-links {
-            flex-direction: column;
-            align-items: center;
+        .hero-btn {
+            padding: 0.85rem 1.75rem;
+            font-size: 1rem;
         }
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="canvas">
-    <div class="hero">
-        <div class="hero-copy">
-            <h1>Track Your Amiibo Collection</h1>
-            <p class="subtext">
-                Manage your Amiibo collection with Google Sheets integration. Browse released figures and learn about NFC technology—all in one place.
-            </p>
+<nav class="top-nav">
+    <div class="nav-container">
+        <div class="nav-section nav-left">
+            <a href="{% url 'index' %}" class="logo-link">
+                <img src="{% static 'images/top_bar_logo.png' %}" alt="Amiibo Tracker" class="logo">
+            </a>
+        </div>
 
-            <div class="actions">
-                <a href="{% url 'oauth_login' %}" class="action-btn primary">
-                    <img src="{% static 'images/google-logo.svg' %}" alt="Google logo">
-                    Start Tracking
-                </a>
-                <a href="{% url 'blog_list' %}" class="action-btn blog">
-                    📚 Browse Amiibo Catalog
-                </a>
-                <a href="{% url 'demo' %}" class="action-btn demo">
-                    Try Demo
-                </a>
-            </div>
+        <div class="nav-section nav-center">
+            <a href="{% url 'about' %}" class="nav-link">About</a>
+            <a href="{% url 'blog_list' %}" class="nav-link">Blog</a>
+            <a href="{% url 'privacy' %}" class="nav-link">Privacy</a>
+        </div>
 
-            <div class="info-list">
-                <h2>✓ Track your collection with Google Sheets</h2>
-                <h2>✓ Browse all released Amiibo figures</h2>
-                <h2>✓ Learn about NFC technology</h2>
-                <h2>✓ Your data stays private in your Drive</h2>
-            </div>
+        <div class="nav-section nav-right">
+            <a href="{% url 'oauth_login' %}" class="login-btn">
+                <img src="{% static 'images/google-logo.svg' %}" alt="Google logo">
+                Login
+            </a>
+        </div>
 
-            <div class="footer-links">
-                <a href="{% url 'about' %}" class="footer-link">Learn More →</a>
-                <a href="{% url 'blog_list' %}" class="footer-link">📚 Blog</a>
-                <a href="{% url 'privacy' %}" class="footer-link">Privacy Policy</a>
-            </div>
+        <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Toggle Menu">
+            <span class="hamburger-icon">☰</span>
+        </button>
+    </div>
+
+    <div class="mobile-nav" id="mobileNav">
+        <a href="{% url 'about' %}" class="mobile-nav-link">About</a>
+        <a href="{% url 'blog_list' %}" class="mobile-nav-link">Blog</a>
+        <a href="{% url 'privacy' %}" class="mobile-nav-link">Privacy</a>
+        <a href="{% url 'oauth_login' %}" class="mobile-nav-link login">
+            <img src="{% static 'images/google-logo.svg' %}" alt="Google logo">
+            Login with Google
+        </a>
+    </div>
+</nav>
+
+<div class="hero-section">
+    <div class="hero-image-container">
+        <img src="{% static 'images/amiibo-lineup-img.avif' %}" alt="Amiibo Collection" class="hero-image">
+    </div>
+    <div class="hero-content">
+        <h1>Track Your Amiibo Collection</h1>
+        <p class="hero-subtitle">
+            Manage your collection with Google Sheets. Browse all released figures. Keep your data private.
+        </p>
+        <div class="hero-actions">
+            <a href="{% url 'demo' %}" class="hero-btn demo-btn">Try Demo</a>
+            <a href="{% url 'blog_list' %}" class="hero-btn catalog-btn">Browse Catalog</a>
         </div>
     </div>
 </div>
+
+<script>
+    document.getElementById('mobileMenuBtn').addEventListener('click', () => {
+        const mobileNav = document.getElementById('mobileNav');
+        const hamburger = document.querySelector('.hamburger-icon');
+        mobileNav.classList.toggle('active');
+        hamburger.textContent = mobileNav.classList.contains('active') ? '✕' : '☰';
+    });
+</script>
 {% endblock %}
