@@ -187,8 +187,73 @@ python manage.py shell
 
 ### Memory Usage
 
-The rembg ML model uses approximately 200-300MB of RAM. If memory is constrained:
+The rembg ML model uses approximately 300-400MB of RAM. If memory is constrained:
 
 1. Use a different rembg model (smaller but less accurate)
 2. Disable background removal for some image types
 3. Reduce cache timeout to free memory faster
+
+## Cloud Run Deployment
+
+### Memory Requirements
+
+**Important:** Cloud Run requires **2Gi (2048 MiB)** of memory for this application due to the rembg ML model running with 2 workers.
+
+The deployment is configured in `.github/workflows/build.yml`:
+
+```yaml
+gcloud run services update "$SERVICE_NAME" \
+  --memory 2Gi \
+  --timeout 300
+```
+
+**Why 2Gi?**
+- Rembg model per worker: ~300-400 MiB × 2 workers = ~600-800 MiB
+- Django + gunicorn: ~100-200 MiB
+- Request processing overhead: ~100-200 MiB
+- **Total:** ~800-1200 MiB (2Gi provides safe headroom)
+
+### Startup Optimization
+
+To avoid Cloud Run startup timeouts, the rembg model is **pre-downloaded during Docker build**:
+
+**In Dockerfile:**
+```dockerfile
+# Pre-download rembg model to avoid startup timeout in Cloud Run
+RUN python -c "from rembg import new_session; new_session('u2net_human_seg')"
+```
+
+This ensures:
+- Model is cached in the Docker image
+- Container starts quickly (no download needed)
+- First request is fast (model already loaded)
+
+### Gunicorn Configuration
+
+**In `scripts/entrypoint.sh`:**
+```bash
+exec gunicorn amiibo_tracker.wsgi:application \
+    --bind 0.0.0.0:8080 \
+    --timeout 120 \
+    --workers 2 \
+    --worker-class gthread \
+    --threads 2
+```
+
+**Configuration breakdown:**
+- **Workers: 2** - Balances concurrency with memory usage (each worker loads the model independently)
+- **Worker class: gthread** - Efficient for I/O-bound operations (image processing, HTTP requests)
+- **Threads: 2 per worker** - Allows 4 total concurrent requests (2 workers × 2 threads)
+- **Timeout: 120s** - Sufficient for background removal operations (typically 1-3s)
+
+### Monitoring
+
+Check Cloud Run logs for memory issues:
+```bash
+gcloud logging read "resource.type=cloud_run_revision AND severity>=WARNING" --limit 50
+```
+
+If you see "Memory limit exceeded" errors:
+1. Increase memory: `--memory 2Gi`
+2. Reduce workers: `--workers 1`
+3. Use lighter model: `u2netp` or `silueta`
