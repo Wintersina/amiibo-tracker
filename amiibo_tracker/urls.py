@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.urls import path, include
 from django.views.generic.base import RedirectView
-from django.contrib.sitemaps.views import sitemap
+from tracker.sitemap_views import sitemap
 from tracker.sitemaps import StaticViewSitemap, BlogPostSitemap, AmiiboSitemap
 
 sitemaps = {
