@@ -190,11 +190,11 @@ class TestNintendoAmiiboScraper:
         assert result == "2026-12-31"
 
     def test_parse_release_date_year_only(self):
-        """Test parsing release date with year only."""
+        """Test parsing release date with year only (defaults to Dec 31)."""
         scraper = NintendoAmiiboScraper()
 
         result = scraper.parse_release_date("Coming 2026")
-        assert result == "2026-01-01"
+        assert result == "2026-12-31"
 
     def test_parse_release_date_no_date(self):
         """Test parsing release date with no date."""

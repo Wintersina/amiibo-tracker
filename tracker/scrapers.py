@@ -208,7 +208,9 @@ class NintendoAmiiboScraper(LoggingMixin):
 
         year_match = re.search(r"(20\d{2})", date_text)
         if year_match:
-            return f"{year_match.group(1)}-01-01"
+            # Use December 31st as default when only year is known
+            # This prevents misleading users that it released early in the year
+            return f"{year_match.group(1)}-12-31"
 
         return None
 
