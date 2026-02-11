@@ -15,7 +15,7 @@ class SEOContext:
         self.request = request
         self.data = {
             'title': 'Amiibo Tracker',
-            'description': 'Track your Amiibo collection',
+            'meta_description': 'Track your Amiibo collection',
             'og_type': 'website',
             'og_image': None,
             'og_url': None,
@@ -47,7 +47,7 @@ class SEOContext:
             # Try to break at a sentence or word boundary
             description = description[:152] + '...'
 
-        self.data['description'] = description
+        self.data['meta_description'] = description
         return self
 
     def set_type(self, og_type):
