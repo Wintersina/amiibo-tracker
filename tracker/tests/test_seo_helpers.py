@@ -28,7 +28,7 @@ class TestSEOContext:
 
         assert seo.request == request
         assert seo.data["title"] == "Amiibo Tracker"
-        assert seo.data["description"] == "Track your Amiibo collection"
+        assert seo.data["meta_description"] == "Track your Amiibo collection"
         assert seo.data["og_type"] == "website"
 
     def test_initialization_without_request(self):
@@ -67,7 +67,7 @@ class TestSEOContext:
         description = "This is a test description for SEO."
         seo.set_description(description)
 
-        assert seo.data["description"] == description
+        assert seo.data["meta_description"] == description
 
     def test_set_description_truncation(self):
         """Test that description is truncated to 155 characters."""
@@ -75,8 +75,8 @@ class TestSEOContext:
         long_description = "A" * 200
         seo.set_description(long_description)
 
-        assert len(seo.data["description"]) <= 155
-        assert seo.data["description"].endswith("...")
+        assert len(seo.data["meta_description"]) <= 155
+        assert seo.data["meta_description"].endswith("...")
 
     def test_set_description_strips_html(self):
         """Test that HTML tags are stripped from description."""
@@ -84,9 +84,9 @@ class TestSEOContext:
         html_description = "<p>This is <strong>bold</strong> text.</p>"
         seo.set_description(html_description)
 
-        assert "<" not in seo.data["description"]
-        assert ">" not in seo.data["description"]
-        assert "This is bold text." in seo.data["description"]
+        assert "<" not in seo.data["meta_description"]
+        assert ">" not in seo.data["meta_description"]
+        assert "This is bold text." in seo.data["meta_description"]
 
     def test_set_type(self):
         """Test setting OpenGraph type."""
@@ -166,7 +166,7 @@ class TestSEOContext:
 
         assert isinstance(result, SEOContext)
         assert seo.data["title"] == "Test - Amiibo Tracker"
-        assert seo.data["description"] == "Description"
+        assert seo.data["meta_description"] == "Description"
         assert seo.data["og_type"] == "article"
 
 
@@ -432,7 +432,7 @@ class TestIntegration:
 
         # Verify all context was built correctly
         assert result["title"] == "Test Article - Test Site"
-        assert result["description"] == "This is a test article about Amiibo collecting."
+        assert result["meta_description"] == "This is a test article about Amiibo collecting."
         assert result["og_type"] == "article"
         assert result["og_image"] == "https://example.com/static/image.jpg"
         assert len(result["schemas"]) == 2
