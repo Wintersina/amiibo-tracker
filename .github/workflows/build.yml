@@ -75,6 +75,8 @@ jobs:
             --project "$PROJECT_ID" \
             --memory 3Gi \
             --timeout 300 \
+            --min-instances 0 \
+            --max-instances 10 \
             --quiet
           echo "Cloud Run deployment complete!"
           SERVICE_URL=$(gcloud run services describe "$SERVICE_NAME" \
