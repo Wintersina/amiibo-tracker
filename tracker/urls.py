@@ -18,6 +18,7 @@ from tracker.views import (
     AmiibodexView,
     AmiiboDetailView,
     RobotsTxtView,
+    NintendoScraperAPIView,
 )
 
 urlpatterns = [
@@ -48,4 +49,5 @@ urlpatterns = [
         name="amiibo_detail",
     ),
     path("blog/<slug:slug>/", BlogPostView.as_view(), name="blog_post"),
+    path("api/scrape-nintendo/", NintendoScraperAPIView.as_view(), name="scrape_nintendo"),
 ]
