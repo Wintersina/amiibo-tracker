@@ -18,7 +18,7 @@ class StaticViewSitemap(Sitemap):
 
     def items(self):
         """Return list of static page URL names."""
-        return ["index", "blog_list", "demo", "privacy"]
+        return ["index", "amiibodex", "blog_list", "demo", "about", "privacy"]
 
     def location(self, item):
         """Return the URL for each item."""
