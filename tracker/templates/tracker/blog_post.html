@@ -254,22 +254,26 @@
         }
 
         .page-btn {
-            padding: 0.6rem 1rem;
-            background: rgba(243, 201, 105, 0.15);
+            padding: 0.65rem 1.2rem;
+            background: rgba(255, 255, 255, 0.08);
             border: 1px solid rgba(243, 201, 105, 0.4);
-            border-radius: 8px;
+            border-radius: 12px;
             color: var(--cream);
             text-decoration: none;
-            font-size: 0.9rem;
-            font-weight: 600;
-            transition: all 0.2s ease;
+            font-size: 0.95rem;
+            font-weight: 700;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
             cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
         }
 
         .page-btn:hover {
-            background: rgba(243, 201, 105, 0.25);
+            background: rgba(255, 255, 255, 0.12);
             transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.18);
         }
 
         .page-btn.disabled {
@@ -279,13 +283,14 @@
         }
 
         .page-current {
-            padding: 0.6rem 1rem;
-            background: rgba(15, 118, 110, 0.3);
-            border: 1px solid rgba(243, 201, 105, 0.6);
-            border-radius: 8px;
+            padding: 0.65rem 1.2rem;
+            background: linear-gradient(135deg, rgba(15, 118, 110, 0.3), rgba(243, 201, 105, 0.2));
+            border: 1px solid rgba(243, 201, 105, 0.5);
+            border-radius: 12px;
             color: var(--saffron);
             font-weight: 700;
-            font-size: 0.9rem;
+            font-size: 0.95rem;
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
         }
 
         .error-message {
@@ -420,7 +425,7 @@
                         </thead>
                         <tbody>
                             {% for amiibo in amiibos %}
-                            <tr class="clickable-row" onclick="window.location='{% url 'amiibo_detail' amiibo.amiibo_id %}'">
+                            <tr class="clickable-row" onclick="navigateToAmiibo('{{ amiibo.amiibo_id }}', '{{ amiibo.name|escapejs }}')">
                                 <td class="img-col">
                                     <img src="{{ amiibo.image }}"
                                          alt="{{ amiibo.name }}"
@@ -478,5 +483,21 @@
         </div>
     </div>
 </div>
+<script>
+    function navigateToAmiibo(amiiboId, amiiboName) {
+        // Track with Google Ads (gtag)
+        if (typeof gtag !== 'undefined') {
+            gtag('event', 'amiibo_click', {
+                'event_category': 'engagement',
+                'event_label': amiiboName,
+                'amiibo_id': amiiboId,
+                'page_location': 'all_amiibo_list'
+            });
+        }
+
+        // Navigate to detail page
+        window.location.href = `/blog/number-released/amiibo/${amiiboId}/`;
+    }
+</script>
 </body>
 </html>

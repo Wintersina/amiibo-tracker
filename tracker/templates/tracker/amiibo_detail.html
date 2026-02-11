@@ -325,11 +325,39 @@
         {% endif %}
 
         <div class="nav-buttons">
-            <a href="{% url 'blog_post' 'number-released' %}" class="action-btn primary">← Back to All Amiibo</a>
-            <a href="{% url 'blog_list' %}" class="action-btn">← Back to Blog</a>
-            <a href="{% url 'index' %}" class="action-btn">← Back to Home</a>
+            <a href="javascript:history.back()" class="action-btn primary" id="backBtn">← Go Back</a>
+            <a href="{% url 'blog_post' 'number-released' %}" class="action-btn">← All Amiibo</a>
+            <a href="{% url 'blog_list' %}" class="action-btn">← Blog</a>
+            <a href="{% url 'index' %}" class="action-btn">← Home</a>
         </div>
     </div>
 </div>
+<script>
+    // Track page view with Google Ads
+    if (typeof gtag !== 'undefined') {
+        gtag('event', 'page_view', {
+            'page_title': '{{ amiibo.name }} - Amiibo Detail',
+            'page_location': window.location.href
+        });
+    }
+
+    // Update back button text based on referrer
+    document.addEventListener('DOMContentLoaded', () => {
+        const backBtn = document.getElementById('backBtn');
+        const referrer = document.referrer;
+
+        if (referrer) {
+            if (referrer.includes('/demo')) {
+                backBtn.innerHTML = '← Back to Demo';
+            } else if (referrer.includes('/tracker')) {
+                backBtn.innerHTML = '← Back to Tracker';
+            } else if (referrer.includes('/blog/number-released')) {
+                backBtn.innerHTML = '← Back to All Amiibo';
+            } else if (referrer.includes('/blog')) {
+                backBtn.innerHTML = '← Back to Blog';
+            }
+        }
+    });
+</script>
 </body>
 </html>

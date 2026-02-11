@@ -263,11 +263,13 @@
             max-height: 140px;
             object-fit: contain;
             margin-bottom: 0.75em;
+            cursor: pointer;
         }
 
         .amiibo-name {
             font-weight: 700;
             margin: 0 0 0.25em;
+            cursor: pointer;
         }
 
         .release-date {
@@ -654,10 +656,14 @@
                     {% for amiibo in group.list %}
                         <div class="amiibo-card {% if amiibo.collected %}collected{% endif %}"
                              data-id="{{ amiibo.head }}{{ amiibo.gameSeries }}{{ amiibo.tail }}"
+                             data-head="{{ amiibo.head }}"
+                             data-tail="{{ amiibo.tail }}"
                              data-type="{{ amiibo.type|default:'Unknown' }}"
                              data-series="{{ amiibo.amiiboSeries }}">
-                            <img src="{{ amiibo.image }}" alt="{{ amiibo.name }}">
-                            <p class="amiibo-name">{{ amiibo.name }}</p>
+                            <img src="{{ amiibo.image }}"
+                                 alt="{{ amiibo.name }}"
+                                 onclick="navigateToAmiiboDetail(this.parentElement)">
+                            <p class="amiibo-name" onclick="navigateToAmiiboDetail(this.parentElement)">{{ amiibo.name }}</p>
                             <p class="amiibo-meta">{{ amiibo.gameSeries|default:"Unknown Series" }} • {{ amiibo.type|default:"Unknown" }}</p>
                             <p class="release-date">
                                 {{ amiibo.display_release|default:"N/A" }}
@@ -1034,6 +1040,25 @@
             button.addEventListener('mouseenter', handleButtonHover);
             button.addEventListener('mouseleave', handleButtonLeave);
         });
+    }
+
+    function navigateToAmiiboDetail(card) {
+        const head = card.dataset.head;
+        const tail = card.dataset.tail;
+        const name = card.querySelector('.amiibo-name').textContent;
+        const amiiboId = `${head}-${tail}`;
+
+        // Track with Google Ads (gtag)
+        if (typeof gtag !== 'undefined') {
+            gtag('event', 'amiibo_click', {
+                'event_category': 'engagement',
+                'event_label': name,
+                'amiibo_id': amiiboId
+            });
+        }
+
+        // Navigate to detail page
+        window.location.href = `/blog/number-released/amiibo/${amiiboId}/`;
     }
 
     window.addEventListener('DOMContentLoaded', () => {
