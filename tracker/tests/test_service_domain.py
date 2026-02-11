@@ -1,6 +1,7 @@
 """
 Tests for service domain logic, particularly placeholder filtering.
 """
+
 import pytest
 from unittest.mock import Mock, MagicMock
 from tracker.service_domain import AmiiboService
@@ -9,13 +10,20 @@ from tracker.service_domain import AmiiboService
 class TestAmiiboServicePlaceholderFiltering:
     """Test that placeholders are filtered from Google Sheets."""
 
-    def test_seed_new_amiibos_skips_needs_backfill(self):
-        """Test that amiibos with _needs_backfill flag are skipped."""
+    def test_seed_new_amiibos_skips_is_upcoming(self):
+        """Test that amiibos with is_upcoming flag are skipped."""
         # Mock the Google Sheet client
         mock_client = Mock()
         mock_sheet = MagicMock()
         mock_sheet.get_all_values.return_value = [
-            ["Amiibo ID", "Amiibo Name", "Game Series", "Release Date", "Type", "Collected Status"]
+            [
+                "Amiibo ID",
+                "Amiibo Name",
+                "Game Series",
+                "Release Date",
+                "Type",
+                "Collected Status",
+            ]
         ]
         mock_client.get_or_create_worksheet_by_name.return_value = mock_sheet
 
@@ -39,7 +47,7 @@ class TestAmiiboServicePlaceholderFiltering:
                 "gameSeries": "Super Mario",
                 "type": "Figure",
                 "release": {"na": "2026-03-15"},
-                "_needs_backfill": True,  # Should be skipped
+                "is_upcoming": True,  # Should be skipped
             },
         ]
 
@@ -56,7 +64,14 @@ class TestAmiiboServicePlaceholderFiltering:
         mock_client = Mock()
         mock_sheet = MagicMock()
         mock_sheet.get_all_values.return_value = [
-            ["Amiibo ID", "Amiibo Name", "Game Series", "Release Date", "Type", "Collected Status"]
+            [
+                "Amiibo ID",
+                "Amiibo Name",
+                "Game Series",
+                "Release Date",
+                "Type",
+                "Collected Status",
+            ]
         ]
         mock_client.get_or_create_worksheet_by_name.return_value = mock_sheet
 
@@ -103,7 +118,14 @@ class TestAmiiboServicePlaceholderFiltering:
         mock_client = Mock()
         mock_sheet = MagicMock()
         mock_sheet.get_all_values.return_value = [
-            ["Amiibo ID", "Amiibo Name", "Game Series", "Release Date", "Type", "Collected Status"]
+            [
+                "Amiibo ID",
+                "Amiibo Name",
+                "Game Series",
+                "Release Date",
+                "Type",
+                "Collected Status",
+            ]
         ]
         mock_client.get_or_create_worksheet_by_name.return_value = mock_sheet
 
@@ -121,7 +143,7 @@ class TestAmiiboServicePlaceholderFiltering:
                 "release": {"na": "2026-03-15"},
                 "character": "Mario",
                 "image": "https://example.com/mario.png",
-                # No _needs_backfill flag - was removed after backfill
+                # No is_upcoming flag - amiibo is already released
             }
         ]
 
@@ -138,7 +160,14 @@ class TestAmiiboServicePlaceholderFiltering:
         mock_client = Mock()
         mock_sheet = MagicMock()
         mock_sheet.get_all_values.return_value = [
-            ["Amiibo ID", "Amiibo Name", "Game Series", "Release Date", "Type", "Collected Status"]
+            [
+                "Amiibo ID",
+                "Amiibo Name",
+                "Game Series",
+                "Release Date",
+                "Type",
+                "Collected Status",
+            ]
         ]
         mock_client.get_or_create_worksheet_by_name.return_value = mock_sheet
 
@@ -153,7 +182,7 @@ class TestAmiiboServicePlaceholderFiltering:
                 "gameSeries": "Unknown",
                 "type": "Figure",
                 "release": {},
-                "_needs_backfill": True,
+                "is_upcoming": True,
             },
             {
                 "name": "Placeholder 2",
@@ -162,13 +191,14 @@ class TestAmiiboServicePlaceholderFiltering:
                 "gameSeries": "Unknown",
                 "type": "Figure",
                 "release": {},
-                "_needs_backfill": True,
+                "is_upcoming": True,
             },
         ]
 
         # Mock the logger
         from unittest.mock import patch
-        with patch.object(service, 'log_info') as mock_log:
+
+        with patch.object(service, "log_info") as mock_log:
             service.seed_new_amiibos(amiibos)
 
             # Verify logging was called

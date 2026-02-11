@@ -1,6 +1,7 @@
 """
 Comprehensive pytest tests for Nintendo amiibo scraper.
 """
+
 import json
 import pytest
 from pathlib import Path
@@ -53,16 +54,19 @@ def sample_scraped_data():
             "name": "Mario",
             "series": "Super Mario",
             "release_date": "2014-11-21",
+            "image": "https://www.nintendo.com/mario.png",
         },
         {
             "name": "Link",
             "series": "The Legend of Zelda",
             "release_date": "2014-11-21",
+            "image": "https://www.nintendo.com/link.png",
         },
         {
             "name": "Splatoon 3 Inkling",
             "series": "Splatoon",
             "release_date": "2026-03-15",
+            "image": "https://www.nintendo.com/inkling.png",
         },
     ]
 
@@ -98,7 +102,7 @@ class TestNintendoAmiiboScraper:
         mock_database_path.write_text('{"amiibo": []}')
 
         # Mock the file modification time to be 10 hours ago
-        with patch.object(Path, 'stat') as mock_stat:
+        with patch.object(Path, "stat") as mock_stat:
             old_time = datetime.now().timestamp() - (10 * 3600)
             mock_stat.return_value.st_mtime = old_time
 
@@ -122,8 +126,14 @@ class TestNintendoAmiiboScraper:
         """Test name normalization for matching."""
         scraper = NintendoAmiiboScraper()
 
-        assert scraper.normalize_name("Mario - Super Smash Bros.") == "mario super smash bros"
-        assert scraper.normalize_name("Link (The Legend of Zelda)") == "link the legend of zelda"
+        assert (
+            scraper.normalize_name("Mario - Super Smash Bros.")
+            == "mario super smash bros"
+        )
+        assert (
+            scraper.normalize_name("Link (The Legend of Zelda)")
+            == "link the legend of zelda"
+        )
         assert scraper.normalize_name("  Multiple   Spaces  ") == "multiple spaces"
 
     def test_calculate_similarity_exact_substring(self):
@@ -132,26 +142,29 @@ class TestNintendoAmiiboScraper:
 
         # "mario" is substring of "mario super"
         similarity = scraper.calculate_similarity("mario", "mario super")
-        assert similarity == 0.9
+        # With new algorithm: sequence_score * 0.6 + word_score * 0.4 + substring_bonus 0.1
+        assert similarity > 0.8  # Should be high similarity
 
         # Reverse
         similarity = scraper.calculate_similarity("mario super", "mario")
-        assert similarity == 0.9
+        assert similarity > 0.8
 
     def test_calculate_similarity_word_overlap(self):
         """Test similarity calculation for word overlap."""
         scraper = NintendoAmiiboScraper()
 
-        # One word in common out of three total unique words
+        # Partial word match
         similarity = scraper.calculate_similarity("super mario", "mario kart")
-        assert similarity == 1/3  # intersection: {mario} / union: {super, mario, kart}
+        # Should have decent similarity due to shared "mario"
+        assert 0.3 < similarity < 0.7
 
     def test_calculate_similarity_no_match(self):
         """Test similarity calculation for no match."""
         scraper = NintendoAmiiboScraper()
 
         similarity = scraper.calculate_similarity("mario", "zelda")
-        assert similarity == 0
+        # Should be low but not necessarily 0 due to character-level matching
+        assert similarity < 0.3
 
     def test_contains_date_patterns(self):
         """Test date pattern detection."""
@@ -198,11 +211,30 @@ class TestNintendoAmiiboScraper:
         assert scraper.clean_series("Zelda Series") == "Zelda"
         assert scraper.clean_series("No suffix here") == "No suffix here"
 
+    def test_is_set_or_bundle(self):
+        """Test detection of sets, bundles, and grouped items."""
+        scraper = NintendoAmiiboScraper()
+
+        # Should identify as sets/bundles
+        assert scraper.is_set_or_bundle("Card Starter Set") is True
+        assert scraper.is_set_or_bundle("Cards - Series 5") is True
+        assert scraper.is_set_or_bundle("Power-Up Band") is True
+        assert scraper.is_set_or_bundle("Amiibo Triple Pack") is True
+        assert scraper.is_set_or_bundle("Mario 3-Pack") is True
+        assert scraper.is_set_or_bundle("Collection Bundle") is True
+
+        # Should identify as individual amiibos
+        assert scraper.is_set_or_bundle("Mario") is False
+        assert scraper.is_set_or_bundle("Link - The Legend of Zelda") is False
+        assert scraper.is_set_or_bundle("Splatoon Inkling") is False
+        assert scraper.is_set_or_bundle("Super Smash Bros. Mario") is False
+
     def test_find_best_match_exact(self, sample_amiibos):
         """Test finding exact match."""
         scraper = NintendoAmiiboScraper()
 
-        match = scraper.find_best_match("Mario", sample_amiibos)
+        scraped_amiibo = {"name": "Mario", "release_date": "2014-11-21"}
+        match = scraper.find_best_match(scraped_amiibo, sample_amiibos)
         assert match is not None
         assert match["name"] == "Mario"
 
@@ -210,7 +242,8 @@ class TestNintendoAmiiboScraper:
         """Test finding partial match."""
         scraper = NintendoAmiiboScraper()
 
-        match = scraper.find_best_match("Super Smash Bros Mario", sample_amiibos)
+        scraped_amiibo = {"name": "Super Smash Bros Mario", "release_date": None}
+        match = scraper.find_best_match(scraped_amiibo, sample_amiibos)
         assert match is not None
         assert match["name"] == "Mario"
 
@@ -218,23 +251,49 @@ class TestNintendoAmiiboScraper:
         """Test when no match is found."""
         scraper = NintendoAmiiboScraper()
 
-        match = scraper.find_best_match("Samus", sample_amiibos)
+        scraped_amiibo = {"name": "Samus", "release_date": None}
+        match = scraper.find_best_match(scraped_amiibo, sample_amiibos)
         # With default threshold 0.6, "Samus" should not match
         assert match is None
+
+    def test_find_best_match_with_date_boost(self, sample_amiibos):
+        """Test that matching release dates boost confidence score."""
+        scraper = NintendoAmiiboScraper()
+
+        # Exact date match should boost score
+        scraped_amiibo = {"name": "Mario", "release_date": "2014-11-21"}
+        match = scraper.find_best_match(scraped_amiibo, sample_amiibos)
+        assert match is not None
+        assert match["name"] == "Mario"
+
+    def test_dates_are_close(self):
+        """Test date proximity detection."""
+        scraper = NintendoAmiiboScraper()
+
+        # Same date
+        assert scraper.dates_are_close("2026-01-01", "2026-01-01") is True
+
+        # Within 30 days
+        assert scraper.dates_are_close("2026-01-01", "2026-01-15") is True
+        assert scraper.dates_are_close("2026-01-15", "2026-01-01") is True
+
+        # Beyond 30 days
+        assert scraper.dates_are_close("2026-01-01", "2026-03-01") is False
+
+        # Invalid dates
+        assert scraper.dates_are_close("invalid", "2026-01-01") is False
+        assert scraper.dates_are_close("2026-01-01", "invalid") is False
 
     def test_update_amiibo_adds_release_date(self, sample_amiibos):
         """Test updating amiibo with new release date."""
         scraper = NintendoAmiiboScraper()
 
-        amiibo = {
-            "name": "Test Amiibo",
-            "release": {}  # No release dates
-        }
+        amiibo = {"name": "Test Amiibo", "release": {}}  # No release dates
 
         scraped_data = {
             "name": "Test Amiibo",
             "series": "Test Series",
-            "release_date": "2026-03-15"
+            "release_date": "2026-03-15",
         }
 
         updated = scraper.update_amiibo(amiibo, scraped_data)
@@ -252,7 +311,7 @@ class TestNintendoAmiiboScraper:
         scraped_data = {
             "name": "Mario",
             "series": "Super Mario",
-            "release_date": "2026-01-01"  # Different date
+            "release_date": "2026-01-01",  # Different date
         }
 
         updated = scraper.update_amiibo(amiibo, scraped_data)
@@ -267,7 +326,7 @@ class TestNintendoAmiiboScraper:
         scraped_data = {
             "name": "New Amiibo",
             "series": "New Series",
-            "release_date": "2026-06-15"
+            "release_date": "2026-06-15",
         }
 
         placeholder = scraper.create_placeholder_amiibo(scraped_data)
@@ -280,7 +339,7 @@ class TestNintendoAmiiboScraper:
         assert placeholder["tail"] == "00000000"
         assert placeholder["type"] == "Figure"
         assert placeholder["release"]["na"] == "2026-06-15"
-        assert placeholder["_needs_backfill"] is True
+        assert placeholder["is_upcoming"] is True
 
     def test_load_existing_amiibos(self, mock_database_path, sample_amiibos):
         """Test loading amiibos from JSON file."""
@@ -324,7 +383,7 @@ class TestNintendoAmiiboScraper:
         assert len(data["amiibo"]) == 2
         assert data["amiibo"][0]["name"] == "Mario"
 
-    @patch('tracker.scrapers.requests.get')
+    @patch("tracker.scrapers.requests.get")
     def test_scrape_nintendo_amiibos_success(self, mock_get):
         """Test successful scraping from Nintendo website."""
         # Mock HTML response
@@ -354,10 +413,11 @@ class TestNintendoAmiiboScraper:
         assert result[1]["name"] == "Link"
         assert result[1]["series"] == "The Legend of Zelda"
 
-    @patch('tracker.scrapers.requests.get')
+    @patch("tracker.scrapers.requests.get")
     def test_scrape_nintendo_amiibos_network_error(self, mock_get):
         """Test scraping with network error."""
         import requests
+
         mock_get.side_effect = requests.RequestException("Network error")
 
         scraper = NintendoAmiiboScraper()
@@ -365,12 +425,19 @@ class TestNintendoAmiiboScraper:
 
         assert result == []
 
-    @patch.object(NintendoAmiiboScraper, 'scrape_nintendo_amiibos')
-    @patch.object(NintendoAmiiboScraper, 'load_existing_amiibos')
-    @patch.object(NintendoAmiiboScraper, 'save_amiibos')
-    @patch.object(NintendoAmiiboScraper, 'should_run')
-    def test_run_full_workflow(self, mock_should_run, mock_save, mock_load, mock_scrape,
-                              sample_amiibos, sample_scraped_data):
+    @patch.object(NintendoAmiiboScraper, "scrape_nintendo_amiibos")
+    @patch.object(NintendoAmiiboScraper, "load_existing_amiibos")
+    @patch.object(NintendoAmiiboScraper, "save_amiibos")
+    @patch.object(NintendoAmiiboScraper, "should_run")
+    def test_run_full_workflow(
+        self,
+        mock_should_run,
+        mock_save,
+        mock_load,
+        mock_scrape,
+        sample_amiibos,
+        sample_scraped_data,
+    ):
         """Test full scraper workflow."""
         mock_should_run.return_value = True
         mock_scrape.return_value = sample_scraped_data
@@ -384,7 +451,7 @@ class TestNintendoAmiiboScraper:
         assert result["new"] == 1  # Splatoon 3 Inkling is new
         assert mock_save.called
 
-    @patch.object(NintendoAmiiboScraper, 'should_run')
+    @patch.object(NintendoAmiiboScraper, "should_run")
     def test_run_skipped_due_to_cache(self, mock_should_run):
         """Test that run is skipped when cache is valid."""
         mock_should_run.return_value = False
@@ -395,8 +462,8 @@ class TestNintendoAmiiboScraper:
         assert result["status"] == "skipped"
         assert result["reason"] == "cache_valid"
 
-    @patch.object(NintendoAmiiboScraper, 'should_run')
-    @patch.object(NintendoAmiiboScraper, 'scrape_nintendo_amiibos')
+    @patch.object(NintendoAmiiboScraper, "should_run")
+    @patch.object(NintendoAmiiboScraper, "scrape_nintendo_amiibos")
     def test_run_force_bypasses_cache(self, mock_scrape, mock_should_run):
         """Test that force=True bypasses cache check."""
         mock_should_run.return_value = False  # Cache says skip
@@ -409,8 +476,8 @@ class TestNintendoAmiiboScraper:
         assert mock_scrape.called
         assert result["status"] == "error"  # No amiibos scraped
 
-    @patch.object(NintendoAmiiboScraper, 'scrape_nintendo_amiibos')
-    @patch.object(NintendoAmiiboScraper, 'should_run')
+    @patch.object(NintendoAmiiboScraper, "scrape_nintendo_amiibos")
+    @patch.object(NintendoAmiiboScraper, "should_run")
     def test_run_handles_scraping_error(self, mock_should_run, mock_scrape):
         """Test that run handles scraping errors gracefully."""
         mock_should_run.return_value = True
@@ -426,7 +493,7 @@ class TestNintendoAmiiboScraper:
 class TestScraperIntegration:
     """Integration tests for the scraper."""
 
-    @patch('tracker.scrapers.requests.get')
+    @patch("tracker.scrapers.requests.get")
     def test_end_to_end_scraping(self, mock_get, tmp_path):
         """Test complete end-to-end scraping workflow."""
         # Setup

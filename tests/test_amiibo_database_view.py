@@ -37,7 +37,7 @@ def test_filters_by_name_and_game_series(monkeypatch, rf):
         lambda self: local_data["amiibo"],
     )
     monkeypatch.setattr(
-        views.AmiiboDatabaseView, "_fetch_remote_amiibos", lambda self: []
+        views.AmiiboDatabaseView, "_fetch_local_amiibos", lambda self: []
     )
 
     request = rf.get("/api/amiibo/", {"name": "mar", "gameseries": "super"})
@@ -79,7 +79,7 @@ def test_character_filter_adds_usage(monkeypatch, rf):
         lambda self: local_data["amiibo"],
     )
     monkeypatch.setattr(
-        views.AmiiboDatabaseView, "_fetch_remote_amiibos", lambda self: remote_data
+        views.AmiiboDatabaseView, "_fetch_local_amiibos", lambda self: remote_data
     )
 
     request = rf.get("/api/amiibo/", {"character": "zelda", "showusage": "1"})
@@ -125,7 +125,7 @@ def test_logs_missing_remote_items(monkeypatch, rf):
         lambda self: local_data["amiibo"],
     )
     monkeypatch.setattr(
-        views.AmiiboDatabaseView, "_fetch_remote_amiibos", lambda self: remote_data
+        views.AmiiboDatabaseView, "_fetch_local_amiibos", lambda self: remote_data
     )
     monkeypatch.setattr(views.AmiiboDatabaseView, "log_warning", capture_log)
 

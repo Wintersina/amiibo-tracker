@@ -19,9 +19,7 @@ class NintendoAmiiboScraper(LoggingMixin):
     def __init__(self, min_similarity=0.6, cache_hours=6):
         self.min_similarity = min_similarity
         self.cache_hours = cache_hours
-        self.database_path = (
-            Path(__file__).parent / "data" / "amiibo_database.json"
-        )
+        self.database_path = Path(__file__).parent / "data" / "amiibo_database.json"
 
     def should_run(self):
         """
@@ -121,7 +119,9 @@ class NintendoAmiiboScraper(LoggingMixin):
                     # Name is in aria-label attribute
                     name = link.get("aria-label", "").strip()
                     if not name:
-                        self.log_warning(f"No aria-label found in link: {link.get('href', 'unknown')}")
+                        self.log_warning(
+                            f"No aria-label found in link: {link.get('href', 'unknown')}"
+                        )
                         continue
 
                     # Extract image from img tag
@@ -129,7 +129,9 @@ class NintendoAmiiboScraper(LoggingMixin):
                     img_tag = link.find("img")
                     if img_tag:
                         # Try src first, then data-src (for lazy loading)
-                        image_url = img_tag.get("src", "") or img_tag.get("data-src", "")
+                        image_url = img_tag.get("src", "") or img_tag.get(
+                            "data-src", ""
+                        )
                         # Make sure URL is absolute
                         if image_url and not image_url.startswith("http"):
                             image_url = f"https://www.nintendo.com{image_url}"
@@ -152,6 +154,11 @@ class NintendoAmiiboScraper(LoggingMixin):
                             series = text
 
                     release_date = self.parse_release_date(date_text)
+
+                    # Skip sets, bundles, and grouped items
+                    if self.is_set_or_bundle(name):
+                        self.log_info(f"Skipping set/bundle: {name}")
+                        continue
 
                     amiibos.append(
                         {
@@ -208,6 +215,48 @@ class NintendoAmiiboScraper(LoggingMixin):
         """Clean series name by removing ' series' suffix"""
         return re.sub(r"\s+series$", "", series_text, flags=re.IGNORECASE)
 
+    def is_set_or_bundle(self, name):
+        """
+        Check if an amiibo name represents a set, bundle, or grouped item.
+
+        Args:
+            name: Amiibo name to check
+
+        Returns:
+            True if it's a set/bundle, False if it's an individual amiibo
+        """
+        name_lower = name.lower()
+
+        # Keywords that indicate sets, bundles, or grouped items
+        set_indicators = [
+            "starter set",
+            "card set",
+            "pack",
+            "bundle",
+            "collection",
+            "power-up band",
+            "power up band",
+            "cards - series",  # e.g., "Cards - Series 5"
+            "card series",
+            "amiibo cards series",
+            "triple pack",
+            "3-pack",
+            "3 pack",
+            "multi-pack",
+            "multipack",
+        ]
+
+        # Check if any indicator is in the name
+        for indicator in set_indicators:
+            if indicator in name_lower:
+                return True
+
+        # Check for patterns like "Series N" at the end (card series)
+        if re.search(r"series\s+\d+$", name_lower):
+            return True
+
+        return False
+
     def load_existing_amiibos(self):
         """Load existing amiibos from JSON file"""
         try:
@@ -249,7 +298,9 @@ class NintendoAmiiboScraper(LoggingMixin):
                 if existing_na_date and existing_na_date == scraped_date:
                     # Exact date match gives significant boost
                     date_boost = 0.3
-                elif existing_na_date and self.dates_are_close(scraped_date, existing_na_date):
+                elif existing_na_date and self.dates_are_close(
+                    scraped_date, existing_na_date
+                ):
                     # Close dates give smaller boost (within 30 days)
                     date_boost = 0.15
 
@@ -347,7 +398,11 @@ class NintendoAmiiboScraper(LoggingMixin):
         if scraped_data.get("image"):
             existing_image = existing_amiibo.get("image", "")
             # Update if no image or if it's a placeholder/broken URL
-            if not existing_image or existing_image == "" or "00000000" in existing_image:
+            if (
+                not existing_image
+                or existing_image == ""
+                or "00000000" in existing_image
+            ):
                 existing_amiibo["image"] = scraped_data["image"]
                 updated = True
 
@@ -457,8 +512,12 @@ class NintendoAmiiboScraper(LoggingMixin):
 
         # Update with real data
         placeholder["character"] = api_amiibo.get("character", placeholder["character"])
-        placeholder["gameSeries"] = api_amiibo.get("gameSeries", placeholder["gameSeries"])
-        placeholder["amiiboSeries"] = api_amiibo.get("amiiboSeries", placeholder["amiiboSeries"])
+        placeholder["gameSeries"] = api_amiibo.get(
+            "gameSeries", placeholder["gameSeries"]
+        )
+        placeholder["amiiboSeries"] = api_amiibo.get(
+            "amiiboSeries", placeholder["amiiboSeries"]
+        )
         placeholder["image"] = api_amiibo.get("image", "")
         placeholder["type"] = api_amiibo.get("type", placeholder.get("type", "Figure"))
 

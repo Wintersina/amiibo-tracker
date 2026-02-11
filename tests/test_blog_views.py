@@ -146,7 +146,7 @@ class TestAmiiboDetailView:
 
         monkeypatch.setattr(
             views.AmiiboDetailView,
-            "_fetch_remote_amiibos",
+            "_fetch_local_amiibos",
             lambda self: mock_amiibos,
         )
 
@@ -190,7 +190,7 @@ class TestAmiiboDetailView:
 
         monkeypatch.setattr(
             views.AmiiboDetailView,
-            "_fetch_remote_amiibos",
+            "_fetch_local_amiibos",
             lambda self: mock_amiibos,
         )
 
@@ -222,7 +222,7 @@ class TestAmiiboDetailView:
         monkeypatch.setattr(views.AmiiboDetailView, "log_action", capture_log)
         monkeypatch.setattr(
             views.AmiiboDetailView,
-            "_fetch_remote_amiibos",
+            "_fetch_local_amiibos",
             lambda self: mock_amiibos,
         )
 
@@ -260,7 +260,7 @@ class TestAmiiboDetailView:
 
         monkeypatch.setattr(
             views.AmiiboDetailView,
-            "_fetch_remote_amiibos",
+            "_fetch_local_amiibos",
             lambda self: mock_amiibos,
         )
 
@@ -300,7 +300,7 @@ class TestCharacterDescriptions:
 
         monkeypatch.setattr(
             views.AmiiboDetailView,
-            "_fetch_remote_amiibos",
+            "_fetch_local_amiibos",
             lambda self: mock_amiibos,
         )
 
@@ -338,7 +338,7 @@ class TestCharacterDescriptions:
 
         monkeypatch.setattr(
             views.AmiiboDetailView,
-            "_fetch_remote_amiibos",
+            "_fetch_local_amiibos",
             lambda self: mock_amiibos,
         )
 
@@ -373,7 +373,7 @@ class TestCharacterDescriptions:
 
         monkeypatch.setattr(
             views.AmiiboDetailView,
-            "_fetch_remote_amiibos",
+            "_fetch_local_amiibos",
             lambda self: mock_amiibos,
         )
 
@@ -409,7 +409,7 @@ class TestCharacterDescriptions:
 
         monkeypatch.setattr(
             views.AmiiboDetailView,
-            "_fetch_remote_amiibos",
+            "_fetch_local_amiibos",
             lambda self: mock_amiibos,
         )
 
