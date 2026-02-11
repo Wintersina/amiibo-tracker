@@ -226,6 +226,7 @@
 
         .search-input {
             min-width: 240px;
+            flex-shrink: 1;
         }
 
         .dark-toggle,
@@ -412,23 +413,32 @@
 
         .hamburger-btn {
             display: none;
-            background: rgba(255, 255, 255, 0.75);
-            border: 1px solid var(--card-border);
+            background: linear-gradient(135deg, rgba(15, 118, 110, 0.15), rgba(243, 201, 105, 0.15));
+            border: 2px solid rgba(15, 118, 110, 0.4);
             border-radius: 12px;
             padding: 0.6rem;
             cursor: pointer;
             font-size: 1.5rem;
             line-height: 1;
-            transition: transform 0.2s ease;
-        }
-
-        body.dark .hamburger-btn {
-            background: rgba(31, 41, 55, 0.85);
-            border-color: rgba(243, 201, 105, 0.25);
+            transition: transform 0.2s ease, background 0.2s ease;
+            color: var(--text);
+            font-weight: 700;
         }
 
         .hamburger-btn:hover {
             transform: scale(1.05);
+            background: linear-gradient(135deg, rgba(15, 118, 110, 0.25), rgba(243, 201, 105, 0.25));
+            border-color: rgba(15, 118, 110, 0.6);
+        }
+
+        body.dark .hamburger-btn {
+            background: rgba(31, 41, 55, 0.85);
+            border-color: rgba(243, 201, 105, 0.35);
+        }
+
+        body.dark .hamburger-btn:hover {
+            background: rgba(31, 41, 55, 0.95);
+            border-color: rgba(243, 201, 105, 0.5);
         }
 
         @media (max-width: 720px) {
@@ -473,8 +483,16 @@
 
             .hamburger-btn {
                 display: block;
-                width: 100%;
+                width: auto;
                 text-align: center;
+            }
+
+            .search-input {
+                width: 100%;
+                min-width: 100%;
+                font-size: 0.95rem;
+                padding: 0.6em 1em;
+                order: 1;
             }
 
             .welcome {
@@ -483,6 +501,8 @@
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
+                width: 100%;
+                order: 0;
             }
 
             .collection-pill {
@@ -498,6 +518,7 @@
                 max-height: 0;
                 overflow: hidden;
                 transition: max-height 0.3s ease;
+                order: 2;
             }
 
             .control-row.open {
@@ -516,8 +537,7 @@
                 font-size: 0.85rem;
             }
 
-            .filter-select,
-            .search-input {
+            .filter-select {
                 width: 100%;
                 min-width: 100%;
                 font-size: 0.95rem;
@@ -658,8 +678,8 @@
         </div>
         <button class="hamburger-btn" id="hamburgerToggle" aria-label="Toggle Menu">☰</button>
     </div>
+    <input id="searchInput" class="search-input" type="text" placeholder="Search Amiibo or date...">
     <div class="control-row" id="mobileMenu">
-        <input id="searchInput" class="search-input" type="text" placeholder="Search Amiibo or date...">
         <select id="filterSelect" class="filter-select">
             <option value="all">Show All</option>
             <option value="collected">Collected Only</option>
