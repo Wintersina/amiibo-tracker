@@ -410,6 +410,27 @@
             color: var(--muted);
         }
 
+        .hamburger-btn {
+            display: none;
+            background: rgba(255, 255, 255, 0.75);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 0.6rem;
+            cursor: pointer;
+            font-size: 1.5rem;
+            line-height: 1;
+            transition: transform 0.2s ease;
+        }
+
+        body.dark .hamburger-btn {
+            background: rgba(31, 41, 55, 0.85);
+            border-color: rgba(243, 201, 105, 0.25);
+        }
+
+        .hamburger-btn:hover {
+            transform: scale(1.05);
+        }
+
         @media (max-width: 720px) {
             body {
                 padding: 0 0.75rem 2rem;
@@ -450,13 +471,22 @@
                 top: 0.5rem;
             }
 
+            .hamburger-btn {
+                display: block;
+                width: 100%;
+                text-align: center;
+            }
+
             .welcome {
                 font-size: 0.95rem;
                 margin-right: 0;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
             }
 
             .collection-pill {
-                margin-top: 0.25rem;
+                margin-top: 0;
                 padding: 0.3rem 0.65rem;
                 font-size: 0.85rem;
             }
@@ -465,6 +495,13 @@
                 width: 100%;
                 flex-direction: column;
                 gap: 0.5rem;
+                max-height: 0;
+                overflow: hidden;
+                transition: max-height 0.3s ease;
+            }
+
+            .control-row.open {
+                max-height: 1000px;
             }
 
             .type-filters {
@@ -560,8 +597,31 @@
             }
 
             .amiibo-card {
-                width: 100%;
-                margin: 0.4em 0;
+                width: calc(50% - 1em);
+                margin: 0.5em;
+                padding: 0.7em;
+            }
+
+            .amiibo-card img {
+                max-height: 90px;
+                margin-bottom: 0.4em;
+            }
+
+            .amiibo-name {
+                font-size: 0.8em;
+            }
+
+            .amiibo-meta {
+                font-size: 0.75em;
+            }
+
+            .release-date {
+                font-size: 0.8em;
+            }
+
+            .amiibo-card button {
+                padding: 0.45em 0.8em;
+                font-size: 0.8em;
             }
 
             .game-series-header {
@@ -592,10 +652,13 @@
 
 <div class="top-controls">
     <div class="welcome">
-        <div>Welcome, Demo User.</div>
-        <div id="collectionTotal" class="collection-pill">Collected: 0</div>
+        <div>
+            <div>Welcome, Demo User.</div>
+            <div id="collectionTotal" class="collection-pill">Collected: 0</div>
+        </div>
+        <button class="hamburger-btn" id="hamburgerToggle" aria-label="Toggle Menu">☰</button>
     </div>
-    <div class="control-row">
+    <div class="control-row" id="mobileMenu">
         <input id="searchInput" class="search-input" type="text" placeholder="Search Amiibo or date...">
         <select id="filterSelect" class="filter-select">
             <option value="all">Show All</option>
@@ -916,6 +979,14 @@
         const isDark = body.classList.toggle('dark');
         document.getElementById('darkModeToggle').textContent = isDark ? '☀️' : '🌙';
         localStorage.setItem(DARK_MODE_KEY, isDark);
+    });
+
+    // Hamburger menu toggle
+    document.getElementById('hamburgerToggle').addEventListener('click', () => {
+        const menu = document.getElementById('mobileMenu');
+        const hamburger = document.getElementById('hamburgerToggle');
+        menu.classList.toggle('open');
+        hamburger.textContent = menu.classList.contains('open') ? '✕' : '☰';
     });
 
     function navigateToAmiiboDetail(amiibo) {
