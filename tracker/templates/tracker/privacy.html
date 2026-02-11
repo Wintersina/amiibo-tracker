@@ -10,15 +10,16 @@
         body {
             font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             margin: 0;
-            padding: 100px 2rem 2rem 2rem;
+            padding: 120px 2rem 2rem 2rem;
             background: #0c0c0f;
             color: #f5f7fb;
             line-height: 1.6;
         }
 
         main {
+            position: relative;
             max-width: 860px;
-            margin: 0 auto;
+            margin: 2rem auto;
             background: #13131a;
             border: 1px solid #1f1f2a;
             border-radius: 18px;
@@ -63,11 +64,37 @@
             padding-top: 1rem;
             border-top: 1px solid #1f2735;
         }
+
+        .back-link {
+            position: absolute;
+            top: 1.5rem;
+            right: 1.5rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            text-decoration: none;
+            color: rgba(203, 213, 225, 0.7);
+            padding: 0.5rem 0.9rem;
+            border-radius: 8px;
+            background: rgba(15, 118, 110, 0.15);
+            border: 1px solid rgba(130, 224, 255, 0.2);
+            font-weight: 500;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+        }
+
+        .back-link:hover {
+            color: #82e0ff;
+            background: rgba(15, 118, 110, 0.25);
+            border-color: rgba(130, 224, 255, 0.4);
+            transform: translateX(-2px);
+        }
     </style>
 {% endblock %}
 
 {% block content %}
 <main>
+        <a href="{% url 'index' %}" class="back-link">← Back</a>
         <h1>Privacy Policy</h1>
         <p>
             Amiibo Tracker relies on Google Sign-In only to authenticate you and to connect to your personal Google Sheet named

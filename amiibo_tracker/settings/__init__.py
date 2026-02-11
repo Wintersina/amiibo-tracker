@@ -1,7 +1,8 @@
+import os
+
 from django.core.exceptions import ImproperlyConfigured
 
 from .base import *
-import os
 
 
 # Determine environment and import specific settings

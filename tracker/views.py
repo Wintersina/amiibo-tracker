@@ -59,7 +59,6 @@ def load_blog_posts():
         return []
 
 
-
 BLOG_POSTS = [
     {
         "slug": "how-it-works",
@@ -2137,7 +2136,14 @@ class ToggleCollectedView(View, LoggingMixin):
                 user_name=request.session.get("user_name"),
                 user_email=request.session.get("user_email"),
             )
-            status_code = 429 if isinstance(error, RateLimitError) else 503
+            # Determine appropriate status code based on error type
+            if isinstance(error, RateLimitError):
+                status_code = 429
+            elif isinstance(error, InvalidCredentialsError):
+                status_code = 401
+            else:
+                status_code = 503
+
             return JsonResponse(
                 {
                     "status": "error",
@@ -2583,7 +2589,14 @@ class ToggleDarkModeView(View, LoggingMixin):
                 user_name=request.session.get("user_name"),
                 user_email=request.session.get("user_email"),
             )
-            status_code = 429 if isinstance(error, RateLimitError) else 503
+            # Determine appropriate status code based on error type
+            if isinstance(error, RateLimitError):
+                status_code = 429
+            elif isinstance(error, InvalidCredentialsError):
+                status_code = 401
+            else:
+                status_code = 503
+
             return JsonResponse(
                 {
                     "status": "error",
@@ -2656,7 +2669,14 @@ class ToggleTypeFilterView(View, LoggingMixin):
             self.log_error(
                 "Google Sheets error during type filter toggle: %s", str(error)
             )
-            status_code = 429 if isinstance(error, RateLimitError) else 503
+            # Determine appropriate status code based on error type
+            if isinstance(error, RateLimitError):
+                status_code = 429
+            elif isinstance(error, InvalidCredentialsError):
+                status_code = 401
+            else:
+                status_code = 503
+
             return JsonResponse(
                 {
                     "status": "error",
@@ -2703,7 +2723,14 @@ class ToggleTypeFilterView(View, LoggingMixin):
                 user_name=request.session.get("user_name"),
                 user_email=request.session.get("user_email"),
             )
-            status_code = 429 if isinstance(error, RateLimitError) else 503
+            # Determine appropriate status code based on error type
+            if isinstance(error, RateLimitError):
+                status_code = 429
+            elif isinstance(error, InvalidCredentialsError):
+                status_code = 401
+            else:
+                status_code = 503
+
             return JsonResponse(
                 {
                     "status": "error",
@@ -2979,6 +3006,7 @@ class BlogPostView(View, LoggingMixin, AmiiboRemoteFetchMixin):
         # Set OG image if featured_image exists
         if post.get("featured_image"):
             from django.templatetags.static import static
+
             image_url = static(post["featured_image"])
             seo.set_og_image(image_url)
 
@@ -3341,7 +3369,9 @@ class AmiiboDetailView(View, LoggingMixin, AmiiboRemoteFetchMixin):
         game_series = amiibo.get("gameSeries", "")
 
         # Try to load custom descriptions from JSON file
-        descriptions_path = Path(__file__).parent / "data" / "character_descriptions.json"
+        descriptions_path = (
+            Path(__file__).parent / "data" / "character_descriptions.json"
+        )
         if descriptions_path.exists():
             try:
                 with open(descriptions_path, "r", encoding="utf-8") as f:

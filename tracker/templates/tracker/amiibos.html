@@ -1035,8 +1035,8 @@
                     body: JSON.stringify({ amiibo_id: amiiboId, action: action })
                 });
 
-                if (await handleRateLimitResponse(response)) {
-                    // If rate limited, put item back and stop processing
+                if (await handleErrorResponse(response)) {
+                    // If error was handled (rate limit, expired auth, etc.), put item back and stop
                     toggleQueue.items.unshift({ card, button, amiiboId, action });
                     card.classList.remove('processing');
                     const isCollected = card.classList.contains('collected');
@@ -1149,6 +1149,31 @@
         return true;
     }
 
+    async function handleErrorResponse(response) {
+        // Handle successful responses
+        if (response.ok) {
+            return false;
+        }
+
+        // Handle rate limit errors
+        if (response.status === 429) {
+            return await handleRateLimitResponse(response);
+        }
+
+        // Handle other error responses with action_required
+        try {
+            const data = await response.clone().json();
+            if (data && data.action_required) {
+                showErrorModal(data.message || 'An error occurred', data.action_required);
+                return true;
+            }
+        } catch (error) {
+            // If response isn't JSON or parsing fails, continue with default error handling
+        }
+
+        return false;
+    }
+
     function handleButtonHover(event) {
         const button = event.currentTarget;
         const card = button.parentElement;
@@ -1235,7 +1260,7 @@
                     body: JSON.stringify({ type, ignore })
                 });
 
-                if (await handleRateLimitResponse(response)) {
+                if (await handleErrorResponse(response)) {
                     return;
                 }
             } finally {
@@ -1314,7 +1339,7 @@
                 body: JSON.stringify({ dark_mode: isDark })
             });
 
-            if (await handleRateLimitResponse(response)) {
+            if (await handleErrorResponse(response)) {
                 return;
             }
         } finally {

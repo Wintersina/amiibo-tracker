@@ -1,6 +1,7 @@
 """
 Sitemap definitions for SEO optimization.
 """
+
 import json
 from pathlib import Path
 from datetime import datetime
@@ -102,8 +103,6 @@ class AmiiboSitemap(Sitemap):
         Return last modification date.
         Use earliest release date as lastmod.
         """
-        from datetime import datetime
-
         release_dates = item.get("release", {})
         for region in ["na", "jp", "eu", "au"]:
             date_str = release_dates.get(region)

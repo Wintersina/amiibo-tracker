@@ -5,6 +5,7 @@ from functools import cached_property
 import gspread
 import requests
 from django.conf import settings
+from google.auth.exceptions import RefreshError
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import Flow
 from oauth2client.service_account import ServiceAccountCredentials
@@ -132,7 +133,9 @@ class GoogleSheetClientManager(HelperMixin, LoggingMixin):
                 elif error_code == 503:
                     # Service unavailable - retry with backoff
                     if attempt < self.MAX_RETRIES - 1:
-                        backoff = min(self.INITIAL_BACKOFF * (2 ** attempt), self.MAX_BACKOFF)
+                        backoff = min(
+                            self.INITIAL_BACKOFF * (2**attempt), self.MAX_BACKOFF
+                        )
                         self.log_warning(
                             "Google Sheets service unavailable (503), retrying in %s seconds (attempt %d/%d)",
                             backoff,
@@ -148,6 +151,14 @@ class GoogleSheetClientManager(HelperMixin, LoggingMixin):
                     self.log_error("Unknown API error: %s", error)
                     raise
 
+            except RefreshError as error:
+                # Handle expired or revoked OAuth tokens
+                self.log_warning(
+                    "OAuth token expired or revoked: %s. User needs to re-authenticate.",
+                    error,
+                )
+                raise InvalidCredentialsError() from error
+
             except requests.exceptions.ConnectionError as error:
                 last_exception = error
                 raise NetworkError() from error
@@ -155,7 +166,7 @@ class GoogleSheetClientManager(HelperMixin, LoggingMixin):
             except requests.exceptions.Timeout as error:
                 last_exception = error
                 if attempt < self.MAX_RETRIES - 1:
-                    backoff = min(self.INITIAL_BACKOFF * (2 ** attempt), self.MAX_BACKOFF)
+                    backoff = min(self.INITIAL_BACKOFF * (2**attempt), self.MAX_BACKOFF)
                     self.log_warning(
                         "Request timeout, retrying in %s seconds (attempt %d/%d)",
                         backoff,
@@ -174,7 +185,9 @@ class GoogleSheetClientManager(HelperMixin, LoggingMixin):
         # Try to open by stored ID with retry logic for transient errors
         if self.spreadsheet_id:
             try:
-                return self._retry_with_backoff(self.client.open_by_key, self.spreadsheet_id)
+                return self._retry_with_backoff(
+                    self.client.open_by_key, self.spreadsheet_id
+                )
             except (SpreadsheetNotFoundError, gspread.exceptions.SpreadsheetNotFound):
                 self.log_warning(
                     "Stored spreadsheet id '%s' was not found; falling back to discovery by name.",
@@ -339,5 +352,7 @@ class GoogleSheetClientManager(HelperMixin, LoggingMixin):
         )
 
     @staticmethod
-    def _worksheet_cache_key(spreadsheet_id: str, worksheet_name: str) -> tuple[str, str]:
+    def _worksheet_cache_key(
+        spreadsheet_id: str, worksheet_name: str
+    ) -> tuple[str, str]:
         return (spreadsheet_id, worksheet_name)

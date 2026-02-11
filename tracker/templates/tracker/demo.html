@@ -79,9 +79,10 @@
 
         h1 {
             text-align: center;
-            margin-top: 1.5rem;
+            margin-top: 0;
             margin-bottom: 0.6rem;
             letter-spacing: 0.01em;
+            padding-top: 0.5rem;
         }
 
         .intro {
@@ -270,9 +271,22 @@
         }
 
         .back-btn {
-            background: linear-gradient(135deg, var(--button-bg), var(--button-hover));
-            color: #fff;
-            border-color: rgba(255, 255, 255, 0.2);
+            background: rgba(15, 118, 110, 0.15);
+            color: rgba(51, 51, 51, 0.7);
+            border-color: rgba(243, 201, 105, 0.2);
+            font-weight: 500;
+            padding: 0.55rem 1rem;
+            font-size: 0.9rem;
+        }
+
+        body.dark .back-btn {
+            color: rgba(253, 247, 227, 0.7);
+        }
+
+        .back-btn:hover {
+            background: rgba(15, 118, 110, 0.25);
+            border-color: rgba(243, 201, 105, 0.4);
+            color: var(--saffron);
         }
 
         .amiibo-card {
@@ -753,7 +767,7 @@
             <span style="font-weight: 700;">Types:</span>
         </div>
         <button id="darkModeToggle" class="dark-toggle" aria-label="Toggle Dark Mode">🌙</button>
-        <a href="{% url 'index' %}" class="back-btn" aria-label="Back to Home">Back to Home</a>
+        <a href="{% url 'index' %}" class="back-btn" aria-label="Back to Home">← Back</a>
     </div>
 </div>
 
