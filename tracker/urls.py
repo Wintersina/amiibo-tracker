@@ -16,11 +16,12 @@ from tracker.views import (
     BlogListView,
     BlogPostView,
     AmiiboDetailView,
+    RobotsTxtView,
 )
 
 urlpatterns = [
     path("", IndexView.as_view(), name="index"),
-    path("robots.txt", TemplateView.as_view(template_name="../static/robots.txt", content_type="text/plain"), name="robots"),
+    path("robots.txt", RobotsTxtView.as_view(), name="robots"),
     path("demo/", DemoView.as_view(), name="demo"),
     path("tracker/", AmiiboListView.as_view(), name="amiibo_list"),
     path("toggle/", ToggleCollectedView.as_view(), name="toggle_collected"),

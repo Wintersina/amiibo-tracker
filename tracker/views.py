@@ -11,7 +11,7 @@ from google.auth.transport.requests import Request as GoogleAuthRequest
 from google.oauth2.credentials import Credentials
 from django.contrib.auth import logout as django_logout
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
-from django.http import JsonResponse, Http404
+from django.http import JsonResponse, Http404, HttpResponse
 from django.shortcuts import redirect, render
 from django.utils.decorators import method_decorator
 from django.views import View
@@ -2976,6 +2976,12 @@ class BlogPostView(View, LoggingMixin, AmiiboRemoteFetchMixin):
         seo.set_description(description)
         seo.set_type("article")
 
+        # Set OG image if featured_image exists
+        if post.get("featured_image"):
+            from django.templatetags.static import static
+            image_url = static(post["featured_image"])
+            seo.set_og_image(image_url)
+
         # Add Article schema
         post_url = request.build_absolute_uri()
         seo.add_schema(
@@ -3255,3 +3261,18 @@ class AmiiboDetailView(View, LoggingMixin, AmiiboRemoteFetchMixin):
             return f"{character_name} is featured in this amiibo."
         else:
             return "This amiibo features a character from Nintendo's gaming universe."
+
+
+class RobotsTxtView(View):
+    """
+    Serves the robots.txt file with proper content type.
+    """
+
+    def get(self, request):
+        robots_path = Path(__file__).parent.parent / "static" / "robots.txt"
+        try:
+            with open(robots_path, "r", encoding="utf-8") as f:
+                content = f.read()
+            return HttpResponse(content, content_type="text/plain")
+        except FileNotFoundError:
+            return HttpResponse("User-agent: *\nAllow: /\n", content_type="text/plain")
