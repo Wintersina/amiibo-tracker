@@ -255,8 +255,8 @@
         }
 
         .search-input {
+            flex: 1;
             min-width: 240px;
-            flex-shrink: 1;
             cursor: text;
         }
 
@@ -577,7 +577,6 @@
                 font-size: 0.95rem;
                 padding: 0.65em 1.1em;
                 height: 46px;
-                order: 1;
             }
 
             .welcome {
@@ -784,8 +783,8 @@
         </div>
         <button class="hamburger-btn" id="hamburgerToggle" aria-label="Toggle Menu">☰</button>
     </div>
-    <input id="searchInput" class="search-input" type="text" placeholder="Search Amiibo or date...">
     <div class="control-row" id="mobileMenu">
+        <input id="searchInput" class="search-input" type="text" placeholder="Search Amiibo or date...">
         <select id="filterSelect" class="filter-select">
             <option value="all">Show All</option>
             <option value="collected">Collected Only</option>
