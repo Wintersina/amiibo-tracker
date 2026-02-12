@@ -94,3 +94,41 @@ jobs:
           PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
           REGION: ${{ secrets.GCP_REGION }}
           SERVICE_NAME: ${{ env.SERVICE_NAME }}
+
+      - name: Trigger Initial Scraper Run
+        run: |
+          echo "🚀 Triggering scraper to refresh data after deployment..."
+          SERVICE_URL=$(gcloud run services describe "$SERVICE_NAME" \
+            --region "$REGION" \
+            --format="value(status.url)" 2>/dev/null || echo "")
+
+          if [ -z "$SERVICE_URL" ]; then
+            echo "⚠️  Could not get service URL, skipping scraper trigger"
+            exit 0
+          fi
+
+          echo "Service URL: $SERVICE_URL"
+          echo "Waiting 10 seconds for service to be fully ready..."
+          sleep 10
+
+          # Get auth token for Cloud Run
+          TOKEN=$(gcloud auth print-identity-token)
+
+          # Trigger the scraper endpoint
+          RESPONSE=$(curl -s -w "\n%{http_code}" \
+            -X POST \
+            -H "Authorization: Bearer $TOKEN" \
+            -H "Content-Type: application/json" \
+            "$SERVICE_URL/api/scrape-nintendo/?force=true")
+
+          HTTP_CODE=$(echo "$RESPONSE" | tail -1)
+          BODY=$(echo "$RESPONSE" | head -n -1)
+
+          echo "Response code: $HTTP_CODE"
+          echo "Response body: $BODY"
+
+          if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "201" ]; then
+            echo "✅ Scraper triggered successfully!"
+          else
+            echo "⚠️  Scraper trigger returned status $HTTP_CODE (non-fatal, continuing)"
+          fi
