@@ -16,8 +16,8 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --upgrade pip && pip install -r requirements.txt
 
-# Pre-download rembg model to avoid startup timeout in Cloud Run
-RUN python -c "from rembg import new_session; print('Downloading rembg model...'); new_session('u2net_human_seg'); print('Model downloaded!')"
+# DISABLED: rembg model download no longer needed (amiibo.life images don't need background removal)
+# RUN python -c "from rembg import new_session; print('Downloading rembg model...'); new_session('u2net_human_seg'); print('Model downloaded!')"
 
 COPY . .
 

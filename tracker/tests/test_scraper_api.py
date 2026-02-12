@@ -1,6 +1,7 @@
 """
-Tests for Nintendo scraper API endpoint.
+Tests for amiibo scraper API endpoint.
 """
+
 import json
 import pytest
 from unittest.mock import Mock, patch
@@ -15,9 +16,9 @@ def request_factory():
 
 
 class TestNintendoScraperAPIView:
-    """Tests for the NintendoScraperAPIView."""
+    """Tests for the NintendoScraperAPIView (now using AmiiboLifeScraper)."""
 
-    @patch('tracker.views.NintendoAmiiboScraper')
+    @patch("tracker.views.AmiiboLifeScraper")
     def test_post_success(self, mock_scraper_class, request_factory):
         """Test successful POST request to scraper endpoint."""
         # Mock scraper result
@@ -31,11 +32,11 @@ class TestNintendoScraperAPIView:
         mock_scraper_class.return_value = mock_scraper
 
         # Create POST request
-        request = request_factory.post('/api/scrape-nintendo/')
+        request = request_factory.post("/api/scrape-nintendo/")
         view = NintendoScraperAPIView()
 
         # Mock log_action to avoid session requirement
-        with patch.object(view, 'log_action'):
+        with patch.object(view, "log_action"):
             # Call view
             response = view.post(request)
 
@@ -50,7 +51,7 @@ class TestNintendoScraperAPIView:
         # Verify scraper was called with force=True
         mock_scraper.run.assert_called_once_with(force=True)
 
-    @patch('tracker.views.NintendoAmiiboScraper')
+    @patch("tracker.views.AmiiboLifeScraper")
     def test_post_error(self, mock_scraper_class, request_factory):
         """Test POST request with scraper error."""
         # Mock scraper to raise exception
@@ -59,11 +60,11 @@ class TestNintendoScraperAPIView:
         mock_scraper_class.return_value = mock_scraper
 
         # Create POST request
-        request = request_factory.post('/api/scrape-nintendo/')
+        request = request_factory.post("/api/scrape-nintendo/")
         view = NintendoScraperAPIView()
 
         # Mock log_action to avoid session requirement
-        with patch.object(view, 'log_action'):
+        with patch.object(view, "log_action"):
             # Call view
             response = view.post(request)
 
@@ -76,7 +77,7 @@ class TestNintendoScraperAPIView:
     def test_get_health_check(self, request_factory):
         """Test GET request returns health check info."""
         # Create GET request
-        request = request_factory.get('/api/scrape-nintendo/')
+        request = request_factory.get("/api/scrape-nintendo/")
         view = NintendoScraperAPIView()
 
         # Call view
@@ -89,7 +90,7 @@ class TestNintendoScraperAPIView:
         assert "endpoint" in data
         assert "POST" in data["endpoint"]
 
-    @patch('tracker.views.NintendoAmiiboScraper')
+    @patch("tracker.views.AmiiboLifeScraper")
     def test_logging_on_success(self, mock_scraper_class, request_factory):
         """Test that successful scraper execution is logged."""
         # Mock scraper result
@@ -103,11 +104,11 @@ class TestNintendoScraperAPIView:
         mock_scraper_class.return_value = mock_scraper
 
         # Create POST request
-        request = request_factory.post('/api/scrape-nintendo/')
+        request = request_factory.post("/api/scrape-nintendo/")
         view = NintendoScraperAPIView()
 
         # Mock logging
-        with patch.object(view, 'log_action') as mock_log:
+        with patch.object(view, "log_action") as mock_log:
             response = view.post(request)
 
             # Verify logging was called
@@ -115,7 +116,7 @@ class TestNintendoScraperAPIView:
             call_args = mock_log.call_args
             assert "scraper-api" in call_args[0][0]  # Either triggered or error
 
-    @patch('tracker.views.NintendoAmiiboScraper')
+    @patch("tracker.views.AmiiboLifeScraper")
     def test_logging_on_error(self, mock_scraper_class, request_factory):
         """Test that scraper errors are logged."""
         # Mock scraper to raise exception
@@ -124,11 +125,11 @@ class TestNintendoScraperAPIView:
         mock_scraper_class.return_value = mock_scraper
 
         # Create POST request
-        request = request_factory.post('/api/scrape-nintendo/')
+        request = request_factory.post("/api/scrape-nintendo/")
         view = NintendoScraperAPIView()
 
         # Mock logging
-        with patch.object(view, 'log_action') as mock_log:
+        with patch.object(view, "log_action") as mock_log:
             response = view.post(request)
 
             # Verify error logging was called
@@ -140,9 +141,9 @@ class TestNintendoScraperAPIView:
 class TestScraperAPIIntegration:
     """Integration tests for scraper API endpoint."""
 
-    @patch('tracker.scrapers.requests.get')
-    @patch('tracker.scrapers.NintendoAmiiboScraper.load_existing_amiibos')
-    @patch('tracker.scrapers.NintendoAmiiboScraper.save_amiibos')
+    @patch("tracker.scrapers.requests.get")
+    @patch("tracker.scrapers.AmiiboLifeScraper.load_existing_amiibos")
+    @patch("tracker.scrapers.AmiiboLifeScraper.save_amiibos")
     def test_full_api_workflow(self, mock_save, mock_load, mock_get, request_factory):
         """Test complete workflow from API call to scraper execution."""
         # Mock existing amiibos
@@ -153,25 +154,39 @@ class TestScraperAPIIntegration:
             }
         ]
 
-        # Mock Nintendo website
+        # Mock amiibo.life website
         mock_response = Mock()
         mock_response.status_code = 200
         mock_response.content = b"""
         <html>
-            <a href="/us/amiibo/detail/mario/" aria-label="Mario">
-                <p>Super Mario series</p>
-                <p>Available 11/21/2014</p>
-            </a>
+            <tr>
+                <td>
+                    <a href="/amiibo/super-smash-bros/mario">
+                        <div class="figure-card row lazy" data-src="/assets/figures/mario.png">
+                            <p class="name">Mario</p>
+                            <p class="series">Super Smash Bros. series<br />amiibo figure</p>
+                        </div>
+                    </a>
+                </td>
+                <td class="release_dates_cell">
+                    <ul class="release_dates">
+                        <li>
+                            <img title="North America" class="region_flag" />
+                            <time datetime="2014-11-21">2014 Nov 21</time>
+                        </li>
+                    </ul>
+                </td>
+            </tr>
         </html>
         """
         mock_get.return_value = mock_response
 
         # Create API request
-        request = request_factory.post('/api/scrape-nintendo/')
+        request = request_factory.post("/api/scrape-nintendo/")
         view = NintendoScraperAPIView()
 
         # Mock log_action to avoid session requirement
-        with patch.object(view, 'log_action'):
+        with patch.object(view, "log_action"):
             # Call API
             response = view.post(request)
 
