@@ -76,53 +76,70 @@ class ImageProcessingMixin(LoggingMixin):
 
 def remove_bg(request):
     """
-    API endpoint to remove background from an image URL.
+    DISABLED: Background removal endpoint (no longer needed with amiibo.life images).
+
+    Previously used to remove backgrounds from Nintendo.com images.
+    Now disabled to reduce memory requirements in Cloud Run.
 
     Usage: /api/remove-bg/?url=<image_url>
 
-    Returns: PNG image with transparent background
-    Caches: Results cached for 1 hour (3600 seconds)
+    Returns: Error message indicating endpoint is disabled
     """
-    url = request.GET.get("url")
-    if not url:
-        return HttpResponseBadRequest("Missing 'url' query parameter.")
+    return HttpResponseBadRequest(
+        "Background removal endpoint is disabled. "
+        "amiibo.life images already have transparent backgrounds."
+    )
 
-    # Restrict to allowed domains for security
-    domain = urlparse(url).hostname
-    if ALLOWED_DOMAINS and domain not in ALLOWED_DOMAINS:
-        return HttpResponseBadRequest(f"Domain '{domain}' is not allowed.")
-
-    # Check cache first
-    cache_key = f"rembg_{hashlib.md5(url.encode()).hexdigest()}"
-    cached = cache.get(cache_key)
-    if cached:
-        return HttpResponse(cached, content_type="image/png")
-
-    # Fetch the image
-    try:
-        resp = http_requests.get(url, timeout=10)
-        resp.raise_for_status()
-    except http_requests.RequestException as e:
-        return HttpResponseBadRequest(f"Failed to fetch image: {e}")
-
-    # Remove background
-    try:
-        input_img = Image.open(BytesIO(resp.content))
-        # Lazy-load session if it wasn't pre-loaded
-        session = _session if _session is not None else new_session("u2net_human_seg")
-        output_img = remove(input_img, session=session)
-
-        # Remove white fringe artifacts around edges
-        output_img = remove_white_fringe(output_img)
-    except Exception as e:
-        return HttpResponseBadRequest(f"Failed to process image: {e}")
-
-    # Write to buffer
-    buf = BytesIO()
-    output_img.save(buf, format="PNG")
-    png_bytes = buf.getvalue()
-
-    # Cache for 1 hour (3600 seconds)
-    cache.set(cache_key, png_bytes, timeout=3600)
-
-    return HttpResponse(png_bytes, content_type="image/png")
+# DEPRECATED CODE - kept for reference
+# def remove_bg_original(request):
+#     """
+#     API endpoint to remove background from an image URL.
+#
+#     Usage: /api/remove-bg/?url=<image_url>
+#
+#     Returns: PNG image with transparent background
+#     Caches: Results cached for 1 hour (3600 seconds)
+#     """
+#     url = request.GET.get("url")
+#     if not url:
+#         return HttpResponseBadRequest("Missing 'url' query parameter.")
+#
+#     # Restrict to allowed domains for security
+#     domain = urlparse(url).hostname
+#     if ALLOWED_DOMAINS and domain not in ALLOWED_DOMAINS:
+#         return HttpResponseBadRequest(f"Domain '{domain}' is not allowed.")
+#
+#     # Check cache first
+#     cache_key = f"rembg_{hashlib.md5(url.encode()).hexdigest()}"
+#     cached = cache.get(cache_key)
+#     if cached:
+#         return HttpResponse(cached, content_type="image/png")
+#
+#     # Fetch the image
+#     try:
+#         resp = http_requests.get(url, timeout=10)
+#         resp.raise_for_status()
+#     except http_requests.RequestException as e:
+#         return HttpResponseBadRequest(f"Failed to fetch image: {e}")
+#
+#     # Remove background
+#     try:
+#         input_img = Image.open(BytesIO(resp.content))
+#         # Lazy-load session if it wasn't pre-loaded
+#         session = _session if _session is not None else new_session("u2net_human_seg")
+#         output_img = remove(input_img, session=session)
+#
+#         # Remove white fringe artifacts around edges
+#         output_img = remove_white_fringe(output_img)
+#     except Exception as e:
+#         return HttpResponseBadRequest(f"Failed to process image: {e}")
+#
+#     # Write to buffer
+#     buf = BytesIO()
+#     output_img.save(buf, format="PNG")
+#     png_bytes = buf.getvalue()
+#
+#     # Cache for 1 hour (3600 seconds)
+#     cache.set(cache_key, png_bytes, timeout=3600)
+#
+#     return HttpResponse(png_bytes, content_type="image/png")

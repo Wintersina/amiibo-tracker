@@ -24,7 +24,7 @@ from constants import OauthConstants
 from tracker.google_sheet_client_manager import GoogleSheetClientManager
 from tracker.helpers import LoggingMixin, AmiiboRemoteFetchMixin, AmiiboLocalFetchMixin
 from tracker.service_domain import AmiiboService, GoogleSheetConfigManager
-from tracker.scrapers import NintendoAmiiboScraper
+from tracker.scrapers import AmiiboLifeScraper
 from tracker.seo_helpers import (
     SEOContext,
     generate_meta_description,
@@ -3473,14 +3473,14 @@ class RobotsTxtView(View):
 @method_decorator(csrf_exempt, name="dispatch")
 class NintendoScraperAPIView(View, LoggingMixin):
     """
-    API endpoint for triggering Nintendo amiibo scraper.
+    API endpoint for triggering amiibo scraper (now using amiibo.life).
     Designed for Cloud Scheduler or manual triggering.
     """
 
     def post(self, request):
         """Trigger the scraper"""
         try:
-            scraper = NintendoAmiiboScraper()
+            scraper = AmiiboLifeScraper()
             result = scraper.run(force=True)
 
             self.log_action(

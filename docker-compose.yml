@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: pytest tracker/tests/ -v --tb=short
+    environment:
+      - DJANGO_SETTINGS_MODULE=amiibo_tracker.settings
+      - PYTHONUNBUFFERED=1
+    volumes:
+      # Mount source code for development
+      - ./tracker:/app/tracker
+      - ./amiibo_tracker:/app/amiibo_tracker
+    working_dir: /app
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: python manage.py runserver 0.0.0.0:8080
+    environment:
+      - DJANGO_SETTINGS_MODULE=amiibo_tracker.settings
+      - PORT=8080
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./tracker:/app/tracker
+      - ./amiibo_tracker:/app/amiibo_tracker
+    working_dir: /app

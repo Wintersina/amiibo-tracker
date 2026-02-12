@@ -1,9 +1,9 @@
 from django.core.management.base import BaseCommand
-from tracker.scrapers import NintendoAmiiboScraper
+from tracker.scrapers import AmiiboLifeScraper, NintendoDotComScraper
 
 
 class Command(BaseCommand):
-    help = "Auto-run Nintendo amiibo scraper (meant for scheduled tasks)"
+    help = "Auto-run amiibo scraper (meant for scheduled tasks)"
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -17,14 +17,26 @@ class Command(BaseCommand):
             default=0.6,
             help="Minimum similarity score for name matching (0.0-1.0)",
         )
+        parser.add_argument(
+            "--scraper",
+            type=str,
+            default="amiibolife",
+            choices=["amiibolife", "nintendodotcom"],
+            help="Which scraper to use (default: amiibolife)",
+        )
 
     def handle(self, *args, **options):
         force = options["force"]
         min_similarity = options["min_similarity"]
+        scraper_type = options["scraper"]
 
-        scraper = NintendoAmiiboScraper(min_similarity=min_similarity)
-
-        self.stdout.write("Running Nintendo amiibo scraper...")
+        # Select scraper based on argument
+        if scraper_type == "nintendodotcom":
+            scraper = NintendoDotComScraper(min_similarity=min_similarity)
+            self.stdout.write("Running Nintendo.com amiibo scraper (deprecated)...")
+        else:
+            scraper = AmiiboLifeScraper(min_similarity=min_similarity)
+            self.stdout.write("Running amiibo.life scraper...")
 
         result = scraper.run(force=force)
 
