@@ -1,14 +1,16 @@
 import hashlib
-from io import BytesIO
 from urllib.parse import urlparse
 
-import numpy as np
+# Background removal imports (DISABLED - kept for reference only)
+# import numpy as np
+# from io import BytesIO
+# from PIL import Image
+# from rembg import remove, new_session
+# from scipy.ndimage import binary_erosion
+
 import requests as http_requests
 from django.core.cache import cache
 from django.http import HttpResponse, HttpResponseBadRequest
-from PIL import Image
-from rembg import remove, new_session
-from scipy.ndimage import binary_erosion
 
 from tracker.helpers import LoggingMixin
 
@@ -20,17 +22,9 @@ ALLOWED_DOMAINS = {
     "amiiboapi.org",
 }
 
-# Pre-load rembg session for better performance
-# This loads the ML model once instead of on every request
-# u2net_human_seg is optimized for figures/characters (perfect for amiibos!)
-try:
-    print("Loading rembg model: u2net_human_seg...")
-    _session = new_session("u2net_human_seg")
-    print("Rembg model loaded successfully")
-except Exception as e:
-    print(f"Warning: Failed to pre-load rembg model: {e}")
-    print("Model will be loaded on first request")
-    _session = None
+# DISABLED: Background removal no longer used (amiibo.life images already have transparent backgrounds)
+# Pre-loading the rembg model is no longer necessary and has been disabled to reduce memory usage
+_session = None
 
 
 def remove_white_fringe(img, threshold=240):
