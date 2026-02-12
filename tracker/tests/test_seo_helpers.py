@@ -1,6 +1,7 @@
 """
 Comprehensive pytest tests for SEO helper functions and classes.
 """
+
 import pytest
 import json
 from datetime import datetime
@@ -9,7 +10,7 @@ from tracker.seo_helpers import (
     SEOContext,
     generate_meta_description,
     generate_article_schema,
-    generate_product_schema,
+    generate_blog_posting_schema,
     generate_breadcrumb_schema,
     generate_organization_schema,
     generate_website_schema,
@@ -162,7 +163,9 @@ class TestSEOContext:
     def test_builder_pattern_chaining(self):
         """Test that methods can be chained."""
         seo = SEOContext()
-        result = seo.set_title("Test").set_description("Description").set_type("article")
+        result = (
+            seo.set_title("Test").set_description("Description").set_type("article")
+        )
 
         assert isinstance(result, SEOContext)
         assert seo.data["title"] == "Test - Amiibo Tracker"
@@ -274,12 +277,12 @@ class TestGenerateArticleSchema:
         assert schema["publisher"]["name"] == "Custom Publisher"
 
 
-class TestGenerateProductSchema:
-    """Tests for the generate_product_schema function."""
+class TestGenerateBlogPostingSchema:
+    """Tests for the generate_blog_posting_schema function."""
 
-    def test_basic_product_schema(self):
-        """Test generating basic product schema."""
-        schema = generate_product_schema(
+    def test_basic_blog_posting_schema(self):
+        """Test generating basic blog posting schema."""
+        schema = generate_blog_posting_schema(
             name="Mario Amiibo",
             description="Mario figure from Super Mario series",
             image="https://example.com/mario.jpg",
@@ -287,35 +290,55 @@ class TestGenerateProductSchema:
         )
 
         assert schema["name"] == "Mario Amiibo"
+        assert schema["headline"] == "Mario Amiibo"
         assert schema["description"] == "Mario figure from Super Mario series"
         assert schema["image"] == "https://example.com/mario.jpg"
         assert schema["url"] == "https://example.com/amiibo/mario/"
-        assert schema["brand"]["@type"] == "Brand"
-        assert schema["brand"]["name"] == "Nintendo"
+        assert schema["author"]["@type"] == "Person"
+        assert schema["author"]["name"] == "Amiibo Tracker"
+        assert schema["publisher"]["@type"] == "Organization"
+        assert schema["publisher"]["name"] == "Amiibo Tracker"
 
-    def test_product_schema_with_release_date(self):
-        """Test product schema with release date."""
-        schema = generate_product_schema(
+    def test_blog_posting_schema_with_date_published(self):
+        """Test blog posting schema with publication date."""
+        schema = generate_blog_posting_schema(
             name="Test",
             description="Test",
             image="",
             url="",
-            release_date="2014-11-21",
+            date_published="2014-11-21",
         )
 
-        assert schema["releaseDate"] == "2014-11-21"
+        assert schema["datePublished"] == "2014-11-21"
+        assert schema["dateModified"] == "2014-11-21"
 
-    def test_product_schema_custom_brand(self):
-        """Test product schema with custom brand."""
-        schema = generate_product_schema(
+    def test_blog_posting_schema_custom_author(self):
+        """Test blog posting schema with custom author and publisher."""
+        schema = generate_blog_posting_schema(
             name="Test",
             description="Test",
             image="",
             url="",
-            brand="Custom Brand",
+            author="Custom Author",
+            publisher="Custom Publisher",
         )
 
-        assert schema["brand"]["name"] == "Custom Brand"
+        assert schema["author"]["name"] == "Custom Author"
+        assert schema["publisher"]["name"] == "Custom Publisher"
+
+    def test_blog_posting_schema_with_datetime(self):
+        """Test that datetime objects are converted to ISO format."""
+        date = datetime(2014, 11, 21, 10, 30, 0)
+        schema = generate_blog_posting_schema(
+            name="Test",
+            description="Test",
+            image="",
+            url="",
+            date_published=date,
+        )
+
+        assert schema["datePublished"] == "2014-11-21T10:30:00"
+        assert schema["dateModified"] == "2014-11-21T10:30:00"
 
 
 class TestGenerateBreadcrumbSchema:
@@ -383,7 +406,9 @@ class TestGenerateWebsiteSchema:
         assert schema["url"] == "https://amiibotracker.app"
         assert schema["potentialAction"]["@type"] == "SearchAction"
         assert "urlTemplate" in schema["potentialAction"]["target"]
-        assert "{search_term_string}" in schema["potentialAction"]["target"]["urlTemplate"]
+        assert (
+            "{search_term_string}" in schema["potentialAction"]["target"]["urlTemplate"]
+        )
 
     def test_custom_website_schema(self):
         """Test generating website schema with custom values."""
@@ -395,7 +420,10 @@ class TestGenerateWebsiteSchema:
 
         assert schema["name"] == "Custom Site"
         assert schema["url"] == "https://custom.com"
-        assert "https://custom.com/search?q=" in schema["potentialAction"]["target"]["urlTemplate"]
+        assert (
+            "https://custom.com/search?q="
+            in schema["potentialAction"]["target"]["urlTemplate"]
+        )
 
 
 class TestIntegration:
@@ -404,7 +432,9 @@ class TestIntegration:
     def test_full_seo_context_build(self):
         """Test building a complete SEO context with all features."""
         request = Mock()
-        request.build_absolute_uri = Mock(side_effect=lambda path="": f"https://example.com{path}")
+        request.build_absolute_uri = Mock(
+            side_effect=lambda path="": f"https://example.com{path}"
+        )
 
         seo = SEOContext(request)
         seo.set_title("Test Article", suffix="Test Site")
@@ -422,17 +452,22 @@ class TestIntegration:
         seo.add_schema("Article", article_schema)
 
         # Add breadcrumb schema
-        breadcrumb_schema = generate_breadcrumb_schema([
-            ("Home", "https://example.com/"),
-            ("Article", "https://example.com/article/"),
-        ])
+        breadcrumb_schema = generate_breadcrumb_schema(
+            [
+                ("Home", "https://example.com/"),
+                ("Article", "https://example.com/article/"),
+            ]
+        )
         seo.add_schema("BreadcrumbList", breadcrumb_schema)
 
         result = seo.build()
 
         # Verify all context was built correctly
         assert result["title"] == "Test Article - Test Site"
-        assert result["meta_description"] == "This is a test article about Amiibo collecting."
+        assert (
+            result["meta_description"]
+            == "This is a test article about Amiibo collecting."
+        )
         assert result["og_type"] == "article"
         assert result["og_image"] == "https://example.com/static/image.jpg"
         assert len(result["schemas"]) == 2

@@ -29,7 +29,7 @@ from tracker.seo_helpers import (
     SEOContext,
     generate_meta_description,
     generate_article_schema,
-    generate_product_schema,
+    generate_blog_posting_schema,
     generate_breadcrumb_schema,
     generate_organization_schema,
     generate_website_schema,
@@ -3173,6 +3173,7 @@ class AmiibodexView(View, LoggingMixin, AmiiboLocalFetchMixin):
 
                 # Determine if amiibo is upcoming
                 from datetime import datetime
+
                 today = datetime.now().date()
                 is_upcoming = False
 
@@ -3191,13 +3192,16 @@ class AmiibodexView(View, LoggingMixin, AmiiboLocalFetchMixin):
             filtered_amiibos = amiibos
             if search_query:
                 filtered_amiibos = [
-                    a for a in filtered_amiibos
-                    if (search_query in a.get("name", "").lower() or
-                        search_query in a.get("type", "").lower() or
-                        search_query in a.get("gameSeries", "").lower() or
-                        search_query in a.get("amiiboSeries", "").lower() or
-                        search_query in a.get("display_release", "").lower() or
-                        search_query in a.get("character", "").lower())
+                    a
+                    for a in filtered_amiibos
+                    if (
+                        search_query in a.get("name", "").lower()
+                        or search_query in a.get("type", "").lower()
+                        or search_query in a.get("gameSeries", "").lower()
+                        or search_query in a.get("amiiboSeries", "").lower()
+                        or search_query in a.get("display_release", "").lower()
+                        or search_query in a.get("character", "").lower()
+                    )
                 ]
 
             # Sort by earliest release date (newest first), then by name
@@ -3340,7 +3344,7 @@ class AmiiboDetailView(View, LoggingMixin, AmiiboLocalFetchMixin):
             if amiibo.get("image"):
                 seo.set_og_image(amiibo["image"])
 
-            # Add Product schema
+            # Add BlogPosting schema (wiki-style informational content)
             product_url = request.build_absolute_uri()
             earliest_release = None
             for region in ["na", "jp", "eu", "au"]:
@@ -3350,14 +3354,15 @@ class AmiiboDetailView(View, LoggingMixin, AmiiboLocalFetchMixin):
                     break
 
             seo.add_schema(
-                "Product",
-                generate_product_schema(
+                "BlogPosting",
+                generate_blog_posting_schema(
                     name=amiibo_name,
                     description=description or meta_description,
                     image=amiibo.get("image", ""),
                     url=product_url,
-                    release_date=earliest_release,
-                    brand="Nintendo",
+                    date_published=earliest_release,
+                    author="Amiibo Tracker",
+                    publisher="Amiibo Tracker",
                 ),
             )
 

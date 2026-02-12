@@ -7,6 +7,10 @@
 
 {% block head_extra %}
 <style>
+        * {
+            box-sizing: border-box;
+        }
+
         body {
             margin: 0;
             padding: 120px 2rem 2rem 2rem;
@@ -25,6 +29,18 @@
             font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             color: #f5f7fb;
             line-height: 1.6;
+        }
+
+        .content-wrapper {
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Add padding on larger screens to prevent title overlap with back button */
+        @media (min-width: 721px) {
+            .content-wrapper {
+                padding-right: 200px;
+            }
         }
 
         h1 {
@@ -89,12 +105,77 @@
             border-color: rgba(130, 224, 255, 0.4);
             transform: translateX(-2px);
         }
+
+        /* Make back button full-width and static on mobile */
+        @media (max-width: 720px) {
+            body {
+                padding: 1.5rem 1rem;
+            }
+
+            main {
+                padding: 1.75rem 1.5rem;
+                margin: 1rem auto;
+            }
+
+            .content-wrapper {
+                padding-right: 0;
+            }
+
+            .back-link {
+                position: static;
+                margin-bottom: 1.5rem;
+                width: 100%;
+                justify-content: center;
+                padding: 0.85rem 1.2rem;
+                font-size: 1rem;
+            }
+
+            h1 {
+                font-size: 1.75rem;
+            }
+
+            h2 {
+                font-size: 1.3rem;
+            }
+
+            p, li {
+                font-size: 0.95rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 1rem 0.5rem;
+            }
+
+            main {
+                padding: 1.5rem 1.25rem;
+            }
+
+            .back-link {
+                padding: 0.8rem 1rem;
+                font-size: 0.95rem;
+            }
+
+            h1 {
+                font-size: 1.5rem;
+            }
+
+            h2 {
+                font-size: 1.15rem;
+            }
+
+            p, li {
+                font-size: 0.9rem;
+            }
+        }
     </style>
 {% endblock %}
 
 {% block content %}
 <main>
-        <a href="{% url 'index' %}" class="back-link">← Back</a>
+    <a href="{% url 'index' %}" class="back-link">← Back</a>
+    <div class="content-wrapper">
         <h1>Privacy Policy</h1>
         <p>
             Amiibo Tracker relies on Google Sign-In only to authenticate you and to connect to your personal Google Sheet named
@@ -167,5 +248,6 @@
         <p class="contact">
             For privacy questions, email <a href="mailto:codingsina@gmail.com">codingsina@gmail.com</a>. Deleting your data remains under your control via your Google account.
         </p>
-    </main>
+    </div>
+</main>
 {% endblock %}
