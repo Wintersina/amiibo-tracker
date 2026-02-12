@@ -753,7 +753,8 @@ class TestAmiiboLifeScraper:
         """Test updating amiibo with new release dates from multiple regions."""
         scraper = AmiiboLifeScraper()
 
-        amiibo = {"name": "Test Amiibo", "release": {}}
+        # Must have is_upcoming=True for dates to be updated
+        amiibo = {"name": "Test Amiibo", "release": {}, "is_upcoming": True}
 
         scraped_data = {
             "name": "Test Amiibo",
@@ -1178,9 +1179,11 @@ class TestAmiiboLifeScraperIntegration:
         with db_path.open() as f:
             saved_data = json.load(f)
 
-        # Verify Mario got NA release date
+        # Verify Mario was matched but dates NOT updated (not is_upcoming)
         mario = next(a for a in saved_data["amiibo"] if a["name"] == "Mario")
-        assert mario["release"]["na"] == "2014-11-21"
+        # Mario should NOT have NA date because he doesn't have is_upcoming=True
+        assert "na" not in mario["release"]
+        assert mario["release"]["eu"] == "2014-11-28"  # Original EU date preserved
 
         # Verify Inkling was added
         inkling = next(a for a in saved_data["amiibo"] if a["name"] == "Inkling")
