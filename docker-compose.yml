@@ -1,10 +1,9 @@
-version: '3.8'
-
 services:
   test:
     build:
       context: .
       dockerfile: Dockerfile
+    entrypoint: ""  # Override the entrypoint to not run gunicorn
     command: pytest tracker/tests/ -v --tb=short
     environment:
       - DJANGO_SETTINGS_MODULE=amiibo_tracker.settings
@@ -19,6 +18,22 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    environment:
+      - DJANGO_SETTINGS_MODULE=amiibo_tracker.settings
+      - PORT=8080
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./tracker:/app/tracker
+      - ./amiibo_tracker:/app/amiibo_tracker
+    working_dir: /app
+
+  # Development server (Django runserver instead of gunicorn)
+  dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    entrypoint: ""
     command: python manage.py runserver 0.0.0.0:8080
     environment:
       - DJANGO_SETTINGS_MODULE=amiibo_tracker.settings

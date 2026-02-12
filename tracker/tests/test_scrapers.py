@@ -925,7 +925,10 @@ class TestAmiiboLifeScraper:
         assert result[0]["type"] == "Figure"
         assert result[0]["release_dates"]["na"] == "2014-11-21"
         assert result[0]["release_dates"]["eu"] == "2014-11-28"
-        assert result[0]["image"] == "https://amiibo.life/assets/figures/amiibo/super-smash-bros/mario.png"
+        assert (
+            result[0]["image"]
+            == "https://amiibo.life/assets/figures/amiibo/super-smash-bros/mario.png"
+        )
 
         assert result[1]["name"] == "Inkling Girl"
         assert result[1]["series"] == "Splatoon"
@@ -1183,3 +1186,55 @@ class TestAmiiboLifeScraperIntegration:
         inkling = next(a for a in saved_data["amiibo"] if a["name"] == "Inkling")
         assert inkling["is_upcoming"] is True
         assert inkling["head"].startswith("ff")
+
+    def test_update_amiibo_only_updates_upcoming(self):
+        """Test that release dates are only updated for upcoming amiibos."""
+        scraper = AmiiboLifeScraper()
+
+        # Non-upcoming amiibo (official from AmiiboAPI)
+        existing_amiibo = {
+            "name": "Mario",
+            "release": {"na": "2014-11-21"},
+            "is_upcoming": False,
+        }
+
+        scraped_data = {
+            "name": "Mario",
+            "series": "Super Mario",
+            "release_dates": {"eu": "2014-11-28"},  # New EU date
+            "image": "",
+        }
+
+        updated = scraper.update_amiibo(existing_amiibo, scraped_data)
+
+        # Should NOT update because is_upcoming=False
+        assert updated is False
+        assert "eu" not in existing_amiibo["release"]
+
+    def test_update_amiibo_updates_upcoming_dates(self):
+        """Test that release dates ARE updated for upcoming amiibos."""
+        scraper = AmiiboLifeScraper()
+
+        # Upcoming amiibo (newly scraped)
+        existing_amiibo = {
+            "name": "New Amiibo",
+            "release": {},
+            "is_upcoming": True,
+        }
+
+        scraped_data = {
+            "name": "New Amiibo",
+            "series": "New Series",
+            "release_dates": {
+                "na": "2026-06-15",
+                "eu": "2026-06-20",
+            },
+            "image": "",
+        }
+
+        updated = scraper.update_amiibo(existing_amiibo, scraped_data)
+
+        # Should update because is_upcoming=True
+        assert updated is True
+        assert existing_amiibo["release"]["na"] == "2026-06-15"
+        assert existing_amiibo["release"]["eu"] == "2026-06-20"

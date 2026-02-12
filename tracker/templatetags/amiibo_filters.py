@@ -1,5 +1,5 @@
-from urllib.parse import quote
 from django import template
+from django.utils.safestring import mark_safe
 
 register = template.Library()
 
@@ -7,10 +7,10 @@ register = template.Library()
 @register.filter(name="amiibo_image")
 def amiibo_image(amiibo):
     """
-    Returns a URL that will serve the image with background removed for upcoming amiibos only.
+    Returns the image URL for an amiibo.
 
-    Official AmiiboAPI images already have transparent backgrounds, so we only process
-    newly scraped amiibos (is_upcoming=True) from Nintendo's website.
+    Both AmiiboAPI and amiibo.life images already have transparent backgrounds,
+    so no background removal processing is needed.
 
     Usage in templates:
         <img src="{{ amiibo|amiibo_image }}" alt="{{ amiibo.name }}">
@@ -19,14 +19,10 @@ def amiibo_image(amiibo):
     if not original_image:
         return ""
 
-    # Only process background removal for upcoming amiibos (newly scraped from Nintendo)
-    # Official AmiiboAPI images already have transparent backgrounds
-    if amiibo.get("is_upcoming"):
-        # Return URL to our background removal API endpoint
-        encoded_url = quote(original_image, safe="")
-        return f"/api/remove-bg/?url={encoded_url}"
-
-    # Return original image for official amiibos (already has transparent background)
+    # UPDATED: No background removal needed anymore
+    # - AmiiboAPI images already have transparent backgrounds
+    # - amiibo.life images (new source) also have transparent backgrounds
+    # Return the URL directly (no encoding needed for img src attributes)
     return original_image
 
 

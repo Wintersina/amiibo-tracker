@@ -25,3 +25,6 @@ terraform/*.tfvars
 
 # Optional: VSCode or editor-specific
 .vscode/
+
+# Temporary curl files
+cookies.txt

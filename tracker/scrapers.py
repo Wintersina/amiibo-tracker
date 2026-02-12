@@ -147,10 +147,14 @@ class AmiiboLifeScraper(LoggingMixin):
                         series_full = series_tag.get_text(strip=True)
                         # Split by "amiibo figure" or "amiibo cards"
                         if "amiibo figure" in series_full:
-                            series_text = series_full.replace("amiibo figure", "").strip()
+                            series_text = series_full.replace(
+                                "amiibo figure", ""
+                            ).strip()
                             amiibo_type = "Figure"
                         elif "amiibo cards" in series_full:
-                            series_text = series_full.replace("amiibo cards", "").strip()
+                            series_text = series_full.replace(
+                                "amiibo cards", ""
+                            ).strip()
                             amiibo_type = "Card"
                         else:
                             series_text = series_full
@@ -171,9 +175,13 @@ class AmiiboLifeScraper(LoggingMixin):
                                 # Find region from img alt text
                                 parent_li = time_tag.find_parent("li")
                                 if parent_li:
-                                    region_img = parent_li.find("img", class_="region_flag")
+                                    region_img = parent_li.find(
+                                        "img", class_="region_flag"
+                                    )
                                     if region_img:
-                                        region_name = region_img.get("title", "").lower()
+                                        region_name = region_img.get(
+                                            "title", ""
+                                        ).lower()
 
                                         # Map to our region codes
                                         region_map = {
@@ -202,8 +210,6 @@ class AmiiboLifeScraper(LoggingMixin):
                             "type": amiibo_type,
                         }
                     )
-
-                    self.log_info(f"Scraped: {name} ({series_text})")
 
                 except Exception as e:
                     self.log_warning("Error parsing amiibo card", error=str(e))
@@ -413,19 +419,26 @@ class AmiiboLifeScraper(LoggingMixin):
             return False
 
     def update_amiibo(self, existing_amiibo, scraped_data):
-        """Update existing amiibo with scraped data (release dates and image)"""
+        """
+        Update existing amiibo with scraped data (release dates and image).
+
+        Only updates release dates for upcoming amiibos to avoid overwriting
+        historical data with potentially less accurate information.
+        """
         updated = False
 
-        # Update release dates
-        scraped_dates = scraped_data.get("release_dates", {})
-        if scraped_dates:
-            if not existing_amiibo.get("release"):
-                existing_amiibo["release"] = {}
+        # Only update release dates for upcoming amiibos
+        # Don't overwrite existing historical release date data
+        if existing_amiibo.get("is_upcoming"):
+            scraped_dates = scraped_data.get("release_dates", {})
+            if scraped_dates:
+                if not existing_amiibo.get("release"):
+                    existing_amiibo["release"] = {}
 
-            for region, date in scraped_dates.items():
-                if not existing_amiibo["release"].get(region):
-                    existing_amiibo["release"][region] = date
-                    updated = True
+                for region, date in scraped_dates.items():
+                    if not existing_amiibo["release"].get(region):
+                        existing_amiibo["release"][region] = date
+                        updated = True
 
         # Update image if missing (amiibo.life images don't need background removal)
         scraped_image = scraped_data.get("image", "")
