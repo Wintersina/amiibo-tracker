@@ -68,15 +68,27 @@ scrape: scrape-amiibo
 
 scrape-amiibo:
 	@echo "🎮 Running amiibo.life scraper..."
-	python manage.py auto_scrape_nintendo --scraper=amiibolife --force
+	@if [ -d "env" ]; then \
+		./env/bin/python manage.py auto_scrape_nintendo --scraper=amiibolife --force; \
+	else \
+		python manage.py auto_scrape_nintendo --scraper=amiibolife --force; \
+	fi
 
 scrape-nintendo:
 	@echo "⚠️  Running Nintendo.com scraper (deprecated)..."
-	python manage.py auto_scrape_nintendo --scraper=nintendodotcom --force
+	@if [ -d "env" ]; then \
+		./env/bin/python manage.py auto_scrape_nintendo --scraper=nintendodotcom --force; \
+	else \
+		python manage.py auto_scrape_nintendo --scraper=nintendodotcom --force; \
+	fi
 
 scrape-force:
 	@echo "🎮 Force running amiibo.life scraper..."
-	python manage.py auto_scrape_nintendo --scraper=amiibolife --force
+	@if [ -d "env" ]; then \
+		./env/bin/python manage.py auto_scrape_nintendo --scraper=amiibolife --force; \
+	else \
+		python manage.py auto_scrape_nintendo --scraper=amiibolife --force; \
+	fi
 
 scrape-docker:
 	@echo "🎮 Running scraper in Docker..."
@@ -111,7 +123,11 @@ run-dev:
 
 run-local:
 	@echo "🚀 Starting Django dev server..."
-	python manage.py runserver 8080
+	@if [ -d "env" ]; then \
+		./env/bin/python manage.py runserver 8080; \
+	else \
+		python manage.py runserver 8080; \
+	fi
 
 stop:
 	@echo "🛑 Stopping containers..."
@@ -132,15 +148,27 @@ shell-python:
 # Database
 migrate:
 	@echo "🗄️  Running migrations..."
-	python manage.py migrate
+	@if [ -d "env" ]; then \
+		./env/bin/python manage.py migrate; \
+	else \
+		python manage.py migrate; \
+	fi
 
 makemigrations:
 	@echo "🗄️  Creating migrations..."
-	python manage.py makemigrations
+	@if [ -d "env" ]; then \
+		./env/bin/python manage.py makemigrations; \
+	else \
+		python manage.py makemigrations; \
+	fi
 
 collectstatic:
 	@echo "📦 Collecting static files..."
-	python manage.py collectstatic --noinput
+	@if [ -d "env" ]; then \
+		./env/bin/python manage.py collectstatic --noinput; \
+	else \
+		python manage.py collectstatic --noinput; \
+	fi
 
 # Utilities
 clean:
@@ -156,9 +184,13 @@ clean:
 
 install:
 	@echo "📦 Installing dependencies..."
-	pip install -r requirements.txt
+	@if [ -d "env" ]; then \
+		./env/bin/pip install -r requirements.txt; \
+	else \
+		pip install -r requirements.txt; \
+	fi
 
-setup: install migrate collectstatic
+setup: dev-setup
 	@echo "✅ Setup complete! Run 'make run-local' to start the dev server"
 
 # Git helpers

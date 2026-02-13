@@ -10,23 +10,35 @@ Amiibo Tracker is a Django web app that keeps your personal Amiibo collection in
 - Dark mode, search, and collapsible sections for quick browsing
 
 ## Quick start
-1. Install Python 3.11+ and create a virtual environment:
+1. **Prerequisites:** Install Python 3.11+ and Make.
+
+2. **Setup development environment:**
    ```bash
-   python -m venv .venv
-   source .venv/bin/activate  # On Windows: .venv\\Scripts\\activate
-   pip install -r requirements.txt
+   make dev-setup
    ```
-2. Create a Google Service Account with access to Google Sheets and Google Drive. Download the `credentials.json` for that account and place it in the project root.
-3. Make a Google Sheet named `AmiiboCollection` with headers `Amiibo ID | Amiibo Name | Collected Status`, then share it with the service account email.
-4. Start the app locally:
+   This will create a virtual environment (`env/`), install dependencies, and run database migrations.
+
+3. **Create Google Service Account:**
+   - Create a Google Service Account with access to Google Sheets and Google Drive
+   - Download the `credentials.json` for that account and place it in the project root
+   - Create a Google Sheet named `AmiiboCollection` with headers `Amiibo ID | Amiibo Name | Collected Status`
+   - Share the sheet with the service account email
+
+4. **Start the development server:**
    ```bash
-   ./scripts/mac_local_run.sh
+   make run-local
    ```
-   On Windows use:
-   ```bash
-   ./scripts/windows_local_run.sh
-   ```
-5. Open [http://localhost:8000](http://localhost:8000) to browse and update your collection.
+
+5. Open [http://localhost:8080](http://localhost:8080) to browse and update your collection.
+
+## Development Commands
+
+Run `make help` to see all available commands, including:
+- `make test` - Run all tests
+- `make format` - Auto-format code
+- `make lint` - Run linting checks
+- `make scrape` - Run the amiibo scraper
+- `make clean` - Clean up cache files
 
 ## Deployment
 For production, the repository includes Terraform and GitHub Actions templates that deploy the app to Google Cloud Run. Provide your own Google Cloud project, OAuth client, and allowed hostnames (including custom domains like `goozamiibo.com`) when running the workflow or Terraform modules.

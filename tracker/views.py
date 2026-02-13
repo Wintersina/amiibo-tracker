@@ -3186,27 +3186,9 @@ class AmiibodexView(View, LoggingMixin, AmiiboLocalFetchMixin):
 
                 amiibo["is_upcoming"] = is_upcoming
 
-            # Apply search filter - single query searches across all fields
-            search_query = request.GET.get("q", "").strip().lower()
-
-            filtered_amiibos = amiibos
-            if search_query:
-                filtered_amiibos = [
-                    a
-                    for a in filtered_amiibos
-                    if (
-                        search_query in a.get("name", "").lower()
-                        or search_query in a.get("type", "").lower()
-                        or search_query in a.get("gameSeries", "").lower()
-                        or search_query in a.get("amiiboSeries", "").lower()
-                        or search_query in a.get("display_release", "").lower()
-                        or search_query in a.get("character", "").lower()
-                    )
-                ]
-
             # Sort by earliest release date (newest first), then by name
             sorted_amiibos = sorted(
-                filtered_amiibos,
+                amiibos,
                 key=lambda x: (
                     x["earliest_release"] is None,  # Put None dates at end
                     x["earliest_release"] if x["earliest_release"] else "",
@@ -3215,20 +3197,8 @@ class AmiibodexView(View, LoggingMixin, AmiiboLocalFetchMixin):
                 reverse=True,  # Newest first
             )
 
-            # Implement pagination (50 items per page)
-            page = request.GET.get("page", 1)
-            paginator = Paginator(sorted_amiibos, 50)
-
-            try:
-                amiibos_page = paginator.page(page)
-            except PageNotAnInteger:
-                amiibos_page = paginator.page(1)
-            except EmptyPage:
-                amiibos_page = paginator.page(paginator.num_pages)
-
-            context["amiibos"] = amiibos_page
+            context["amiibos"] = sorted_amiibos
             context["total_count"] = len(sorted_amiibos)
-            context["search_query"] = request.GET.get("q", "")
 
             self.log_action(
                 "amiibodex-content-loaded",
