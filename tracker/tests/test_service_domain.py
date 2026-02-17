@@ -65,8 +65,8 @@ class TestAmiiboServicePlaceholderFiltering:
         assert len(added_rows) == 1
         assert added_rows[0][1] == "Mario"
 
-    def test_seed_new_amiibos_skips_placeholder_ids(self):
-        """Test that amiibos with 00000000 IDs are skipped."""
+    def test_seed_new_amiibos_includes_all_00000000_ids(self):
+        """Test that amiibos with 00000000 IDs are ALWAYS included, regardless of release dates."""
         mock_client = Mock()
         mock_sheet = MagicMock()
         mock_sheet.get_all_values.return_value = [
@@ -95,7 +95,7 @@ class TestAmiiboServicePlaceholderFiltering:
                 "release": {"na": "2014-11-21"},
             },
             {
-                "name": "Placeholder with 00000000 head",
+                "name": "00000000 head without release",
                 "head": "00000000",
                 "tail": "02bb0e02",
                 "gameSeries": "Unknown",
@@ -103,7 +103,7 @@ class TestAmiiboServicePlaceholderFiltering:
                 "release": {},
             },
             {
-                "name": "Placeholder with 00000000 tail",
+                "name": "00000000 tail without release",
                 "head": "09d00301",
                 "tail": "00000000",
                 "gameSeries": "Unknown",
@@ -114,11 +114,13 @@ class TestAmiiboServicePlaceholderFiltering:
 
         service.seed_new_amiibos(amiibos)
 
-        # Only the real amiibo should be added
+        # All three amiibos should be added (00000000 IDs are NEVER filtered)
         mock_sheet.append_rows.assert_called_once()
         added_rows = mock_sheet.append_rows.call_args[0][0]
-        assert len(added_rows) == 1
+        assert len(added_rows) == 3
         assert added_rows[0][1] == "Real Amiibo"
+        assert added_rows[1][1] == "00000000 head without release"
+        assert added_rows[2][1] == "00000000 tail without release"
 
     def test_seed_new_amiibos_allows_backfilled(self):
         """Test that backfilled amiibos (no flag, real IDs) are added."""
@@ -162,6 +164,102 @@ class TestAmiiboServicePlaceholderFiltering:
         added_rows = mock_sheet.append_rows.call_args[0][0]
         assert len(added_rows) == 1
         assert added_rows[0][1] == "Backfilled Amiibo"
+
+    def test_seed_new_amiibos_includes_released_with_placeholder_ids(self):
+        """Test that released amiibos with 00000000 IDs are included (not filtered)."""
+        mock_client = Mock()
+        mock_sheet = MagicMock()
+        mock_sheet.get_all_values.return_value = [
+            [
+                "Amiibo ID",
+                "Amiibo Name",
+                "Game Series",
+                "Release Date",
+                "Type",
+                "Collected Status",
+            ]
+        ]
+        mock_client.get_or_create_worksheet_by_name.return_value = mock_sheet
+        mock_client.execute_worksheet_operation.side_effect = mock_execute_worksheet_operation
+
+        service = AmiiboService(mock_client)
+        service.sheet = mock_sheet
+
+        # 8-Bit Mario - has 00000000 head but is released
+        amiibos = [
+            {
+                "name": "8-Bit Mario Classic Color",
+                "head": "00000000",
+                "tail": "02380602",
+                "gameSeries": "Super Mario",
+                "type": "Figure",
+                "release": {"na": "2015-09-11", "jp": "2015-09-10"},
+                "is_upcoming": False,
+            }
+        ]
+
+        service.seed_new_amiibos(amiibos)
+
+        # Should be added despite 00000000 head because it has release dates
+        mock_sheet.append_rows.assert_called_once()
+        added_rows = mock_sheet.append_rows.call_args[0][0]
+        assert len(added_rows) == 1
+        assert added_rows[0][1] == "8-Bit Mario Classic Color"
+
+    def test_seed_new_amiibos_skips_ff_placeholder_ids(self):
+        """Test that amiibos with ff-prefixed IDs are skipped if they have no release dates."""
+        mock_client = Mock()
+        mock_sheet = MagicMock()
+        mock_sheet.get_all_values.return_value = [
+            [
+                "Amiibo ID",
+                "Amiibo Name",
+                "Game Series",
+                "Release Date",
+                "Type",
+                "Collected Status",
+            ]
+        ]
+        mock_client.get_or_create_worksheet_by_name.return_value = mock_sheet
+        mock_client.execute_worksheet_operation.side_effect = mock_execute_worksheet_operation
+
+        service = AmiiboService(mock_client)
+        service.sheet = mock_sheet
+
+        amiibos = [
+            {
+                "name": "Real Amiibo",
+                "head": "09d00301",
+                "tail": "02bb0e02",
+                "gameSeries": "Super Mario",
+                "type": "Figure",
+                "release": {"na": "2014-11-21"},
+            },
+            {
+                "name": "FF Placeholder without release",
+                "head": "ff000000",
+                "tail": "02bb0e02",
+                "gameSeries": "Unknown",
+                "type": "Figure",
+                "release": {},
+            },
+            {
+                "name": "FF Placeholder tail without release",
+                "head": "09d00301",
+                "tail": "ff000000",
+                "gameSeries": "Unknown",
+                "type": "Figure",
+                "release": {},
+            },
+        ]
+
+        service.seed_new_amiibos(amiibos)
+
+        # Only the real amiibo should be added (ff placeholders without release dates are filtered)
+        mock_sheet.append_rows.assert_called_once()
+        added_rows = mock_sheet.append_rows.call_args[0][0]
+        assert len(added_rows) == 1
+        assert added_rows[0][1] == "Real Amiibo"
 
     def test_seed_new_amiibos_logs_skipped_placeholders(self):
         """Test that skipped placeholders are logged."""

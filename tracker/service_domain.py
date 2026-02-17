@@ -59,22 +59,27 @@ class AmiiboService(LoggingMixin, AmiiboRemoteFetchMixin, AmiiboLocalFetchMixin)
         skipped_placeholders = []
 
         for amiibo in amiibos:
-            # Skip placeholders that haven't been backfilled yet
+            head = amiibo.get("head", "")
+            tail = amiibo.get("tail", "")
+
+            # Skip amiibos that are explicitly marked as upcoming
             if amiibo.get("is_upcoming"):
                 skipped_placeholders.append(amiibo.get("name", "Unknown"))
                 continue
 
-            # Skip amiibos with placeholder IDs (00000000 or ff-prefixed)
-            head = amiibo.get("head", "")
-            tail = amiibo.get("tail", "")
-            if (
-                head == "00000000"
-                or tail == "00000000"
-                or head.startswith("ff")
-                or tail.startswith("ff")
-            ):
-                skipped_placeholders.append(amiibo.get("name", "Unknown"))
-                continue
+            # Skip amiibos with ff-prefixed placeholder IDs ONLY if they have no release dates
+            # NEVER filter 00000000 IDs - some released amiibos legitimately have them (like 8-Bit Mario)
+            has_ff_placeholder = head.startswith("ff") or tail.startswith("ff")
+
+            if has_ff_placeholder:
+                # Check if it has any release dates
+                release_dates = amiibo.get("release", {})
+                has_release = any(release_dates.get(region) for region in ["na", "jp", "eu", "au"])
+
+                # Only skip if it's an ff placeholder AND has no release dates
+                if not has_release:
+                    skipped_placeholders.append(amiibo.get("name", "Unknown"))
+                    continue
 
             amiibo_id = amiibo["head"] + amiibo["gameSeries"] + amiibo["tail"]
             release_date = self._format_release_date(amiibo.get("release"))

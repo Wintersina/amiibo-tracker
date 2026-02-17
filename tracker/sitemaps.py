@@ -81,21 +81,30 @@ class AmiiboSitemap(Sitemap):
                 data = json.load(database_file)
                 amiibos = data.get("amiibo", [])
 
-                # Filter out placeholders (upcoming amiibos with ff-prefixed or 00000000 IDs)
-                # We don't want these in the sitemap since they're not real pages yet
+                # Filter out unreleased/upcoming amiibos
+                # Note: NEVER filter 00000000 IDs - some released amiibos have them (like 8-Bit Mario)
                 filtered_amiibos = []
                 for amiibo in amiibos:
+                    # Skip if explicitly marked as upcoming
+                    if amiibo.get("is_upcoming", False):
+                        continue
+
                     head = amiibo.get("head", "")
                     tail = amiibo.get("tail", "")
-                    is_placeholder = (
-                        head == "00000000"
-                        or tail == "00000000"
-                        or head.startswith("ff")
-                        or tail.startswith("ff")
-                        or amiibo.get("is_upcoming", False)
-                    )
-                    if not is_placeholder:
-                        filtered_amiibos.append(amiibo)
+                    has_ff_placeholder = head.startswith("ff") or tail.startswith("ff")
+
+                    if has_ff_placeholder:
+                        # Check if it has any release dates
+                        release_dates = amiibo.get("release", {})
+                        has_release = any(
+                            release_dates.get(region) for region in ["na", "jp", "eu", "au"]
+                        )
+                        # Only skip if ff placeholder AND no release dates
+                        if not has_release:
+                            continue
+
+                    # Include this amiibo
+                    filtered_amiibos.append(amiibo)
 
                 # Cache the results
                 cache.set(cache_key, filtered_amiibos, cache_timeout)
