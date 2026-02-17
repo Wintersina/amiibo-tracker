@@ -350,15 +350,9 @@ class GoogleSheetClientManager(HelperMixin, LoggingMixin):
                     sheet.append_row, ["Config name", "Config value"]
                 )
                 self._retry_with_backoff(sheet.append_row, ["DarkMode", "0"])
-                self._retry_with_backoff(
-                    sheet.append_row, ["IgnoreType:Band", "1"]
-                )
-                self._retry_with_backoff(
-                    sheet.append_row, ["IgnoreType:Card", "1"]
-                )
-                self._retry_with_backoff(
-                    sheet.append_row, ["IgnoreType:Yarn", "1"]
-                )
+                self._retry_with_backoff(sheet.append_row, ["IgnoreType:Band", "1"])
+                self._retry_with_backoff(sheet.append_row, ["IgnoreType:Card", "1"])
+                self._retry_with_backoff(sheet.append_row, ["IgnoreType:Yarn", "1"])
 
         self._worksheet_cache[cache_key] = sheet
         return sheet
