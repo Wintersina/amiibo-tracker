@@ -323,15 +323,18 @@ class GoogleSheetClientManager(HelperMixin, LoggingMixin):
             return self._worksheet_cache[cache_key]
 
         try:
-            sheet = spreadsheet.worksheet(worksheet_name)
+            sheet = self._retry_with_backoff(spreadsheet.worksheet, worksheet_name)
             created = False
         except gspread.exceptions.WorksheetNotFound:
-            sheet = spreadsheet.add_worksheet(title=worksheet_name, rows=500, cols=6)
+            sheet = self._retry_with_backoff(
+                spreadsheet.add_worksheet, title=worksheet_name, rows=500, cols=6
+            )
             created = True
 
         if created:
             if worksheet_name == self.work_sheet_amiibo_manager:
-                sheet.append_row(
+                self._retry_with_backoff(
+                    sheet.append_row,
                     [
                         "Amiibo ID",
                         "Amiibo Name",
@@ -339,15 +342,23 @@ class GoogleSheetClientManager(HelperMixin, LoggingMixin):
                         "Release Date",
                         "Type",
                         "Collected Status",
-                    ]
+                    ],
                 )
 
             if worksheet_name == self.work_sheet_config_manager:
-                sheet.append_row(["Config name", "Config value"])
-                sheet.append_row(["DarkMode", "0"])
-                sheet.append_row(["IgnoreType:Band", "1"])
-                sheet.append_row(["IgnoreType:Card", "1"])
-                sheet.append_row(["IgnoreType:Yarn", "1"])
+                self._retry_with_backoff(
+                    sheet.append_row, ["Config name", "Config value"]
+                )
+                self._retry_with_backoff(sheet.append_row, ["DarkMode", "0"])
+                self._retry_with_backoff(
+                    sheet.append_row, ["IgnoreType:Band", "1"]
+                )
+                self._retry_with_backoff(
+                    sheet.append_row, ["IgnoreType:Card", "1"]
+                )
+                self._retry_with_backoff(
+                    sheet.append_row, ["IgnoreType:Yarn", "1"]
+                )
 
         self._worksheet_cache[cache_key] = sheet
         return sheet
@@ -357,7 +368,7 @@ class GoogleSheetClientManager(HelperMixin, LoggingMixin):
 
     def _remove_default_sheet_if_present(self, spreadsheet):
         try:
-            default_sheet = spreadsheet.worksheet("Sheet1")
+            default_sheet = self._retry_with_backoff(spreadsheet.worksheet, "Sheet1")
         except gspread.exceptions.WorksheetNotFound:
             return
 
@@ -370,7 +381,7 @@ class GoogleSheetClientManager(HelperMixin, LoggingMixin):
             return
 
         if hasattr(spreadsheet, "del_worksheet"):
-            spreadsheet.del_worksheet(default_sheet)
+            self._retry_with_backoff(spreadsheet.del_worksheet, default_sheet)
 
     def _spreadsheet_cache_key(self) -> tuple[str, str, bool, str | None]:
         return (
