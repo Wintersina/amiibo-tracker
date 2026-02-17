@@ -184,6 +184,32 @@ class GoogleSheetClientManager(HelperMixin, LoggingMixin):
         if last_exception:
             raise ServiceUnavailableError() from last_exception
 
+    def execute_worksheet_operation(self, operation_func, *args, **kwargs):
+        """
+        Execute a worksheet operation with retry and error handling.
+
+        This method wraps gspread worksheet operations (e.g., update_cell, find,
+        col_values) with the same error handling and retry logic used for
+        spreadsheet operations.
+
+        Args:
+            operation_func: The worksheet method to call (e.g., sheet.update_cell)
+            *args: Positional arguments for the operation
+            **kwargs: Keyword arguments for the operation
+
+        Returns:
+            The result of the operation
+
+        Raises:
+            GoogleSheetsError: Various custom exceptions based on the error type
+
+        Example:
+            result = manager.execute_worksheet_operation(
+                sheet.update_cell, row, col, value
+            )
+        """
+        return self._retry_with_backoff(operation_func, *args, **kwargs)
+
     def _open_or_create_spreadsheet(self):
         # Try to open by stored ID with retry logic for transient errors
         if self.spreadsheet_id:

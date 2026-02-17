@@ -46,7 +46,9 @@ class AmiiboService(LoggingMixin, AmiiboRemoteFetchMixin, AmiiboLocalFetchMixin)
         return self._fetch_local_amiibos()
 
     def seed_new_amiibos(self, amiibos: list[dict]):
-        existing_values = self.sheet.get_all_values()
+        existing_values = self.google_sheet_client.execute_worksheet_operation(
+            self.sheet.get_all_values
+        )
         existing_map: dict[str, tuple[int, list[str]]] = {}
         for idx, row in enumerate(existing_values[1:], start=2):
             if row:
@@ -117,7 +119,9 @@ class AmiiboService(LoggingMixin, AmiiboRemoteFetchMixin, AmiiboLocalFetchMixin)
             self._batched_update(update_requests)
 
         if new_rows:
-            self.sheet.append_rows(new_rows, value_input_option="USER_ENTERED")
+            self.google_sheet_client.execute_worksheet_operation(
+                self.sheet.append_rows, new_rows, value_input_option="USER_ENTERED"
+            )
 
         # Log skipped placeholders
         if skipped_placeholders:
@@ -127,7 +131,9 @@ class AmiiboService(LoggingMixin, AmiiboRemoteFetchMixin, AmiiboLocalFetchMixin)
             )
 
     def get_collected_status(self):
-        rows = self.sheet.get_all_values()[1:]
+        rows = self.google_sheet_client.execute_worksheet_operation(
+            self.sheet.get_all_values
+        )[1:]
         return {
             row[0]: (
                 row[self.COLLECTED_STATUS_COL - 1]
@@ -138,20 +144,32 @@ class AmiiboService(LoggingMixin, AmiiboRemoteFetchMixin, AmiiboLocalFetchMixin)
         }
 
     def toggle_collected(self, amiibo_id: str, action: str):
-        current_ids = self.sheet.col_values(1)[1:]
+        # Use wrapper to handle API errors gracefully
+        current_ids = self.google_sheet_client.execute_worksheet_operation(
+            self.sheet.col_values, 1
+        )[1:]
         if amiibo_id not in current_ids:
             return False
 
-        cell = self.sheet.find(amiibo_id)
-        self.sheet.update_cell(
-            cell.row, self.COLLECTED_STATUS_COL, "1" if action == "collect" else "0"
+        cell = self.google_sheet_client.execute_worksheet_operation(
+            self.sheet.find, amiibo_id
+        )
+        self.google_sheet_client.execute_worksheet_operation(
+            self.sheet.update_cell,
+            cell.row,
+            self.COLLECTED_STATUS_COL,
+            "1" if action == "collect" else "0",
         )
         return True
 
     def _ensure_sheet_structure(self, sheet):
-        header = sheet.row_values(1)
+        header = self.google_sheet_client.execute_worksheet_operation(
+            sheet.row_values, 1
+        )
         if header != self.HEADER:
-            sheet.update("A1:F1", [self.HEADER])
+            self.google_sheet_client.execute_worksheet_operation(
+                sheet.update, "A1:F1", [self.HEADER]
+            )
 
     def _batched_update(self, update_requests: list[dict], batch_size: int = 50):
         batch_updater = getattr(self.sheet, "batch_update", None)
@@ -159,10 +177,14 @@ class AmiiboService(LoggingMixin, AmiiboRemoteFetchMixin, AmiiboLocalFetchMixin)
         for start in range(0, len(update_requests), batch_size):
             batch = update_requests[start : start + batch_size]
             if batch_updater:
-                batch_updater(batch, value_input_option="USER_ENTERED")
+                self.google_sheet_client.execute_worksheet_operation(
+                    batch_updater, batch, value_input_option="USER_ENTERED"
+                )
             else:
                 for request in batch:
-                    self.sheet.update(request["range"], request["values"])
+                    self.google_sheet_client.execute_worksheet_operation(
+                        self.sheet.update, request["range"], request["values"]
+                    )
 
     @staticmethod
     def _format_release_date(release_info: dict | None):
@@ -239,10 +261,14 @@ class GoogleSheetConfigManager(LoggingMixin):
         config_map = self._get_config_map()
         if key in config_map:
             row_index = config_map[key][0]
-            self.sheet.update_cell(row_index, 2, value)
+            self.google_sheet_client.execute_worksheet_operation(
+                self.sheet.update_cell, row_index, 2, value
+            )
             config_map[key] = (row_index, value)
         else:
-            self.sheet.append_row([key, value], value_input_option="USER_ENTERED")
+            self.google_sheet_client.execute_worksheet_operation(
+                self.sheet.append_row, [key, value], value_input_option="USER_ENTERED"
+            )
             # next row is len(config_map) + 2 (account for header row)
             config_map[key] = (len(config_map) + 2, value)
         self._CONFIG_CACHE[self._config_cache_key] = config_map
@@ -252,7 +278,9 @@ class GoogleSheetConfigManager(LoggingMixin):
             return cached_map
 
         self._ensure_structure(self.sheet)
-        values = self.sheet.get_all_values()
+        values = self.google_sheet_client.execute_worksheet_operation(
+            self.sheet.get_all_values
+        )
         config_map: dict[str, tuple[int, str]] = {}
         for idx, row in enumerate(values[1:], start=2):
             if not row or not row[0]:
@@ -265,32 +293,42 @@ class GoogleSheetConfigManager(LoggingMixin):
         return config_map
 
     def _ensure_structure(self, sheet):
-        values = sheet.get_all_values()
+        values = self.google_sheet_client.execute_worksheet_operation(
+            sheet.get_all_values
+        )
         if not values or values[0][:2] != self.CONFIG_HEADER:
             existing_dark_mode = None
             if values and values[0] and values[0][0].lower() == "darkmode":
                 existing_dark_mode = values[1][0] if len(values) > 1 else None
 
-            sheet.clear()
-            sheet.append_row(self.CONFIG_HEADER)
+            self.google_sheet_client.execute_worksheet_operation(sheet.clear)
+            self.google_sheet_client.execute_worksheet_operation(
+                sheet.append_row, self.CONFIG_HEADER
+            )
             dark_mode_value = existing_dark_mode or "0"
             defaults = [["DarkMode", dark_mode_value]]
             for amiibo_type, default_val in self.DEFAULT_IGNORE_TYPES.items():
                 defaults.append([self._type_config_key(amiibo_type), default_val])
-            sheet.append_rows(defaults, value_input_option="USER_ENTERED")
+            self.google_sheet_client.execute_worksheet_operation(
+                sheet.append_rows, defaults, value_input_option="USER_ENTERED"
+            )
         else:
             # Ensure default rows exist
             config_map = {
                 row[0]: idx for idx, row in enumerate(values[1:], start=2) if row
             }
             if "DarkMode" not in config_map:
-                sheet.append_row(["DarkMode", "0"], value_input_option="USER_ENTERED")
+                self.google_sheet_client.execute_worksheet_operation(
+                    sheet.append_row, ["DarkMode", "0"], value_input_option="USER_ENTERED"
+                )
 
             for amiibo_type, default_val in self.DEFAULT_IGNORE_TYPES.items():
                 key = self._type_config_key(amiibo_type)
                 if key not in config_map:
-                    sheet.append_row(
-                        [key, default_val], value_input_option="USER_ENTERED"
+                    self.google_sheet_client.execute_worksheet_operation(
+                        sheet.append_row,
+                        [key, default_val],
+                        value_input_option="USER_ENTERED",
                     )
         if self._config_cache_key in self._CONFIG_CACHE:
             del self._CONFIG_CACHE[self._config_cache_key]
@@ -304,8 +342,10 @@ class GoogleSheetConfigManager(LoggingMixin):
         config_map = self._get_config_map()
         if key not in config_map:
             new_row_index = len(config_map) + 2
-            self.sheet.append_row(
-                [key, default_value], value_input_option="USER_ENTERED"
+            self.google_sheet_client.execute_worksheet_operation(
+                self.sheet.append_row,
+                [key, default_value],
+                value_input_option="USER_ENTERED",
             )
             config_map[key] = (new_row_index, default_value)
             self._CONFIG_CACHE[self._config_cache_key] = config_map
