@@ -43,6 +43,7 @@ from tracker.exceptions import (
     QuotaExceededError,
     InvalidCredentialsError,
     NetworkError,
+    InsufficientScopesError,
 )
 
 os.environ.setdefault("OAUTHLIB_RELAX_TOKEN_SCOPE", "1")
@@ -2321,14 +2322,56 @@ class OAuthCallbackView(View, LoggingMixin):
         try:
             manager = build_sheet_client_manager(request)
             ensure_spreadsheet_session(request, manager)
-        except Exception as error:
+        except GoogleSheetsError as error:
+            # Handle Google Sheets errors gracefully with user-friendly messages
             self.log_action(
                 "spreadsheet-init-failed",
                 request,
                 level="error",
                 error=str(error),
+                error_type=type(error).__name__,
             )
-            raise
+
+            # Clear OAuth session data since authentication failed
+            request.session.pop("oauth_state", None)
+            request.session.pop("oauth_code_verifier", None)
+            request.session.pop("credentials", None)
+            request.session.pop("user_name", None)
+            request.session.pop("user_email", None)
+
+            # Store error information in session for display on index page
+            request.session["oauth_error"] = {
+                "message": error.user_message,
+                "action_required": error.action_required,
+                "is_retryable": error.is_retryable,
+            }
+
+            return redirect("index")
+        except Exception as error:
+            # Handle unexpected errors
+            self.log_action(
+                "spreadsheet-init-failed",
+                request,
+                level="error",
+                error=str(error),
+                error_type=type(error).__name__,
+            )
+
+            # Clear OAuth session data
+            request.session.pop("oauth_state", None)
+            request.session.pop("oauth_code_verifier", None)
+            request.session.pop("credentials", None)
+            request.session.pop("user_name", None)
+            request.session.pop("user_email", None)
+
+            # Store generic error message
+            request.session["oauth_error"] = {
+                "message": "An unexpected error occurred during login. Please try again.",
+                "action_required": "retry",
+                "is_retryable": True,
+            }
+
+            return redirect("index")
 
         self.log_action(
             "login-success",
@@ -2789,7 +2832,13 @@ class IndexView(View):
         # Add Organization schema
         seo.add_schema("Organization", generate_organization_schema())
 
-        return render(request, "tracker/index.html", seo.build())
+        # Check for OAuth error from session
+        context = seo.build()
+        oauth_error = request.session.pop("oauth_error", None)
+        if oauth_error:
+            context["error"] = oauth_error
+
+        return render(request, "tracker/index.html", context)
 
 
 class DemoView(View):

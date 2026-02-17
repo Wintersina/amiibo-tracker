@@ -137,3 +137,20 @@ class NetworkError(GoogleSheetsError):
             is_retryable=True,
             action_required="retry",
         )
+
+
+class InsufficientScopesError(GoogleSheetsError):
+    """Raised when the OAuth token doesn't have sufficient scopes."""
+
+    def __init__(self):
+        user_message = (
+            "You need to grant access to Google Drive and Google Sheets to use this app. "
+            "Please log in again and make sure to approve all requested permissions."
+        )
+        action_required = "reauth_required"
+        super().__init__(
+            "Insufficient authentication scopes",
+            user_message=user_message,
+            is_retryable=False,
+            action_required=action_required,
+        )

@@ -21,6 +21,7 @@ from tracker.exceptions import (
     QuotaExceededError,
     InvalidCredentialsError,
     NetworkError,
+    InsufficientScopesError,
 )
 
 
@@ -111,9 +112,11 @@ class GoogleSheetClientManager(HelperMixin, LoggingMixin):
 
                 # Handle different error codes
                 if error_code == 403:
-                    # Check if it's a quota or permission issue
+                    # Check for specific 403 error types
                     error_message = str(error).lower()
-                    if "quota" in error_message or "limit" in error_message:
+                    if "insufficient authentication scopes" in error_message:
+                        raise InsufficientScopesError() from error
+                    elif "quota" in error_message or "limit" in error_message:
                         raise QuotaExceededError() from error
                     raise SpreadsheetPermissionError(self.spreadsheet_id) from error
 
@@ -194,9 +197,9 @@ class GoogleSheetClientManager(HelperMixin, LoggingMixin):
                     self.spreadsheet_id,
                 )
 
-        # Try to open by name - don't use retry here since "not found" is expected
+        # Try to open by name - use retry logic to catch and handle API errors properly
         try:
-            return self.client.open(self.sheet_name)
+            return self._retry_with_backoff(self.client.open, self.sheet_name)
         except gspread.exceptions.SpreadsheetNotFound:
             pass
         except AttributeError:
