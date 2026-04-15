@@ -1,8 +1,11 @@
 import json
+import logging
 import os
 import warnings
 from collections import defaultdict
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 import googleapiclient.discovery
 import requests
@@ -57,7 +60,7 @@ def load_blog_posts():
             data = json.load(f)
             return data.get("posts", [])
     except (FileNotFoundError, json.JSONDecodeError) as e:
-        print(f"Error loading blog posts: {e}")
+        logger.error("load-blog-posts-failed | context=%s", json.dumps({"error": str(e)}))
         return []
 
 
@@ -2029,6 +2032,15 @@ def logout_user(request, log_action=None):
 @method_decorator(csrf_exempt, name="dispatch")
 class ToggleCollectedView(View, LoggingMixin):
     def post(self, request):
+        try:
+            body = json.loads(request.body)
+        except json.JSONDecodeError:
+            return JsonResponse({"status": "error", "message": "Invalid JSON payload."}, status=400)
+
+        if body.get("demo"):
+            self.log_action("collection-updated", request, **body)
+            return JsonResponse({"status": "success"})
+
         raw_creds = request.session.get("credentials")
         creds_json = get_active_credentials_json(request, self.log_action)
         if not creds_json:
@@ -2071,11 +2083,12 @@ class ToggleCollectedView(View, LoggingMixin):
             )
             ensure_spreadsheet_session(request, google_sheet_client_manager)
         except GoogleSheetsError as error:
-            self.log_error(
-                "Google Sheets error during toggle: %s",
-                str(error),
-                user_name=request.session.get("user_name"),
-                user_email=request.session.get("user_email"),
+            self.log_action(
+                "sheets-error",
+                request,
+                level="error",
+                endpoint="toggle-collected",
+                error=str(error),
             )
             return JsonResponse(
                 {
@@ -2132,11 +2145,12 @@ class ToggleCollectedView(View, LoggingMixin):
             return JsonResponse({"status": "success"})
 
         except GoogleSheetsError as error:
-            self.log_error(
-                "Google Sheets error: %s",
-                str(error),
-                user_name=request.session.get("user_name"),
-                user_email=request.session.get("user_email"),
+            self.log_action(
+                "sheets-error",
+                request,
+                level="error",
+                endpoint="toggle-collected",
+                error=str(error),
             )
             # Determine appropriate status code based on error type
             if isinstance(error, RateLimitError):
@@ -2403,11 +2417,12 @@ class AmiiboListView(View, LoggingMixin, AmiiboLocalFetchMixin):
         Returns:
             Rendered template with error information and fallback data
         """
-        self.log_error(
-            "Google Sheets error: %s",
-            str(error),
-            user_name=request.session.get("user_name"),
-            user_email=request.session.get("user_email"),
+        self.log_action(
+            "sheets-error",
+            request,
+            level="error",
+            endpoint="amiibo-list",
+            error=str(error),
         )
 
         # Try to fetch amiibos from the local database as fallback
@@ -2444,11 +2459,11 @@ class AmiiboListView(View, LoggingMixin, AmiiboLocalFetchMixin):
                 )
 
         except Exception as fetch_error:
-            self.log_warning(
-                "Failed to fetch fallback amiibos: %s",
-                str(fetch_error),
-                user_name=request.session.get("user_name"),
-                user_email=request.session.get("user_email"),
+            self.log_action(
+                "fallback-fetch-failed",
+                request,
+                level="warning",
+                error=str(fetch_error),
             )
             sorted_amiibos = []
             available_types = []
@@ -2582,11 +2597,11 @@ class AmiiboListView(View, LoggingMixin, AmiiboLocalFetchMixin):
                 return self._render_error_view(request, rate_limit_error, user_name)
 
             # For other API errors, re-raise to let Django handle them
-            self.log_error(
-                "Unhandled API error: %s",
-                error,
-                user_name=request.session.get("user_name"),
-                user_email=request.session.get("user_email"),
+            self.log_action(
+                "unhandled-api-error",
+                request,
+                level="error",
+                error=str(error),
             )
             raise
 
@@ -2594,6 +2609,15 @@ class AmiiboListView(View, LoggingMixin, AmiiboLocalFetchMixin):
 @method_decorator(csrf_exempt, name="dispatch")
 class ToggleDarkModeView(View, LoggingMixin):
     def post(self, request):
+        try:
+            body = json.loads(request.body)
+        except json.JSONDecodeError:
+            return JsonResponse({"status": "error", "message": "Invalid JSON payload."}, status=400)
+
+        if body.get("demo"):
+            self.log_action("dark-mode-updated", request, **body)
+            return JsonResponse({"status": "success"})
+
         creds_json = get_active_credentials_json(request, self.log_action)
         if not creds_json:
             self.log_action(
@@ -2627,11 +2651,12 @@ class ToggleDarkModeView(View, LoggingMixin):
             return JsonResponse({"status": "success"})
 
         except GoogleSheetsError as error:
-            self.log_error(
-                "Google Sheets error during dark mode toggle: %s",
-                str(error),
-                user_name=request.session.get("user_name"),
-                user_email=request.session.get("user_email"),
+            self.log_action(
+                "sheets-error",
+                request,
+                level="error",
+                endpoint="toggle-dark-mode",
+                error=str(error),
             )
             # Determine appropriate status code based on error type
             if isinstance(error, RateLimitError):
@@ -2679,6 +2704,15 @@ class ToggleDarkModeView(View, LoggingMixin):
 @method_decorator(csrf_exempt, name="dispatch")
 class ToggleTypeFilterView(View, LoggingMixin):
     def post(self, request):
+        try:
+            body = json.loads(request.body)
+        except json.JSONDecodeError:
+            return JsonResponse({"status": "error", "message": "Invalid JSON payload."}, status=400)
+
+        if body.get("demo"):
+            self.log_action("type-filter-updated", request, **body)
+            return JsonResponse({"status": "success"})
+
         creds_json = get_active_credentials_json(request, self.log_action)
         if not creds_json:
             self.log_action(
@@ -2710,8 +2744,12 @@ class ToggleTypeFilterView(View, LoggingMixin):
             )
             ensure_spreadsheet_session(request, google_sheet_client_manager)
         except GoogleSheetsError as error:
-            self.log_error(
-                "Google Sheets error during type filter toggle: %s", str(error)
+            self.log_action(
+                "sheets-error",
+                request,
+                level="error",
+                endpoint="toggle-type-filter",
+                error=str(error),
             )
             # Determine appropriate status code based on error type
             if isinstance(error, RateLimitError):
@@ -2761,11 +2799,12 @@ class ToggleTypeFilterView(View, LoggingMixin):
             return JsonResponse({"status": "success"})
 
         except GoogleSheetsError as error:
-            self.log_error(
-                "Google Sheets error: %s",
-                str(error),
-                user_name=request.session.get("user_name"),
-                user_email=request.session.get("user_email"),
+            self.log_action(
+                "sheets-error",
+                request,
+                level="error",
+                endpoint="toggle-type-filter",
+                error=str(error),
             )
             # Determine appropriate status code based on error type
             if isinstance(error, RateLimitError):
@@ -3337,11 +3376,6 @@ class AmiiboDetailView(View, LoggingMixin, AmiiboLocalFetchMixin):
 
             # Get character description
             description = self._get_character_description(amiibo)
-            self.log_info(
-                f"Description loaded for {amiibo.get('name')}: {description[:100]}..."
-                if len(description) > 100
-                else f"Description loaded for {amiibo.get('name')}: {description}"
-            )
 
             # Build SEO context
             seo = SEOContext(request)
@@ -3401,13 +3435,6 @@ class AmiiboDetailView(View, LoggingMixin, AmiiboLocalFetchMixin):
             }
             context.update(seo.build())
 
-            # Log context description to verify it's correct
-            self.log_info(
-                f"Context description for template: {context['description'][:100]}..."
-                if len(context["description"]) > 100
-                else f"Context description for template: {context['description']}"
-            )
-
             self.log_action(
                 "amiibo-detail-view",
                 request,
@@ -3446,23 +3473,15 @@ class AmiiboDetailView(View, LoggingMixin, AmiiboLocalFetchMixin):
                     descriptions = json.load(f)
                     # Try amiibo name first (for variant-specific descriptions)
                     if amiibo_name in descriptions:
-                        self.log_info(
-                            f"Found description for amiibo name: {amiibo_name}"
-                        )
                         return descriptions[amiibo_name]
                     # Fall back to character name
                     if character_name in descriptions:
-                        self.log_info(
-                            f"Found description for character name: {character_name}"
-                        )
                         return descriptions[character_name]
-                    # Log when no match is found
-                    self.log_info(
-                        f"No description found for amiibo_name='{amiibo_name}' or character_name='{character_name}'"
-                    )
             except Exception as e:
                 self.log_warning(
-                    f"Error loading character descriptions: {e}. Falling back to template description."
+                    "description-load-failed",
+                    amiibo_name=amiibo_name,
+                    error=str(e),
                 )
 
         # Template-based description (fallback)

@@ -1,0 +1,1 @@
+(function(){var b=document.getElementById('mobileMenuBtn'),m=document.getElementById('mobileNav'),h=document.querySelector('.hamburger-icon');if(b&&m&&h){b.addEventListener('click',function(){m.classList.toggle('active');h.textContent=m.classList.contains('active')?'✕':'☰';});}})();

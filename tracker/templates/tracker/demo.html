@@ -832,6 +832,8 @@
         const storedFilters = localStorage.getItem(TYPE_FILTERS_KEY);
         if (storedFilters) {
             typeFilters = new Set(JSON.parse(storedFilters));
+        } else {
+            typeFilters = new Set(['Card']);
         }
     }
 
@@ -961,7 +963,8 @@
 
     function toggleCollected(card, button) {
         const id = card.dataset.id;
-        if (collectedSet.has(id)) {
+        const wasCollected = collectedSet.has(id);
+        if (wasCollected) {
             collectedSet.delete(id);
             card.classList.remove('collected');
             button.dataset.collected = 'false';
@@ -970,6 +973,8 @@
             card.classList.add('collected');
             button.dataset.collected = 'true';
         }
+        const action = wasCollected ? 'uncollect' : 'collect';
+        logEvent('collection-updated', '/toggle/', { amiibo_id: id, action });
         setButtonState(button, button.dataset.collected === 'true');
         saveToLocalStorage();
         updateCollectedCount();
@@ -1063,6 +1068,18 @@
         updateCollectedCount();
     }
 
+    function logEvent(eventName, endpoint, payload = {}) {
+        console.log('[amiibo]', eventName, payload);
+        if (typeof gtag !== 'undefined') {
+            gtag('event', eventName, payload);
+        }
+        fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+            body: JSON.stringify({ ...payload, demo: true }),
+        }).catch(() => {});
+    }
+
     function setupTypeFilters() {
         const types = new Set();
         allAmiibos.forEach(amiibo => {
@@ -1088,6 +1105,7 @@
                 } else {
                     typeFilters.add(type);
                 }
+                logEvent('type_filter_toggle', '/toggle-type-filter/', { type: type, ignore: !e.target.checked });
                 saveTypeFilters();
                 filterAndSearch();
             };
@@ -1123,6 +1141,7 @@
         const isDark = body.classList.toggle('dark');
         document.getElementById('darkModeToggle').textContent = isDark ? '☀️' : '🌙';
         localStorage.setItem(DARK_MODE_KEY, isDark);
+        logEvent('dark-mode-updated', '/toggle-dark-mode/', { dark_mode: isDark });
     });
 
     // Hamburger menu toggle
