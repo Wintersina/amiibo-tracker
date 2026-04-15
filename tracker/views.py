@@ -2523,14 +2523,14 @@ class AmiiboListView(View, LoggingMixin, AmiiboLocalFetchMixin):
 
             dark_mode = config.is_dark_mode()
             ignored_types = config.get_ignored_types(available_types)
-            filtered_amiibos = [
-                a for a in amiibos if a.get("type") not in ignored_types
-            ]
 
-            service.seed_new_amiibos(filtered_amiibos)
+            # Seed only non-ignored amiibos to preserve prior seeding behavior.
+            service.seed_new_amiibos(
+                [a for a in amiibos if a.get("type") not in ignored_types]
+            )
             collected_status = service.get_collected_status()
 
-            for amiibo in filtered_amiibos:
+            for amiibo in amiibos:
                 amiibo_id = amiibo["head"] + amiibo["gameSeries"] + amiibo["tail"]
                 amiibo["collected"] = collected_status.get(amiibo_id) == "1"
                 amiibo["display_release"] = AmiiboService._format_release_date(
@@ -2538,29 +2538,36 @@ class AmiiboListView(View, LoggingMixin, AmiiboLocalFetchMixin):
                 )
 
             sorted_amiibos = sorted(
-                filtered_amiibos, key=lambda x: (x["amiiboSeries"], x["name"])
+                amiibos, key=lambda x: (x["amiiboSeries"], x["name"])
             )
             grouped_amiibos = defaultdict(list)
             for amiibo in sorted_amiibos:
                 grouped_amiibos[amiibo["amiiboSeries"]].append(amiibo)
 
+            # Ship all amiibos to the client; the client owns the type filter.
+            # Group counts reflect the initial (non-ignored) visible set.
             enriched_groups = []
-            for series, amiibos in grouped_amiibos.items():
-                total = len(amiibos)
-                collected = sum(1 for a in amiibos if a["collected"])
+            visible_total = 0
+            for series, group_amiibos in grouped_amiibos.items():
+                visible = [
+                    a for a in group_amiibos if a.get("type") not in ignored_types
+                ]
+                total = len(visible)
+                collected = sum(1 for a in visible if a["collected"])
                 enriched_groups.append(
                     {
                         "series": series,
-                        "list": amiibos,
+                        "list": group_amiibos,
                         "collected_count": collected,
                         "total_count": total,
                     }
                 )
+                visible_total += total
 
             self.log_action(
                 "render-collection",
                 request,
-                total_amiibos=len(sorted_amiibos),
+                total_amiibos=visible_total,
                 grouped_series=len(enriched_groups),
                 ignored_types=len(ignored_types),
                 dark_mode=dark_mode,
@@ -2578,6 +2585,7 @@ class AmiiboListView(View, LoggingMixin, AmiiboLocalFetchMixin):
                         {"name": amiibo_type, "ignored": amiibo_type in ignored_types}
                         for amiibo_type in available_types
                     ],
+                    "ignored_types": list(ignored_types),
                     "rate_limited": False,
                     "rate_limit_wait_seconds": 0,
                 },

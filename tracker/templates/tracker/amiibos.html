@@ -961,7 +961,8 @@
                              data-head="{{ amiibo.head }}"
                              data-tail="{{ amiibo.tail }}"
                              data-type="{{ amiibo.type|default:'Unknown' }}"
-                             data-series="{{ amiibo.amiiboSeries }}">
+                             data-series="{{ amiibo.amiiboSeries }}"
+                             {% if amiibo.type in ignored_types %}style="display: none"{% endif %}>
                             <img src="{{ amiibo|amiibo_image }}"
                                  alt="{{ amiibo.name }}"
                                  onclick="navigateToAmiiboDetail(this.parentElement)">
@@ -1012,6 +1013,15 @@
 
     const toggleQueue = {
         items: [],
+        processing: false,
+    };
+
+    const typeFilterState = {
+        ignored: new Set(),
+    };
+
+    const typeFilterQueue = {
+        pending: new Map(),
         processing: false,
     };
 
@@ -1267,39 +1277,95 @@
     document.getElementById('searchInput').addEventListener('input', filterAndSearch);
 
     document.querySelectorAll('.type-filters input[type="checkbox"]').forEach(checkbox => {
-        checkbox.addEventListener('change', async (event) => {
+        checkbox.addEventListener('change', (event) => {
             const type = event.target.dataset.type;
             const ignore = !event.target.checked;
 
-            const release = startDebouncedAction();
-            if (!release) {
-                return;
+            if (ignore) {
+                typeFilterState.ignored.add(type);
+            } else {
+                typeFilterState.ignored.delete(type);
             }
 
-            try {
-                const response = await fetch('/toggle-type-filter/', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': '{{ csrf_token }}'
-                    },
-                    body: JSON.stringify({ type, ignore })
-                });
+            filterAndSearch();
+            recomputeGroupCounts();
+            updateCollectedCount();
 
-                if (await handleErrorResponse(response)) {
-                    release();
-                    return;
-                }
-            } catch (e) {
-                release();
-                return;
-            }
-
-            // Keep overlay visible through the reload — no release() — avoids the
-            // flash caused by overlay hiding then page reloading immediately after.
-            window.location.reload();
+            // Coalesce: latest desired state per type wins if the user toggles rapidly.
+            typeFilterQueue.pending.set(type, ignore);
+            processTypeFilterQueue();
         });
     });
+
+    async function processTypeFilterQueue() {
+        if (typeFilterQueue.processing || typeFilterQueue.pending.size === 0) return;
+        if (rateLimitState.active) return;
+
+        typeFilterQueue.processing = true;
+        try {
+            while (typeFilterQueue.pending.size > 0) {
+                const [type, ignore] = typeFilterQueue.pending.entries().next().value;
+                typeFilterQueue.pending.delete(type);
+
+                let handled = false;
+                try {
+                    const response = await fetch('/toggle-type-filter/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': '{{ csrf_token }}'
+                        },
+                        body: JSON.stringify({ type, ignore }),
+                    });
+
+                    if (await handleErrorResponse(response)) {
+                        revertTypeCheckbox(type, ignore);
+                        handled = true;
+                    }
+                } catch (error) {
+                    console.error('Type filter persistence error:', error);
+                    revertTypeCheckbox(type, ignore);
+                    handled = true;
+                }
+
+                if (handled) break;
+                await new Promise(resolve => setTimeout(resolve, 300));
+            }
+        } finally {
+            typeFilterQueue.processing = false;
+        }
+    }
+
+    function revertTypeCheckbox(type, attemptedIgnore) {
+        const checkbox = document.querySelector(
+            `.type-filters input[data-type="${CSS.escape(type)}"]`
+        );
+        if (!checkbox) return;
+        checkbox.checked = attemptedIgnore;
+        if (attemptedIgnore) {
+            typeFilterState.ignored.delete(type);
+        } else {
+            typeFilterState.ignored.add(type);
+        }
+        filterAndSearch();
+        recomputeGroupCounts();
+        updateCollectedCount();
+    }
+
+    function recomputeGroupCounts() {
+        document.querySelectorAll('.game-series-group').forEach(group => {
+            const cards = group.querySelectorAll('.amiibo-card');
+            let total = 0;
+            let collected = 0;
+            cards.forEach(card => {
+                if (typeFilterState.ignored.has(card.dataset.type)) return;
+                total++;
+                if (card.classList.contains('collected')) collected++;
+            });
+            const span = group.querySelector('.group-count');
+            if (span) span.textContent = `(${collected} / ${total})`;
+        });
+    }
 
     function filterAndSearch() {
         const value = document.getElementById('filterSelect').value;
@@ -1322,8 +1388,9 @@
                     value === 'all' ||
                     (value === 'collected' && isCollected) ||
                     (value === 'uncollected' && !isCollected);
+                const matchesType = !typeFilterState.ignored.has(card.dataset.type);
 
-                const shouldDisplay = matchesSearch && matchesFilter;
+                const shouldDisplay = matchesSearch && matchesFilter && matchesType;
                 card.style.display = shouldDisplay ? 'flex' : 'none';
                 if (shouldDisplay) visibleCount++;
             });
@@ -1346,7 +1413,11 @@
 
     function updateCollectedCount() {
         const collected = document.querySelectorAll('.amiibo-card.collected');
-        document.getElementById('collectionTotal').textContent = `Collected: ${collected.length}`;
+        let count = 0;
+        collected.forEach(card => {
+            if (!typeFilterState.ignored.has(card.dataset.type)) count++;
+        });
+        document.getElementById('collectionTotal').textContent = `Collected: ${count}`;
     }
 
     document.getElementById('darkModeToggle').addEventListener('click', async (event) => {
@@ -1421,6 +1492,10 @@
             document.documentElement.classList.add('dark');
             document.getElementById('darkModeToggle').textContent = '☀️';
         }
+
+        document.querySelectorAll('.type-filters input[type="checkbox"]').forEach(cb => {
+            if (!cb.checked) typeFilterState.ignored.add(cb.dataset.type);
+        });
 
         updateCollectedCount();
         initializeButtons();
