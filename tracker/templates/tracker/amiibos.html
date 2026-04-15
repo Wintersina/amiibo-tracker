@@ -1287,12 +1287,16 @@
                 });
 
                 if (await handleErrorResponse(response)) {
+                    release();
                     return;
                 }
-            } finally {
+            } catch (e) {
                 release();
+                return;
             }
 
+            // Keep overlay visible through the reload — no release() — avoids the
+            // flash caused by overlay hiding then page reloading immediately after.
             window.location.reload();
         });
     });
