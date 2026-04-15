@@ -455,11 +455,57 @@
             font-weight: normal;
         }
 
-        .loading {
+        .loading-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(4px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            transition: opacity 0.2s ease;
+        }
+
+        .loading-overlay.active {
+            display: flex;
+        }
+
+        .loading-content {
+            background: var(--card-bg);
+            border: 2px solid var(--card-border);
+            border-radius: 16px;
+            padding: 2rem 2.5rem;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
             text-align: center;
-            padding: 3rem;
-            font-size: 1.2rem;
+            min-width: 280px;
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid var(--card-border);
+            border-top-color: var(--button-bg);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text);
+            margin: 0;
+        }
+
+        .loading-subtext {
+            font-size: 0.9rem;
             color: var(--muted);
+            margin: 0.5rem 0 0;
         }
 
         .no-results {
@@ -689,10 +735,6 @@
                 font-size: 0.85em;
             }
 
-            .loading {
-                font-size: 1.05rem;
-                padding: 2rem;
-            }
         }
 
         @media (max-width: 480px) {
@@ -755,10 +797,6 @@
                 font-size: 0.8em;
             }
 
-            .loading {
-                font-size: 1rem;
-                padding: 1.5rem;
-            }
         }
     </style>
 {% endblock %}
@@ -797,7 +835,13 @@
 </div>
 
 <main>
-    <div id="loading" class="loading">Loading Amiibo collection...</div>
+    <div id="loading" class="loading-overlay active" role="status" aria-live="polite" aria-label="Loading">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <p class="loading-text">Loading Amiibo collection...</p>
+            <p class="loading-subtext">Fetching the latest data</p>
+        </div>
+    </div>
     <div id="no-results" class="no-results">
         <div class="no-results-icon">🔍</div>
         <h2>No Amiibo Found</h2>
@@ -1122,14 +1166,17 @@
             const data = await response.json();
             allAmiibos = data.amiibo || [];
 
-            document.getElementById('loading').style.display = 'none';
+            document.getElementById('loading').classList.remove('active');
             document.getElementById('amiibo-list').style.display = 'block';
 
             setupTypeFilters();
             renderAmiibos();
         } catch (error) {
             console.error('Error loading amiibos:', error);
-            document.getElementById('loading').textContent = 'Error loading Amiibo data. Please refresh the page.';
+            const loadingEl = document.getElementById('loading');
+            loadingEl.querySelector('.loading-text').textContent = 'Error loading Amiibo data.';
+            loadingEl.querySelector('.loading-subtext').textContent = 'Please refresh the page.';
+            loadingEl.querySelector('.loading-spinner').style.display = 'none';
         }
     }
 

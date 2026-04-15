@@ -3,7 +3,6 @@ from functools import cached_property
 from datetime import datetime
 from pathlib import Path
 
-from cachetools import TTLCache
 
 from tracker.google_sheet_client_manager import GoogleSheetClientManager
 from tracker.helpers import LoggingMixin, AmiiboRemoteFetchMixin, AmiiboLocalFetchMixin
@@ -208,7 +207,6 @@ class AmiiboService(LoggingMixin, AmiiboRemoteFetchMixin, AmiiboLocalFetchMixin)
 class GoogleSheetConfigManager(LoggingMixin):
     CONFIG_HEADER = ["Config name", "Config value"]
     DEFAULT_IGNORE_TYPES = {"Band": "1", "Card": "1", "Yarn": "1"}
-    _CONFIG_CACHE = TTLCache(maxsize=32, ttl=60)
 
     def __init__(
         self,
@@ -220,6 +218,9 @@ class GoogleSheetConfigManager(LoggingMixin):
         self.work_sheet_title = work_sheet_title
         self.google_sheet_client: GoogleSheetClientManager = google_sheet_client_manager
         self._config_cache_key = (self.sheet_name, self.work_sheet_title)
+        # Instance-level cache so each request starts fresh — avoids stale reads
+        # across gunicorn workers that don't share memory.
+        self._CONFIG_CACHE: dict = {}
 
     @cached_property
     def sheet(self):
