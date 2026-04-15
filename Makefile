@@ -42,26 +42,56 @@ help:
 	@echo ""
 
 # Testing
+#
+# DOCKER_COMPOSE resolves to the best available compose CLI:
+#   1. docker-compose (v1)
+#   2. docker compose (v2)
+#   3. empty string — triggers local fallback
+DOCKER_COMPOSE := $(shell \
+	if command -v docker-compose >/dev/null 2>&1; then echo docker-compose; \
+	elif command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then echo "docker compose"; \
+	fi)
+
+# PYTHON resolves to ./env/bin/python when a venv exists, else system python3
+PYTHON := $(shell if [ -x env/bin/python ]; then echo ./env/bin/python; else echo python3; fi)
+
 test:
 	@echo "🧪 Running tests..."
-	docker-compose run --rm test
+	@if [ -n "$(DOCKER_COMPOSE)" ]; then \
+		$(DOCKER_COMPOSE) run --rm test; \
+	else \
+		echo "⚠️  Docker Compose not found — running tests locally."; \
+		$(MAKE) test-local; \
+	fi
 
 test-watch:
 	@echo "🧪 Running tests in watch mode..."
-	docker-compose run --rm test pytest tracker/tests/ -v --tb=short -f
+	@if [ -n "$(DOCKER_COMPOSE)" ]; then \
+		$(DOCKER_COMPOSE) run --rm test pytest tracker/tests/ -v --tb=short -f; \
+	else \
+		$(PYTHON) -m pytest tracker/tests/ -v --tb=short -f; \
+	fi
 
 test-coverage:
 	@echo "📊 Running tests with coverage..."
-	docker-compose run --rm test pytest tracker/tests/ --cov=tracker --cov-report=html --cov-report=term
+	@if [ -n "$(DOCKER_COMPOSE)" ]; then \
+		$(DOCKER_COMPOSE) run --rm test pytest tracker/tests/ --cov=tracker --cov-report=html --cov-report=term; \
+	else \
+		$(PYTHON) -m pytest tracker/tests/ --cov=tracker --cov-report=html --cov-report=term; \
+	fi
 	@echo "✅ Coverage report generated in htmlcov/index.html"
 
 test-file:
 	@echo "🧪 Running test file: $(FILE)"
-	docker-compose run --rm test pytest $(FILE) -v --tb=short
+	@if [ -n "$(DOCKER_COMPOSE)" ]; then \
+		$(DOCKER_COMPOSE) run --rm test pytest $(FILE) -v --tb=short; \
+	else \
+		$(PYTHON) -m pytest $(FILE) -v --tb=short; \
+	fi
 
 test-local:
 	@echo "🧪 Running tests locally (no Docker)..."
-	pytest tracker/tests/ -v --tb=short
+	$(PYTHON) -m pytest tracker/tests/ -v --tb=short
 
 # Scraping
 scrape: scrape-amiibo
@@ -114,12 +144,22 @@ build:
 	docker-compose build
 
 run:
-	@echo "🚀 Starting service in Docker (production mode)..."
-	docker-compose up app
+	@echo "🚀 Starting service in Docker (gunicorn)..."
+	@echo "   → Open http://localhost:8080 (home) or http://localhost:8080/demo/"
+	@if [ -n "$(DOCKER_COMPOSE)" ]; then \
+		$(DOCKER_COMPOSE) up app; \
+	else \
+		echo "❌ Docker Compose not found — try 'make run-local'"; exit 1; \
+	fi
 
 run-dev:
 	@echo "🚀 Starting Django dev server in Docker..."
-	docker-compose up dev
+	@echo "   → Open http://localhost:8080 (home) or http://localhost:8080/demo/"
+	@if [ -n "$(DOCKER_COMPOSE)" ]; then \
+		$(DOCKER_COMPOSE) up dev; \
+	else \
+		echo "❌ Docker Compose not found — try 'make run-local'"; exit 1; \
+	fi
 
 run-local:
 	@echo "🚀 Starting Django dev server..."
