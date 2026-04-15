@@ -915,9 +915,7 @@
                 card.dataset.series = amiibo.amiiboSeries || 'Unknown';
 
                 const img = document.createElement('img');
-                // All images (AmiiboAPI and amiibo.life) already have transparent backgrounds
-                // No background removal needed
-                img.src = amiibo.image || '';
+                img.src = amiibo.imgwebp || amiibo.image || '';
                 img.alt = amiibo.name;
                 img.onclick = () => navigateToAmiiboDetail(amiibo);
 

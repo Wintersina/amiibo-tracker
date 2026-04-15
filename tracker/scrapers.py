@@ -573,6 +573,10 @@ class AmiiboLifeScraper(LoggingMixin):
         if not placeholder.get("image"):
             placeholder["image"] = api_amiibo.get("image", "")
 
+        # Always carry over the WebP variant from the API when present
+        if api_amiibo.get("imgwebp"):
+            placeholder["imgwebp"] = api_amiibo["imgwebp"]
+
         placeholder["type"] = api_amiibo.get("type", placeholder.get("type", "Figure"))
 
         # Merge release dates (keep amiibo.life dates if we have them)
@@ -1142,6 +1146,8 @@ class NintendoDotComScraper(LoggingMixin):
             "amiiboSeries", placeholder["amiiboSeries"]
         )
         placeholder["image"] = api_amiibo.get("image", "")
+        if api_amiibo.get("imgwebp"):
+            placeholder["imgwebp"] = api_amiibo["imgwebp"]
         placeholder["type"] = api_amiibo.get("type", placeholder.get("type", "Figure"))
 
         # Merge release dates (keep Nintendo's NA date if we have it)

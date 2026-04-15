@@ -9,21 +9,13 @@ def amiibo_image(amiibo):
     """
     Returns the image URL for an amiibo.
 
-    Both AmiiboAPI and amiibo.life images already have transparent backgrounds,
-    so no background removal processing is needed.
+    Prefers the WebP variant (imgwebp) for faster page loads, falling
+    back to the PNG (image) when WebP isn't available.
 
     Usage in templates:
         <img src="{{ amiibo|amiibo_image }}" alt="{{ amiibo.name }}">
     """
-    original_image = amiibo.get("image", "")
-    if not original_image:
-        return ""
-
-    # UPDATED: No background removal needed anymore
-    # - AmiiboAPI images already have transparent backgrounds
-    # - amiibo.life images (new source) also have transparent backgrounds
-    # Return the URL directly (no encoding needed for img src attributes)
-    return original_image
+    return amiibo.get("imgwebp") or amiibo.get("image", "")
 
 
 @register.filter(name="amiibo_image_original")
