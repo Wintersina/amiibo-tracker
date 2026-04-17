@@ -1988,14 +1988,8 @@ def get_active_credentials_json(request, log_action=None):
 
 
 def logout_user(request, log_action=None):
-    # Capture user info before session is flushed
-    user_name = request.session.get("user_name")
-    user_email = request.session.get("user_email")
-
     if log_action:
-        log_action(
-            "logout-requested", request, user_name=user_name, user_email=user_email
-        )
+        log_action("logout-requested", request)
 
     creds = request.session.get("credentials")
     if creds:
@@ -2011,8 +2005,6 @@ def logout_user(request, log_action=None):
                     "logout-complete",
                     request,
                     status_code=response.status_code,
-                    user_name=user_name,
-                    user_email=user_email,
                 )
         except Exception as e:
             if log_action:
@@ -2021,8 +2013,6 @@ def logout_user(request, log_action=None):
                     request,
                     level="error",
                     error=str(e),
-                    user_name=user_name,
-                    user_email=user_email,
                 )
 
     request.session.flush()
@@ -2387,12 +2377,10 @@ class OAuthCallbackView(View, LoggingMixin):
 
             return redirect("index")
 
-        self.log_action(
-            "login-success",
-            request,
-            user_name=request.session.get("user_name"),
-            user_email=request.session.get("user_email"),
-        )
+        # New-vs-returning users are derived from user_hash in Grafana LogQL
+        # (e.g. `count by (user_hash)` windowed over 24h vs 30d). No DB lookup
+        # happens here — the app has no persistent user store.
+        self.log_action("login-success", request)
 
         return redirect("amiibo_list")
 

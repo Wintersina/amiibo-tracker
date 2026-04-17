@@ -69,3 +69,27 @@ variable "env_secrets" {
   type    = map(string)
   default = {}
 }
+
+variable "loki_url" {
+  description = "Grafana Cloud Loki base URL (without /loki/api/v1/push suffix)"
+  type        = string
+  default     = ""
+}
+
+variable "loki_user" {
+  description = "Grafana Cloud Loki basic-auth username (numeric stack id)"
+  type        = string
+  default     = ""
+}
+
+variable "loki_api_key_secret" {
+  description = "Secret Manager secret id holding the Grafana Cloud API token"
+  type        = string
+  default     = ""
+}
+
+variable "loki_hash_salt_secret" {
+  description = "Secret Manager secret id holding the salt used to hash user emails before shipping logs"
+  type        = string
+  default     = ""
+}

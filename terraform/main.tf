@@ -43,6 +43,8 @@ resource "google_cloud_run_service" "amiibo_tracker" {
     google_project_iam_member.artifact_registry_reader,
     google_project_iam_member.artifact_registry_reader_app_sa,
     google_secret_manager_secret_iam_member.oauth_client_secret_accessor,
+    google_secret_manager_secret_iam_member.loki_api_key_accessor,
+    google_secret_manager_secret_iam_member.loki_hash_salt_accessor,
   ]
 
   template {
@@ -68,6 +70,36 @@ resource "google_cloud_run_service" "amiibo_tracker" {
             value_from {
               secret_key_ref {
                 name = var.oauth_client_secret_secret
+                key  = "latest"
+              }
+            }
+          }
+        }
+
+        dynamic "env" {
+          for_each = var.loki_api_key_secret != "" ? [1] : []
+
+          content {
+            name = "LOKI_API_KEY"
+
+            value_from {
+              secret_key_ref {
+                name = var.loki_api_key_secret
+                key  = "latest"
+              }
+            }
+          }
+        }
+
+        dynamic "env" {
+          for_each = var.loki_hash_salt_secret != "" ? [1] : []
+
+          content {
+            name = "LOKI_HASH_SALT"
+
+            value_from {
+              secret_key_ref {
+                name = var.loki_hash_salt_secret
                 key  = "latest"
               }
             }
@@ -109,5 +141,23 @@ resource "google_project_iam_member" "artifact_registry_reader_app_sa" {
   project = var.project_id
   role    = "roles/artifactregistry.reader"
   member  = "serviceAccount:${google_service_account.app_sa.email}"
+}
+
+resource "google_secret_manager_secret_iam_member" "loki_api_key_accessor" {
+  count = var.loki_api_key_secret != "" ? 1 : 0
+
+  project   = var.project_id
+  secret_id = var.loki_api_key_secret
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${google_service_account.app_sa.email}"
+}
+
+resource "google_secret_manager_secret_iam_member" "loki_hash_salt_accessor" {
+  count = var.loki_hash_salt_secret != "" ? 1 : 0
+
+  project   = var.project_id
+  secret_id = var.loki_hash_salt_secret
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${google_service_account.app_sa.email}"
 }
 

@@ -123,6 +123,10 @@ jobs:
           oauth_redirect_uri = "${{ secrets.OAUTH_REDIRECT_URI }}"
           oauth_client_secret_secret = "${{ secrets.OAUTH_CLIENT_SECRET_SECRET }}"
           allowed_hosts = ${{ steps.allowed_hosts.outputs.allowed_hosts_json }}
+          loki_url = "${{ secrets.LOKI_URL }}"
+          loki_user = "${{ secrets.LOKI_USER }}"
+          loki_api_key_secret = "${{ secrets.LOKI_API_KEY_SECRET }}"
+          loki_hash_salt_secret = "${{ secrets.LOKI_HASH_SALT_SECRET }}"
           EOF
 
       - name: Terraform Init

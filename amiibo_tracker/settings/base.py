@@ -39,6 +39,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "tracker.observability.PageViewMiddleware",
 ]
 
 ROOT_URLCONF = "amiibo_tracker.urls"
@@ -112,16 +113,20 @@ LOGGING = {
             "class": "logging.StreamHandler",
             "formatter": "console",
         },
+        "loki": {
+            "class": "tracker.observability.LokiHandler",
+            "level": "INFO",
+        },
     },
     "root": {
-        "handlers": ["console"],
+        "handlers": ["console", "loki"],
         "level": "INFO",
     },
     "loggers": {
         "django": {
-            "handlers": ["console"],
+            "handlers": ["console", "loki"],
             "level": "WARNING",
-            "propagate": True,
+            "propagate": False,
         },
         "googleapiclient": {"level": "WARNING"},
         "google.auth": {"level": "WARNING"},
