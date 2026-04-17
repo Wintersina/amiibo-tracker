@@ -67,14 +67,22 @@ class LoggingMixin(object):
         return log_fn(msg, *log_args, extra=log_extra)
 
     def log_action(self, event: str, request=None, level: str = "info", **context):
+        from tracker.observability import hash_email
+
         caller = inspect.stack()[1].function
         user_context = {}
 
         if request is not None:
+            email = request.session.get("user_email")
             user_context = {
-                "session_user_name": request.session.get("user_name"),
-                "session_user_email": request.session.get("user_email"),
+                "event": event,
+                "user_hash": hash_email(email),
+                "authenticated": bool(email),
             }
+
+        # Raw emails/names must not reach the log pipeline.
+        context.pop("user_email", None)
+        context.pop("user_name", None)
 
         message = f"{caller}[{event}]"
         merged_context = {**user_context, **context}

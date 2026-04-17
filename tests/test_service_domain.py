@@ -80,6 +80,9 @@ def build_service(sheet_cls=DummySheet):
         def get_or_create_worksheet_by_name(self, name):
             return self.sheet
 
+        def execute_worksheet_operation(self, operation_func, *args, **kwargs):
+            return operation_func(*args, **kwargs)
+
     return AmiiboService(DummyClient())
 
 

@@ -38,6 +38,14 @@ locals {
     {
       name  = "CSRF_TRUSTED_ORIGINS"
       value = join(",", local.csrf_trusted_origins)
+    },
+    {
+      name  = "LOKI_URL"
+      value = var.loki_url
+    },
+    {
+      name  = "LOKI_USER"
+      value = var.loki_user
     }
   ]
 }

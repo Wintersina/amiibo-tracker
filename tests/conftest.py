@@ -18,7 +18,6 @@ from django.conf import settings
 django.setup()
 
 from tracker.google_sheet_client_manager import GoogleSheetClientManager
-from tracker.service_domain import GoogleSheetConfigManager
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -29,10 +28,12 @@ def configure_settings():
 
 @pytest.fixture(autouse=True)
 def clear_caches():
+    # GoogleSheetConfigManager's cache is per-instance (see service_domain.py),
+    # so test isolation there happens naturally when each test builds a fresh
+    # manager. Only the still-class-level GoogleSheetClientManager caches need
+    # explicit reset between tests.
     GoogleSheetClientManager._spreadsheet_cache.clear()
     GoogleSheetClientManager._worksheet_cache.clear()
-    GoogleSheetConfigManager._CONFIG_CACHE.clear()
     yield
     GoogleSheetClientManager._spreadsheet_cache.clear()
     GoogleSheetClientManager._worksheet_cache.clear()
-    GoogleSheetConfigManager._CONFIG_CACHE.clear()
