@@ -4,14 +4,15 @@ services:
       context: .
       dockerfile: Dockerfile
     entrypoint: ""  # Override the entrypoint to not run gunicorn
-    command: pytest tracker/tests/ -v --tb=short
+    command: pytest tracker/tests/ tests/ -v --tb=short
     environment:
-      - DJANGO_SETTINGS_MODULE=amiibo_tracker.settings
+      - DJANGO_SETTINGS_MODULE=amiibo_tracker.settings.testing
       - PYTHONUNBUFFERED=1
     volumes:
       # Mount source code for development
       - ./tracker:/app/tracker
       - ./amiibo_tracker:/app/amiibo_tracker
+      - ./tests:/app/tests
     working_dir: /app
 
   app:
