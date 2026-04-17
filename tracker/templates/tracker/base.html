@@ -46,6 +46,32 @@
     <!-- Privacy Policy Link -->
     <link rel="privacy-policy" href="{% url 'privacy' %}">
 
+    <!-- Grafana Faro Frontend Observability (must load before other scripts) -->
+    <script>
+        (function () {
+            var s = document.createElement('script');
+            s.src = 'https://unpkg.com/@grafana/faro-web-sdk@2/dist/bundle/faro-web-sdk.iife.js';
+            s.onload = function () {
+                window.GrafanaFaroWebSdk.initializeFaro({
+                    url: 'https://faro-collector-prod-us-east-3.grafana.net/collect/f32e621f8ccf7c0d612f1895a7c6e5cc',
+                    app: { name: 'goozamiibo.com', version: '1.0.0', environment: 'production' },
+                    ignoreUrls: [
+                        /pagead2\.googlesyndication\.com/,
+                        /googlesyndication\.com/
+                    ],
+                    experimental: { trackNavigation: true }
+                });
+                var t = document.createElement('script');
+                t.src = 'https://unpkg.com/@grafana/faro-web-tracing@2/dist/bundle/faro-web-tracing.iife.js';
+                t.onload = function () {
+                    window.GrafanaFaroWebSdk.faro.instrumentations.add(new window.GrafanaFaroWebTracing.TracingInstrumentation());
+                };
+                document.head.appendChild(t);
+            };
+            document.head.appendChild(s);
+        })();
+    </script>
+
     <!-- Google AdSense Integration -->
     <meta name="google-adsense-account" content="ca-pub-6947554333794592">
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6947554333794592" crossorigin="anonymous"></script>
