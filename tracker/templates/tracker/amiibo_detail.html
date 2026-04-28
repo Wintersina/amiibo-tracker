@@ -7,9 +7,8 @@
 {% block meta_description %}Learn about {{ amiibo.name }} Amiibo figure - release date, series, character details and regional information.{% endblock %}
 
 {% block head_extra %}
-<style>
-        @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600;700&display=swap');
-
+    <style>
+        
         :root {
             --emerald: #0f766e;
             --saffron: #f3c969;
@@ -30,8 +29,7 @@
             padding: 120px 1rem 2rem 1rem;
             font-family: 'Vazirmatn', system-ui, sans-serif;
             background: linear-gradient(180deg, rgba(6, 10, 14, 0.95), rgba(12, 18, 24, 0.9)),
-            url('{% static "images/amiibo_bg.png" %}') center/420px repeat;
-            background-attachment: fixed;
+            url('{% static "images/amiibo_bg.webp" %}') center/420px fixed repeat;
             min-height: 100vh;
             display: flex;
             flex-direction: column;
@@ -201,7 +199,6 @@
 
         .action-btn {
             text-decoration: none;
-            border: none;
             cursor: pointer;
             border-radius: 8px;
             padding: 0.5rem 0.9rem;
@@ -219,7 +216,6 @@
 
         .action-btn:hover {
             color: var(--saffron);
-            background: rgba(15, 118, 110, 0.25);
             border-color: rgba(243, 201, 105, 0.4);
             transform: translateX(-2px);
             box-shadow: 0 18px 32px rgba(0, 0, 0, 0.35);

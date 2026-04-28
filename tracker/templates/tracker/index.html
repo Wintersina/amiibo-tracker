@@ -21,8 +21,7 @@
     body {
         font-family: 'Geologica', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
         background: linear-gradient(180deg, rgba(6, 10, 14, 0.95), rgba(12, 18, 24, 0.9)),
-        url('{% static "images/amiibo_bg.png" %}') center/420px repeat;
-        background-attachment: fixed;
+        url('{% static "images/amiibo_bg.webp" %}') center/420px fixed repeat;
         min-height: 100vh;
         color: var(--cream);
     }
@@ -65,10 +64,8 @@
         font-size: clamp(1.1rem, 2.5vw, 1.4rem);
         color: rgba(253, 247, 227, 0.9);
         line-height: 1.6;
-        margin: 0 0 2rem 0;
         max-width: 700px;
-        margin-left: auto;
-        margin-right: auto;
+        margin: 0 auto 2rem;
     }
 
     .hero-actions {
@@ -264,7 +261,7 @@
 {% block content %}
 <div class="hero-section">
     <div class="hero-image-container">
-        <img src="{% static 'images/amiibo-lineup-img.png' %}" alt="Amiibo Collection" class="hero-image">
+        <img src="{% static 'images/amiibo-lineup-img.webp' %}" alt="Amiibo Collection" class="hero-image">
     </div>
     <div class="hero-content">
         <h1>Track Your Amiibo Collection</h1>

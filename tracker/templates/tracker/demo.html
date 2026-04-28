@@ -9,12 +9,11 @@
 {% block navigation %}{% endblock %}
 
 {% block head_extra %}
-<style>
+    <style>
         body {
             padding-top: 0 !important;
         }
-        @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600;700&display=swap');
-
+        
         :root {
             --bg: #f7f2e7;
             --text: #0f172a;
@@ -60,16 +59,14 @@
             margin: 0;
             padding: 0 1.2rem 3rem;
             background: linear-gradient(135deg, rgba(15, 118, 110, 0.12), rgba(243, 201, 105, 0.12)),
-                        url('/static/images/amiibo_bg.png') center/600px repeat;
-            background-attachment: fixed;
+                        url('/static/images/amiibo_bg.webp') center/600px fixed repeat;
             color: var(--text);
             transition: background-color 0.3s ease, color 0.3s ease;
         }
 
         body.dark {
             background: linear-gradient(160deg, rgba(6, 10, 14, 0.9), rgba(12, 18, 24, 0.88)),
-                        url('/static/images/amiibo_bg.png') center/520px repeat;
-            background-attachment: fixed;
+                        url('/static/images/amiibo_bg.webp') center/520px fixed repeat;
         }
 
         main {
@@ -261,7 +258,6 @@
 
         .dark-toggle,
         .back-btn {
-            border: none;
             border-radius: 12px;
             padding: 0.65rem 1.2rem;
             font-size: 0.95rem;
@@ -669,8 +665,7 @@
                 width: 100%;
                 min-width: 100%;
                 font-size: 0.95rem;
-                padding: 0.65em 1.1em;
-                padding-right: 2.5em;
+                padding: 0.65em 2.5em 0.65em 1.1em;
                 height: 46px;
             }
 
