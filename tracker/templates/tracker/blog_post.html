@@ -7,7 +7,9 @@
 {% block meta_description %}{{ post.excerpt|truncatewords:20 }}{% endblock %}
 
 {% block head_extra %}
-    <style>
+<style>
+        @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600&display=swap');
+
         :root {
             --emerald: #0f766e;
             --saffron: #f3c969;
@@ -24,7 +26,8 @@
             padding: 120px 1rem 2rem 1rem;
             font-family: 'Vazirmatn', system-ui, sans-serif;
             background: linear-gradient(180deg, rgba(6, 10, 14, 0.95), rgba(12, 18, 24, 0.9)),
-            url('{% static "images/amiibo_bg.webp" %}') center/420px fixed repeat;
+            url('{% static "images/amiibo_bg.png" %}') center/420px repeat;
+            background-attachment: fixed;
             min-height: 100vh;
             display: flex;
             flex-direction: column;
@@ -329,6 +332,7 @@
 
         .action-btn {
             text-decoration: none;
+            border: none;
             cursor: pointer;
             border-radius: 8px;
             padding: 0.5rem 0.9rem;

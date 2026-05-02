@@ -1,0 +1,138 @@
+/* Shared styles for content pages (About, Blog, Privacy, Amiibodex, etc.) */
+
+:root {
+    --emerald: #0f766e;
+    --saffron: #f3c969;
+    --cream: #fdf7e3;
+    --ink: #0f172a;
+}
+
+/* Common body styling */
+body.content-page {
+    margin: 0;
+    padding: 120px 1rem 2rem 1rem;
+    font-family: 'Vazirmatn', system-ui, sans-serif;
+    background: linear-gradient(180deg, rgba(6, 10, 14, 0.95), rgba(12, 18, 24, 0.9)),
+        url('../images/amiibo_bg.png') center/420px repeat;
+    background-attachment: fixed;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    color: var(--cream);
+}
+
+/* Privacy page variant (dark theme) */
+body.content-page.privacy-page {
+    padding: 120px 2rem 2rem 2rem;
+    background: #0c0c0f;
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+/* Common container/canvas styling */
+.page-container,
+.canvas {
+    position: relative;
+    padding: 3rem;
+    width: min(1100px, 90vw);
+    margin: 2rem auto;
+    border-radius: 28px;
+    background: rgba(15, 23, 42, 0.72);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(243, 201, 105, 0.35);
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.45);
+}
+
+/* Smaller container variant */
+.page-container.small,
+.canvas.small {
+    max-width: 900px;
+    width: min(900px, 90vw);
+}
+
+/* Privacy page container styling */
+body.privacy-page .page-container {
+    max-width: 860px;
+    background: #13131a;
+    border: 1px solid #1f1f2a;
+    padding: 2.5rem;
+}
+
+/* Common back button styling */
+.back-link,
+.action-btn {
+    position: absolute;
+    top: 1.5rem;
+    right: 1.5rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    text-decoration: none;
+    color: rgba(253, 247, 227, 0.7);
+    padding: 0.5rem 0.9rem;
+    border-radius: 8px;
+    background: rgba(15, 118, 110, 0.15);
+    border: 1px solid rgba(243, 201, 105, 0.2);
+    font-weight: 500;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.back-link:hover,
+.action-btn:hover {
+    color: var(--saffron);
+    background: rgba(15, 118, 110, 0.25);
+    border-color: rgba(243, 201, 105, 0.4);
+    transform: translateX(-2px);
+}
+
+/* Privacy page back button */
+body.privacy-page .back-link {
+    color: rgba(203, 213, 225, 0.7);
+    border-color: rgba(130, 224, 255, 0.2);
+}
+
+body.privacy-page .back-link:hover {
+    color: #82e0ff;
+    border-color: rgba(130, 224, 255, 0.4);
+}
+
+/* Navigation buttons group */
+.nav-buttons {
+    position: absolute;
+    top: 1.5rem;
+    right: 1.5rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 720px) {
+    body.content-page {
+        padding: 100px 0.75rem 2rem 0.75rem;
+    }
+
+    .page-container,
+    .canvas {
+        padding: 1.75rem 1.5rem;
+        margin: 1rem auto;
+    }
+
+    .back-link,
+    .action-btn,
+    .nav-buttons .action-btn {
+        top: 1rem;
+        right: 1rem;
+        padding: 0.45rem 0.8rem;
+        font-size: 0.85rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .page-container,
+    .canvas {
+        padding: 1.5rem 1.25rem;
+    }
+}
