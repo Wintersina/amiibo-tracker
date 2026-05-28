@@ -7,244 +7,264 @@
 
 {% block head_extra %}
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Geologica:wght@300;400;500;600;700&display=swap');
 
     :root {
         --emerald: #0f766e;
         --saffron: #f3c969;
         --cream: #fdf7e3;
         --ink: #0f172a;
+        --bg: #0c1118;
+        --surface: rgba(20, 25, 34, 0.55);
+        --surface-strong: rgba(24, 31, 42, 0.85);
+        --border: rgba(243, 201, 105, 0.18);
+        --muted: rgba(253, 247, 227, 0.62);
+        --muted-strong: rgba(253, 247, 227, 0.85);
     }
 
-    * {
-        box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
     body {
         margin: 0;
-        padding: 120px 0 2rem 0;
-        font-family: 'Vazirmatn', system-ui, sans-serif;
-        background: linear-gradient(180deg, rgba(6, 10, 14, 0.95), rgba(12, 18, 24, 0.9)),
-        url('{% static "images/amiibo_bg.png" %}') center/420px repeat;
-        background-attachment: fixed;
-        min-height: 100vh;
-        display: flex;
-        flex-direction: column;
+        font-family: 'Geologica', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        background: radial-gradient(1200px 600px at 50% -100px, rgba(15, 118, 110, 0.18), transparent 70%),
+                    radial-gradient(900px 500px at 80% 100%, rgba(243, 201, 105, 0.06), transparent 70%),
+                    var(--bg);
         color: var(--cream);
+        min-height: 100vh;
+        -webkit-font-smoothing: antialiased;
+        font-size: 16px;
+        line-height: 1.7;
     }
+
+    a { color: inherit; }
 
     .container {
-        position: relative;
-        max-width: 900px;
-        margin: 2rem auto 2rem auto;
-        padding: 2.5rem;
-        border-radius: 28px;
-        background: rgba(15, 23, 42, 0.72);
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(243, 201, 105, 0.35);
-        box-shadow: 0 25px 60px rgba(0, 0, 0, 0.45);
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 2.5rem 1.25rem 4rem;
     }
 
-    /* Add padding on larger screens to prevent title overlap with back button */
-    @media (min-width: 721px) {
-        .container {
-            padding-right: 200px;
-        }
+    /* ---- Top bar ---- */
+    .topbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 0.75rem;
+        padding-bottom: 1.5rem;
+        border-bottom: 1px solid var(--border);
+        margin-bottom: 2rem;
     }
-
-    h1 {
-        margin-top: 0;
-        font-size: clamp(2rem, 4vw, 2.5rem);
-        text-align: center;
+    .crumb {
+        font-size: 0.85rem;
+        color: var(--muted);
+        letter-spacing: 0.02em;
+    }
+    .back-link {
+        font-size: 0.85rem;
+        color: var(--muted);
+        padding: 0.45rem 0.85rem;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        text-decoration: none;
+        transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+    }
+    .back-link:hover {
         color: var(--saffron);
+        border-color: rgba(243, 201, 105, 0.45);
+        background: rgba(243, 201, 105, 0.06);
     }
 
-    h2 {
-        font-size: 1.4rem;
-        margin-top: 2rem;
+    /* ---- Header ---- */
+    .article-meta {
+        display: flex;
+        align-items: center;
+        gap: 10px;
         margin-bottom: 0.75rem;
+    }
+    .badge {
+        font-size: 11px;
         color: var(--saffron);
+        background: rgba(243, 201, 105, 0.12);
+        border: 1px solid rgba(243, 201, 105, 0.3);
+        padding: 2px 9px;
+        border-radius: 999px;
+        letter-spacing: 0.03em;
+        text-transform: lowercase;
+    }
+    h1 {
+        margin: 0 0 0.5rem;
+        font-size: clamp(1.8rem, 4vw, 2.4rem);
+        font-weight: 600;
+        line-height: 1.2;
+        letter-spacing: -0.015em;
+        color: var(--cream);
+    }
+    .lede {
+        margin: 0 0 2rem;
+        font-size: 1.02rem;
+        color: var(--muted-strong);
+    }
+
+    /* ---- Sections ---- */
+    h2 {
+        margin-top: 2.5rem;
+        margin-bottom: 0.75rem;
+        font-size: 1.4rem;
+        font-weight: 600;
+        color: var(--cream);
+        letter-spacing: -0.01em;
     }
 
     p, li {
-        line-height: 1.7;
-        color: rgba(253, 247, 227, 0.9);
-        font-size: 1.05rem;
+        color: var(--muted-strong);
+        font-size: 1rem;
     }
+
+    a.inline {
+        color: var(--saffron);
+        text-decoration: underline;
+        text-decoration-thickness: 1px;
+        text-underline-offset: 3px;
+    }
+    a.inline:hover { color: #ffd37a; }
 
     .feature-list {
         list-style: none;
         padding: 0;
-        margin: 1.5rem 0;
+        margin: 1.25rem 0;
+        display: flex;
+        flex-direction: column;
+        gap: 0.65rem;
     }
-
     .feature-list li {
-        padding: 0.75rem 0;
-        border-bottom: 1px solid rgba(243, 201, 105, 0.2);
+        padding: 0.85rem 1rem;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 12px;
     }
-
-    .feature-list li:last-child {
-        border-bottom: none;
-    }
-
-    .feature-list strong {
+    .feature-list li strong {
         color: var(--saffron);
+        font-weight: 600;
     }
 
-    .back-link {
+    .step-list { padding-left: 0; list-style: none; counter-reset: step; margin: 1.25rem 0; }
+    .step-list li {
+        position: relative;
+        padding: 0.85rem 1rem 0.85rem 2.6rem;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        margin-bottom: 0.65rem;
+        counter-increment: step;
+    }
+    .step-list li::before {
+        content: counter(step);
         position: absolute;
-        top: 1.5rem;
-        right: 1.5rem;
-        display: inline-flex;
-        align-items: center;
-        gap: 0.4rem;
-        text-decoration: none;
-        color: rgba(253, 247, 227, 0.7);
-        padding: 0.5rem 0.9rem;
-        border-radius: 8px;
-        background: rgba(15, 118, 110, 0.15);
-        border: 1px solid rgba(243, 201, 105, 0.2);
-        font-weight: 500;
-        font-size: 0.9rem;
-        transition: all 0.2s ease;
-    }
-
-    .back-link:hover {
+        left: 0.85rem;
+        top: 0.85rem;
+        width: 1.4rem;
+        height: 1.4rem;
+        border-radius: 999px;
+        background: rgba(243, 201, 105, 0.14);
+        border: 1px solid rgba(243, 201, 105, 0.35);
         color: var(--saffron);
-        background: rgba(15, 118, 110, 0.25);
-        border-color: rgba(243, 201, 105, 0.4);
-        transform: translateX(-2px);
+        font-size: 0.78rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .step-list li strong { color: var(--cream); }
+
+    ul.plain {
+        margin: 1rem 0;
+        padding-left: 1.4rem;
+    }
+    ul.plain li {
+        margin: 0.4rem 0;
     }
 
+    /* ---- CTA ---- */
     .cta-section {
+        margin-top: 3rem;
+        padding: 1.75rem;
+        background: var(--surface-strong);
+        border: 1px solid var(--border);
+        border-radius: 16px;
         text-align: center;
-        margin-top: 2.5rem;
-        padding-top: 2rem;
-        border-top: 1px solid rgba(243, 201, 105, 0.3);
     }
-
+    .cta-section p { margin: 0 0 1.25rem; color: var(--muted-strong); }
     .cta-btn {
         display: inline-flex;
         align-items: center;
         gap: 0.6rem;
         text-decoration: none;
-        padding: 0.95rem 1.5rem;
+        padding: 0.85rem 1.4rem;
         border-radius: 12px;
         background: linear-gradient(135deg, var(--saffron), #ffd37a);
         color: var(--ink);
-        font-weight: 700;
-        font-size: 1.05rem;
-        box-shadow: 0 14px 28px rgba(0, 0, 0, 0.28);
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        font-weight: 600;
+        font-size: 1rem;
+        box-shadow: 0 10px 24px rgba(243, 201, 105, 0.18);
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
     }
-
     .cta-btn:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 18px 32px rgba(0, 0, 0, 0.35);
+        transform: translateY(-1px);
+        box-shadow: 0 14px 28px rgba(243, 201, 105, 0.25);
+    }
+    .cta-btn img { width: 20px; height: 20px; }
+    .cta-aux {
+        margin-top: 1rem;
+        font-size: 0.9rem;
+        color: var(--muted);
     }
 
-    .cta-btn img {
-        width: 20px;
-        height: 20px;
-    }
-
-    @media (max-width: 720px) {
-        body {
-            padding: 1rem;
-        }
-
-        .container {
-            padding: 1.75rem 1.5rem;
-            margin: 1rem auto;
-        }
-
-        .back-link {
-            position: static;
-            margin-bottom: 1.5rem;
-            width: 100%;
-            justify-content: center;
-            padding: 0.85rem 1.2rem;
-            font-size: 1rem;
-        }
-
-        h1 {
-            font-size: 1.75rem;
-        }
-
-        h2 {
-            font-size: 1.2rem;
-        }
-
-        p, li {
-            font-size: 0.95rem;
-        }
-    }
-
-    @media (max-width: 480px) {
-        .container {
-            padding: 1.5rem 1.25rem;
-        }
-
-        .back-link {
-            padding: 0.8rem 1rem;
-            font-size: 0.95rem;
-        }
-
-        h1 {
-            font-size: 1.5rem;
-        }
-
-        h2 {
-            font-size: 1.1rem;
-        }
-
-        p, li {
-            font-size: 0.9rem;
-        }
+    @media (max-width: 540px) {
+        .container { padding: 1.75rem 1rem 3rem; }
+        .topbar { flex-wrap: wrap; }
+        .cta-section { padding: 1.25rem; }
     }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="container">
-    <a href="{% url 'index' %}" class="back-link">← Back</a>
+    <div class="topbar">
+        <div class="crumb">about</div>
+        <a href="{% url 'index' %}" class="back-link" data-track="about-back">← Back</a>
+    </div>
 
+    <div class="article-meta">
+        <span class="badge">about</span>
+    </div>
     <h1>About Amiibo Tracker</h1>
-
-    <p>
-        Amiibo Tracker is a comprehensive tool for Nintendo Amiibo collectors to manage their collections,
+    <p class="lede">
+        Amiibo Tracker is a tool for Nintendo Amiibo collectors to manage their collections,
         learn about NFC technology, and browse the complete catalog of released figures.
     </p>
 
     <h2>What Goozamiibo Offers</h2>
     <ul class="feature-list">
-        <li><strong>Collection Tracking:</strong> Create and maintain a complete Amiibo inventory using your own Google Sheet. Mark what you own, filter by series and type, and keep everything organized.</li>
-        <li><strong>Complete Catalog:</strong> Browse an always-updated database of all released Amiibo figures with high-quality images, release dates, and series information.</li>
-        <li><strong>Educational Blog:</strong> Learn about NFC technology, Amiibo history, pronunciation guides, compatibility with games, and collecting tips.</li>
-        <li><strong>Privacy-First Design:</strong> Your data stays in your Google Drive. No shared databases, no tracking beyond basic analytics.</li>
-        <li><strong>Dark Mode:</strong> Easy on the eyes with automatic dark mode support across the entire app.</li>
-        <li><strong>Mobile Friendly:</strong> Fully responsive design that works seamlessly on phones, tablets, and desktops.</li>
+        <li><strong>Collection Tracking</strong> — Maintain a complete Amiibo inventory in your own Google Sheet. Mark what you own, filter by series and type, and keep everything organized.</li>
+        <li><strong>Complete Catalog</strong> — Browse an always-updated database of all released Amiibo figures with high-quality images, release dates, and series information.</li>
+        <li><strong>Educational Blog</strong> — Learn about NFC technology, Amiibo history, pronunciation guides, compatibility with games, and collecting tips.</li>
+        <li><strong>Privacy-First Design</strong> — Your data stays in your Google Drive. No shared databases, no tracking beyond basic analytics.</li>
+        <li><strong>Dark Mode</strong> — Easy on the eyes with automatic dark mode support across the entire app.</li>
+        <li><strong>Mobile Friendly</strong> — Fully responsive design that works seamlessly on phones, tablets, and desktops.</li>
     </ul>
 
     <h2>How It Works</h2>
-    <p>
-        <strong>1. Sign in with Google:</strong> Goozamiibo uses Google authentication to securely access your Google Sheets.
-    </p>
-    <p>
-        <strong>2. Create or Select a Sheet:</strong> Choose an existing Google Sheet or let Goozamiibo create a new one for your collection.
-    </p>
-    <p>
-        <strong>3. Start Tracking:</strong> Browse the catalog, mark Amiibo as collected, and your Google Sheet updates automatically.
-    </p>
-    <p>
-        <strong>4. Stay Organized:</strong> Filter by series, search by name or date, and track your progress with real-time collection counts.
-    </p>
+    <ol class="step-list">
+        <li><strong>Sign in with Google.</strong> Goozamiibo uses Google authentication to securely access your Google Sheets.</li>
+        <li><strong>Create or select a sheet.</strong> Choose an existing Google Sheet or let Goozamiibo create a new one for your collection.</li>
+        <li><strong>Start tracking.</strong> Browse the catalog, mark Amiibo as collected, and your Google Sheet updates automatically.</li>
+        <li><strong>Stay organized.</strong> Filter by series, search by name or date, and track your progress with real-time collection counts.</li>
+    </ol>
 
     <h2>Why Google Sheets?</h2>
-    <p>
-        Goozamiibo uses Google Sheets because it gives you complete control over your data. You can:
-    </p>
-    <ul>
+    <p>Goozamiibo uses Google Sheets because it gives you complete control over your data. You can:</p>
+    <ul class="plain">
         <li>View and edit your collection directly in Google Sheets anytime</li>
         <li>Export your data in any format (CSV, Excel, PDF)</li>
         <li>Share your collection with friends or fellow collectors</li>
@@ -252,33 +272,31 @@
         <li>Revoke app access anytime from your Google account settings</li>
     </ul>
 
-    <h2>Privacy & Permissions</h2>
-    <p>
-        Amiibo Tracker requests minimal permissions:
-    </p>
-    <ul>
+    <h2>Privacy &amp; Permissions</h2>
+    <p>Amiibo Tracker requests minimal permissions:</p>
+    <ul class="plain">
         <li><strong>View and manage Google Sheets:</strong> Required to read and update your Amiibo collection data</li>
         <li><strong>See your email address:</strong> Used only to identify your Google account</li>
     </ul>
     <p>
         Goozamiibo does NOT access your emails, other Drive files, or any personal information beyond what's necessary to manage your collection.
-        Review the <a href="{% url 'privacy' %}" style="color: var(--saffron); text-decoration: underline;">Privacy Policy</a> for complete details.
+        Review the <a href="{% url 'privacy' %}" class="inline">Privacy Policy</a> for complete details.
     </p>
 
-    <h2>Open Source & Free</h2>
+    <h2>Open Source &amp; Free</h2>
     <p>
         Amiibo Tracker is free to use with no hidden fees, premium tiers, or subscriptions.
         The project is built with transparency in mind to help the Amiibo collecting community.
     </p>
 
     <div class="cta-section">
-        <p style="font-size: 1.1rem; margin-bottom: 1.5rem;">Ready to start tracking your collection?</p>
-        <a href="{% url 'oauth_login' %}" class="cta-btn">
+        <p>Ready to start tracking your collection?</p>
+        <a href="{% url 'oauth_login' %}" class="cta-btn" data-track="about-login">
             <img src="{% static 'images/google-logo.svg' %}" alt="Google logo">
             Login with Google
         </a>
-        <p style="margin-top: 1.5rem; font-size: 0.95rem;">
-            or <a href="{% url 'demo' %}" style="color: var(--saffron); text-decoration: underline;">view the demo</a>
+        <p class="cta-aux">
+            or <a href="{% url 'demo' %}" class="inline">view the demo</a>
         </p>
     </div>
 </div>

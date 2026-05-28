@@ -1,7 +1,31 @@
+from datetime import datetime
+
 from django import template
 from django.utils.safestring import mark_safe
 
 register = template.Library()
+
+
+@register.filter(name="iso_long_date")
+def iso_long_date(value):
+    """Render an ISO date string (YYYY-MM-DD) as 'Mon DD, YYYY'."""
+    if not value:
+        return ""
+    try:
+        return datetime.strptime(value, "%Y-%m-%d").strftime("%b %d, %Y")
+    except (TypeError, ValueError):
+        return value
+
+
+@register.filter(name="iso_short_date")
+def iso_short_date(value):
+    """Render an ISO date string (YYYY-MM-DD) as 'Mon DD'."""
+    if not value:
+        return ""
+    try:
+        return datetime.strptime(value, "%Y-%m-%d").strftime("%b %d")
+    except (TypeError, ValueError):
+        return value
 
 
 @register.filter(name="amiibo_image")

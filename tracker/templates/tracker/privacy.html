@@ -7,247 +7,227 @@
 
 {% block head_extra %}
 <style>
-        * {
-            box-sizing: border-box;
-        }
+    @import url('https://fonts.googleapis.com/css2?family=Geologica:wght@300;400;500;600;700&display=swap');
 
-        body {
-            margin: 0;
-            padding: 120px 2rem 2rem 2rem;
-            background: #0c0c0f;
-        }
+    :root {
+        --emerald: #0f766e;
+        --saffron: #f3c969;
+        --cream: #fdf7e3;
+        --ink: #0f172a;
+        --bg: #0c1118;
+        --surface: rgba(20, 25, 34, 0.55);
+        --surface-strong: rgba(24, 31, 42, 0.85);
+        --border: rgba(243, 201, 105, 0.18);
+        --muted: rgba(253, 247, 227, 0.62);
+        --muted-strong: rgba(253, 247, 227, 0.85);
+    }
 
-        main {
-            position: relative;
-            max-width: 860px;
-            margin: 2rem auto;
-            background: #13131a;
-            border: 1px solid #1f1f2a;
-            border-radius: 18px;
-            padding: 2.5rem;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.35);
-            font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            color: #f5f7fb;
-            line-height: 1.6;
-        }
+    * { box-sizing: border-box; }
 
-        .content-wrapper {
-            position: relative;
-            z-index: 1;
-        }
+    body {
+        margin: 0;
+        font-family: 'Geologica', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        background: radial-gradient(1200px 600px at 50% -100px, rgba(15, 118, 110, 0.18), transparent 70%),
+                    radial-gradient(900px 500px at 80% 100%, rgba(243, 201, 105, 0.06), transparent 70%),
+                    var(--bg);
+        color: var(--cream);
+        min-height: 100vh;
+        -webkit-font-smoothing: antialiased;
+        font-size: 16px;
+        line-height: 1.7;
+    }
 
-        /* Add padding on larger screens to prevent title overlap with back button */
-        @media (min-width: 721px) {
-            .content-wrapper {
-                padding-right: 200px;
-            }
-        }
+    a { color: inherit; }
 
-        h1 {
-            margin-top: 0;
-            color: #82e0ff;
-            letter-spacing: 0.02em;
-        }
+    .container {
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 2.5rem 1.25rem 4rem;
+    }
 
-        h2 {
-            margin-top: 2rem;
-            color: #e2e8f0;
-        }
+    .topbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 0.75rem;
+        padding-bottom: 1.5rem;
+        border-bottom: 1px solid var(--border);
+        margin-bottom: 2rem;
+    }
+    .crumb {
+        font-size: 0.85rem;
+        color: var(--muted);
+        letter-spacing: 0.02em;
+    }
+    .back-link {
+        font-size: 0.85rem;
+        color: var(--muted);
+        padding: 0.45rem 0.85rem;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        text-decoration: none;
+        transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+    }
+    .back-link:hover {
+        color: var(--saffron);
+        border-color: rgba(243, 201, 105, 0.45);
+        background: rgba(243, 201, 105, 0.06);
+    }
 
-        p {
-            color: #cbd5e1;
-        }
+    .article-meta {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 0.75rem;
+    }
+    .badge {
+        font-size: 11px;
+        color: var(--saffron);
+        background: rgba(243, 201, 105, 0.12);
+        border: 1px solid rgba(243, 201, 105, 0.3);
+        padding: 2px 9px;
+        border-radius: 999px;
+        letter-spacing: 0.03em;
+        text-transform: lowercase;
+    }
+    h1 {
+        margin: 0 0 1rem;
+        font-size: clamp(1.8rem, 4vw, 2.4rem);
+        font-weight: 600;
+        line-height: 1.2;
+        letter-spacing: -0.015em;
+        color: var(--cream);
+    }
+    p, li {
+        color: var(--muted-strong);
+        font-size: 1rem;
+    }
 
-        ul {
-            padding-left: 1.2rem;
-            color: #cbd5e1;
-        }
+    h2 {
+        margin-top: 2.5rem;
+        margin-bottom: 0.75rem;
+        font-size: 1.3rem;
+        font-weight: 600;
+        color: var(--cream);
+        letter-spacing: -0.01em;
+    }
 
-        li strong {
-            color: #f8fafc;
-        }
+    .data-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 1.1rem 1.25rem;
+        margin-top: 0.75rem;
+    }
+    .data-card p { margin: 0 0 0.75rem; }
+    .data-card p:last-child { margin-bottom: 0; }
+    .data-card ul {
+        margin: 0.5rem 0 0;
+        padding-left: 1.4rem;
+    }
+    .data-card li { margin: 0.4rem 0; }
+    .data-card li strong { color: var(--saffron); font-weight: 600; }
 
-        .data-card {
-            background: #0f1118;
-            border: 1px solid #1f2735;
-            border-radius: 14px;
-            padding: 1rem 1.25rem;
-            margin-top: 1rem;
-        }
+    .contact {
+        margin-top: 2.25rem;
+        padding-top: 1.25rem;
+        border-top: 1px solid var(--border);
+    }
+    a.inline {
+        color: var(--saffron);
+        text-decoration: underline;
+        text-decoration-thickness: 1px;
+        text-underline-offset: 3px;
+    }
+    a.inline:hover { color: #ffd37a; }
 
-        .contact {
-            margin-top: 2rem;
-            padding-top: 1rem;
-            border-top: 1px solid #1f2735;
-        }
-
-        .back-link {
-            position: absolute;
-            top: 1.5rem;
-            right: 1.5rem;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.4rem;
-            text-decoration: none;
-            color: rgba(203, 213, 225, 0.7);
-            padding: 0.5rem 0.9rem;
-            border-radius: 8px;
-            background: rgba(15, 118, 110, 0.15);
-            border: 1px solid rgba(130, 224, 255, 0.2);
-            font-weight: 500;
-            font-size: 0.9rem;
-            transition: all 0.2s ease;
-        }
-
-        .back-link:hover {
-            color: #82e0ff;
-            background: rgba(15, 118, 110, 0.25);
-            border-color: rgba(130, 224, 255, 0.4);
-            transform: translateX(-2px);
-        }
-
-        /* Make back button full-width and static on mobile */
-        @media (max-width: 720px) {
-            body {
-                padding: 1.5rem 1rem;
-            }
-
-            main {
-                padding: 1.75rem 1.5rem;
-                margin: 1rem auto;
-            }
-
-            .content-wrapper {
-                padding-right: 0;
-            }
-
-            .back-link {
-                position: static;
-                margin-bottom: 1.5rem;
-                width: 100%;
-                justify-content: center;
-                padding: 0.85rem 1.2rem;
-                font-size: 1rem;
-            }
-
-            h1 {
-                font-size: 1.75rem;
-            }
-
-            h2 {
-                font-size: 1.3rem;
-            }
-
-            p, li {
-                font-size: 0.95rem;
-            }
-        }
-
-        @media (max-width: 480px) {
-            body {
-                padding: 1rem 0.5rem;
-            }
-
-            main {
-                padding: 1.5rem 1.25rem;
-            }
-
-            .back-link {
-                padding: 0.8rem 1rem;
-                font-size: 0.95rem;
-            }
-
-            h1 {
-                font-size: 1.5rem;
-            }
-
-            h2 {
-                font-size: 1.15rem;
-            }
-
-            p, li {
-                font-size: 0.9rem;
-            }
-        }
-    </style>
+    @media (max-width: 540px) {
+        .container { padding: 1.75rem 1rem 3rem; }
+        .topbar { flex-wrap: wrap; }
+    }
+</style>
 {% endblock %}
 
 {% block content %}
-<main>
-    <a href="{% url 'index' %}" class="back-link">← Back</a>
-    <div class="content-wrapper">
-        <h1>Privacy Policy</h1>
+<div class="container">
+    <div class="topbar">
+        <div class="crumb">privacy policy</div>
+        <a href="{% url 'index' %}" class="back-link" data-track="privacy-back">← Back</a>
+    </div>
+
+    <div class="article-meta">
+        <span class="badge">policy</span>
+    </div>
+    <h1>Privacy Policy</h1>
+    <p>
+        Amiibo Tracker relies on Google Sign-In only to authenticate you and to connect to your personal Google Sheet named
+        "AmiiboCollection." The app does not use a separate database or server-side store; all of your collection data stays
+        in your own Google Sheet so you stay in control.
+    </p>
+
+    <h2>Data Accessed</h2>
+    <div class="data-card">
+        <ul>
+            {% for item in data_usage %}
+                <li><strong>{{ item.item }}:</strong> {{ item.purpose }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <h2>Data Usage</h2>
+    <div class="data-card">
         <p>
-            Amiibo Tracker relies on Google Sign-In only to authenticate you and to connect to your personal Google Sheet named
-            "AmiiboCollection." The app does not use a separate database or server-side store; all of your collection data stays
-            in your own Google Sheet so you stay in control.
+            Amiibo Tracker uses your Google profile (email and basic account name) to keep your session tied to the correct
+            Google account and to show which profile is signed in. Google Sheets access is used strictly to create, read, and
+            update the "AmiiboCollection" sheet that stores your collection status, toggles, and preferences. No other Google
+            Drive files or services are accessed, and your data is not used for advertising, profiling, or selling to third
+            parties.
         </p>
+        <ul>
+            <li>Access to Google data is limited to the scopes required to sign you in and manage the "AmiiboCollection" sheet.</li>
+            <li>Data is processed only to provide Amiibo Tracker features (syncing your collection and preferences).</li>
+            <li>The application follows the Google API Services User Data Policy and Google APIs Terms of Service when requesting and using your information.</li>
+        </ul>
+    </div>
 
-        <h2>Data Accessed</h2>
-        <div class="data-card">
-            <ul>
-                {% for item in data_usage %}
-                    <li><strong>{{ item.item }}:</strong> {{ item.purpose }}</li>
-                {% endfor %}
-            </ul>
-        </div>
-
-        <h2>Data Usage</h2>
-        <div class="data-card">
-            <p>
-                Amiibo Tracker uses your Google profile (email and basic account name) to keep your session tied to the correct
-                Google account and to show which profile is signed in. Google Sheets access is used strictly to create, read, and
-                update the "AmiiboCollection" sheet that stores your collection status, toggles, and preferences. No other Google
-                Drive files or services are accessed, and your data is not used for advertising, profiling, or selling to third
-                parties.
-            </p>
-            <ul>
-                <li>Access to Google data is limited to the scopes required to sign you in and manage the "AmiiboCollection" sheet.</li>
-                <li>Data is processed only to provide Amiibo Tracker features (syncing your collection and preferences).</li>
-                <li>The application follows the Google API Services User Data Policy and Google APIs Terms of Service when requesting and using your information.</li>
-            </ul>
-        </div>
-
-        <h2>Data Sharing</h2>
-        <div class="data-card">
-            <p>
-                Amiibo Tracker does not sell, share, or distribute your data to any third parties. The only external services involved
-                are Google Sign-In (for authentication) and Google Sheets (for storage). No data is shared with advertising networks
-                or analytics providers.
-            </p>
-        </div>
-
-        <h2>Data Storage &amp; Protection</h2>
-        <div class="data-card">
-            <p>
-                Amiibo Tracker does not maintain a separate database or server-side store for your information. All collection data
-                is written to your personal "AmiiboCollection" Google Sheet. Access to that sheet is protected by your Google account
-                permissions, and you can revoke app access at any time through your Google account settings.
-            </p>
-            <ul>
-                <li>No Amiibo data is persisted on Goozamiibo's servers; any data processed during a session remains in memory only long enough to complete your request.</li>
-                <li>All connections to Google APIs use HTTPS to protect data in transit.</li>
-                <li>The app does not log or export the contents of your sheet outside your Google account.</li>
-            </ul>
-        </div>
-
-        <h2>Data Retention &amp; Deletion</h2>
-        <div class="data-card">
-            <p>
-                Your data remains in your Google Sheet until you delete it. If you remove app access or delete the "AmiiboCollection"
-                sheet, Amiibo Tracker can no longer read or write your data. You control removal by deleting the sheet or revoking
-                access yourself.
-            </p>
-            <ul>
-                <li>To delete all stored information, remove or clear the "AmiiboCollection" sheet in your Google Drive.</li>
-                <li>To revoke Goozamiibo's access, visit <a href="https://myaccount.google.com/permissions" target="_blank" rel="noopener noreferrer">https://myaccount.google.com/permissions</a> and remove Amiibo Tracker.</li>
-            </ul>
-        </div>
-
-        <h2>Contact</h2>
-        <p class="contact">
-            For privacy questions, email <a href="mailto:codingsina@gmail.com">codingsina@gmail.com</a>. Deleting your data remains under your control via your Google account.
+    <h2>Data Sharing</h2>
+    <div class="data-card">
+        <p>
+            Amiibo Tracker does not sell, share, or distribute your data to any third parties. The only external services involved
+            are Google Sign-In (for authentication) and Google Sheets (for storage). No data is shared with advertising networks
+            or analytics providers.
         </p>
     </div>
-</main>
+
+    <h2>Data Storage &amp; Protection</h2>
+    <div class="data-card">
+        <p>
+            Amiibo Tracker does not maintain a separate database or server-side store for your information. All collection data
+            is written to your personal "AmiiboCollection" Google Sheet. Access to that sheet is protected by your Google account
+            permissions, and you can revoke app access at any time through your Google account settings.
+        </p>
+        <ul>
+            <li>No Amiibo data is persisted on Goozamiibo's servers; any data processed during a session remains in memory only long enough to complete your request.</li>
+            <li>All connections to Google APIs use HTTPS to protect data in transit.</li>
+            <li>The app does not log or export the contents of your sheet outside your Google account.</li>
+        </ul>
+    </div>
+
+    <h2>Data Retention &amp; Deletion</h2>
+    <div class="data-card">
+        <p>
+            Your data remains in your Google Sheet until you delete it. If you remove app access or delete the "AmiiboCollection"
+            sheet, Amiibo Tracker can no longer read or write your data. You control removal by deleting the sheet or revoking
+            access yourself.
+        </p>
+        <ul>
+            <li>To delete all stored information, remove or clear the "AmiiboCollection" sheet in your Google Drive.</li>
+            <li>To revoke Goozamiibo's access, visit <a href="https://myaccount.google.com/permissions" target="_blank" rel="noopener noreferrer" class="inline">https://myaccount.google.com/permissions</a> and remove Amiibo Tracker.</li>
+        </ul>
+    </div>
+
+    <p class="contact">
+        For privacy questions, email <a href="mailto:codingsina@gmail.com" class="inline">codingsina@gmail.com</a>. Deleting your data remains under your control via your Google account.
+    </p>
+</div>
 {% endblock %}

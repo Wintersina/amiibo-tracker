@@ -8,557 +8,406 @@
 
 {% block head_extra %}
 <style>
-        @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Geologica:wght@300;400;500;600;700&display=swap');
 
-        :root {
-            --emerald: #0f766e;
-            --saffron: #f3c969;
-            --cream: #fdf7e3;
-            --ink: #0f172a;
-        }
+    :root {
+        --emerald: #0f766e;
+        --saffron: #f3c969;
+        --cream: #fdf7e3;
+        --ink: #0f172a;
+        --bg: #0c1118;
+        --surface: rgba(20, 25, 34, 0.55);
+        --surface-strong: rgba(24, 31, 42, 0.85);
+        --border: rgba(243, 201, 105, 0.18);
+        --muted: rgba(253, 247, 227, 0.62);
+        --muted-strong: rgba(253, 247, 227, 0.85);
+    }
 
-        * {
-            box-sizing: border-box;
-        }
+    * { box-sizing: border-box; }
 
-        body {
-            margin: 0;
-            padding: 120px 1rem 2rem 1rem;
-            font-family: 'Vazirmatn', system-ui, sans-serif;
-            background: linear-gradient(180deg, rgba(6, 10, 14, 0.95), rgba(12, 18, 24, 0.9)),
-            url('{% static "images/amiibo_bg.png" %}') center/420px repeat;
-            background-attachment: fixed;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            color: var(--cream);
-        }
+    body {
+        margin: 0;
+        font-family: 'Geologica', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        background: radial-gradient(1200px 600px at 50% -100px, rgba(15, 118, 110, 0.18), transparent 70%),
+                    radial-gradient(900px 500px at 80% 100%, rgba(243, 201, 105, 0.06), transparent 70%),
+                    var(--bg);
+        color: var(--cream);
+        min-height: 100vh;
+        -webkit-font-smoothing: antialiased;
+        font-size: 16px;
+        line-height: 1.7;
+    }
 
-        .canvas {
-            position: relative;
-            padding: 3rem;
-            width: min(1100px, 90vw);
-            margin: 2rem auto;
-            border-radius: 28px;
-            background: rgba(15, 23, 42, 0.72);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(243, 201, 105, 0.35);
-            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.45);
-            overflow: hidden;
-        }
+    a { color: inherit; }
 
-        .canvas::before,
-        .canvas::after {
-            content: "";
-            position: absolute;
-            inset: 18px;
-            border-radius: 20px;
-            background-image: radial-gradient(circle at 12px 12px, rgba(243, 201, 105, 0.35) 2px, transparent 0),
-            radial-gradient(circle at 42px 42px, rgba(255, 255, 255, 0.15) 1.5px, transparent 0);
-            background-size: 120px 120px, 160px 160px;
-            opacity: 0.4;
-            pointer-events: none;
-        }
+    .container {
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 2.5rem 1.25rem 4rem;
+    }
 
-        .canvas::after {
-            inset: 0;
-            border: 1px solid rgba(255, 255, 255, 0.06);
-            border-radius: 28px;
-            background: radial-gradient(circle at 25% 20%, rgba(243, 201, 105, 0.08), transparent 30%),
-            radial-gradient(circle at 80% 60%, rgba(15, 118, 110, 0.08), transparent 35%);
-        }
+    /* ---- Top bar ---- */
+    .topbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 0.75rem;
+        padding-bottom: 1.5rem;
+        border-bottom: 1px solid var(--border);
+        margin-bottom: 2rem;
+    }
+    .crumb {
+        font-size: 0.85rem;
+        color: var(--muted);
+        letter-spacing: 0.02em;
+    }
+    .crumb a { color: var(--muted); text-decoration: none; }
+    .crumb a:hover { color: var(--saffron); }
+    .nav-actions { display: flex; gap: 0.5rem; }
+    .action-btn {
+        font-size: 0.85rem;
+        color: var(--muted);
+        padding: 0.45rem 0.85rem;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        text-decoration: none;
+        transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+    }
+    .action-btn:hover {
+        color: var(--saffron);
+        border-color: rgba(243, 201, 105, 0.45);
+        background: rgba(243, 201, 105, 0.06);
+    }
 
-        .content {
-            position: relative;
-            z-index: 1;
-            /* Reserve space for absolutely positioned nav buttons on desktop */
-            padding-right: 0;
-        }
+    /* ---- Article header ---- */
+    .article-meta {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 0.75rem;
+    }
+    .badge {
+        font-size: 11px;
+        color: var(--saffron);
+        background: rgba(243, 201, 105, 0.12);
+        border: 1px solid rgba(243, 201, 105, 0.3);
+        padding: 2px 9px;
+        border-radius: 999px;
+        letter-spacing: 0.03em;
+        text-transform: lowercase;
+    }
+    .date {
+        font-size: 12px;
+        color: var(--muted);
+    }
 
-        /* On larger screens, add padding to prevent title collision with nav buttons */
-        @media (min-width: 721px) {
-            .content {
-                padding-right: 200px;
-            }
-        }
+    h1 {
+        margin: 0 0 1.5rem;
+        font-size: clamp(1.8rem, 4vw, 2.4rem);
+        font-weight: 600;
+        line-height: 1.2;
+        letter-spacing: -0.015em;
+        color: var(--cream);
+    }
 
-        h1 {
-            margin: 0 0 0.35em 0;
-            font-size: clamp(2.1rem, 3vw, 2.8rem);
-            letter-spacing: 0.01em;
-        }
+    .featured-image {
+        width: 100%;
+        max-width: 100%;
+        height: auto;
+        border-radius: 14px;
+        margin: 0 0 2rem;
+        display: block;
+        border: 1px solid var(--border);
+    }
 
-        .post-date {
-            color: rgba(253, 247, 227, 0.7);
-            font-size: 0.95rem;
-            margin-bottom: 2rem;
-        }
+    /* ---- Body ---- */
+    .post-content {
+        font-size: 1.02rem;
+        line-height: 1.75;
+        color: var(--muted-strong);
+    }
 
-        .featured-image {
-            width: 100%;
-            max-width: 800px;
-            height: auto;
-            border-radius: 16px;
-            margin: 1.5rem auto 2rem;
-            display: block;
-            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
-            border: 2px solid rgba(243, 201, 105, 0.3);
-        }
+    .post-content h2 {
+        margin-top: 2.5rem;
+        margin-bottom: 0.75rem;
+        font-size: 1.4rem;
+        font-weight: 600;
+        color: var(--cream);
+        letter-spacing: -0.01em;
+    }
 
-        .post-content {
-            line-height: 1.7;
-            color: rgba(253, 247, 227, 0.9);
-            font-size: 1.05rem;
-        }
+    .post-content h3 {
+        margin-top: 2rem;
+        margin-bottom: 0.5rem;
+        font-size: 1.15rem;
+        font-weight: 600;
+        color: var(--cream);
+    }
 
-        .post-content h2 {
-            margin-top: 2rem;
-            margin-bottom: 0.75rem;
-            font-size: 1.75rem;
-            color: var(--cream);
-        }
+    .post-content p { margin: 1.05rem 0; }
 
-        .post-content h3 {
-            margin-top: 1.5rem;
-            margin-bottom: 0.5rem;
-            font-size: 1.35rem;
-            color: var(--cream);
-        }
+    .post-content ul,
+    .post-content ol {
+        margin: 1rem 0;
+        padding-left: 1.4rem;
+    }
 
-        .post-content p {
-            margin: 1rem 0;
-        }
+    .post-content li { margin: 0.5rem 0; }
 
-        .post-content ul {
-            margin: 1rem 0;
-            padding-left: 1.5rem;
-        }
+    .post-content strong { color: var(--cream); font-weight: 600; }
 
-        .post-content li {
-            margin: 0.5rem 0;
-        }
+    .post-content a {
+        color: var(--saffron);
+        text-decoration: underline;
+        text-decoration-thickness: 1px;
+        text-underline-offset: 3px;
+    }
+    .post-content a:hover { color: #ffd37a; }
 
-        .post-content strong {
-            color: var(--cream);
-            font-weight: 600;
-        }
+    .post-content code {
+        background: rgba(255, 255, 255, 0.06);
+        padding: 1px 6px;
+        border-radius: 4px;
+        font-size: 0.9em;
+    }
 
-        .amiibo-list-intro {
-            background: rgba(243, 201, 105, 0.1);
-            border: 1px solid rgba(243, 201, 105, 0.3);
-            border-radius: 14px;
-            padding: 1.25rem;
-            margin: 1.5rem 0;
-        }
+    .post-content blockquote {
+        margin: 1.5rem 0;
+        padding: 0.5rem 1.25rem;
+        border-left: 3px solid rgba(243, 201, 105, 0.4);
+        color: var(--muted);
+        background: rgba(243, 201, 105, 0.04);
+        border-radius: 0 8px 8px 0;
+    }
 
-        .amiibo-list-intro p {
-            margin: 0;
-            color: rgba(253, 247, 227, 0.95);
-        }
+    /* ---- Dynamic-list callouts ---- */
+    .amiibo-list-intro {
+        background: var(--surface-strong);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 1.1rem 1.25rem;
+        margin: 1.5rem 0;
+    }
+    .amiibo-list-intro p {
+        margin: 0;
+        color: var(--muted-strong);
+    }
 
-        .total-count {
-            font-size: 1.15rem;
-            font-weight: 600;
-            color: var(--saffron);
-            margin: 1.5rem 0 1rem 0;
-        }
+    .total-count {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: var(--saffron);
+        margin: 1.75rem 0 1rem;
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+    }
 
-        .amiibo-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 1.5rem 0;
-            font-size: 0.95rem;
-        }
+    /* ---- Amiibo table ---- */
+    .amiibo-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        margin: 1rem 0 1.5rem;
+        font-size: 0.92rem;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        overflow: hidden;
+    }
+    .amiibo-table thead {
+        background: rgba(255, 255, 255, 0.03);
+    }
+    .amiibo-table th {
+        padding: 0.85rem 0.9rem;
+        text-align: left;
+        font-weight: 600;
+        font-size: 0.78rem;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: var(--muted);
+        border-bottom: 1px solid var(--border);
+    }
+    .amiibo-table th.img-col {
+        width: 72px;
+        text-align: center;
+    }
+    .amiibo-table tbody tr {
+        border-bottom: 1px solid rgba(243, 201, 105, 0.08);
+        transition: background 0.15s ease;
+    }
+    .amiibo-table tbody tr:last-child { border-bottom: none; }
+    .amiibo-table tbody tr.clickable-row { cursor: pointer; }
+    .amiibo-table tbody tr.clickable-row:hover {
+        background: rgba(243, 201, 105, 0.05);
+    }
+    .amiibo-table td {
+        padding: 0.7rem 0.9rem;
+        color: var(--muted-strong);
+        border-bottom: 1px solid rgba(243, 201, 105, 0.08);
+    }
+    .amiibo-table tbody tr:last-child td { border-bottom: none; }
+    .amiibo-table td.img-col {
+        text-align: center;
+        padding: 0.5rem;
+    }
+    .amiibo-thumbnail {
+        width: 44px;
+        height: 44px;
+        object-fit: contain;
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.04);
+        padding: 2px;
+    }
+    .img-fallback {
+        display: none;
+        width: 44px;
+        height: 44px;
+        line-height: 44px;
+        background: rgba(243, 201, 105, 0.12);
+        border-radius: 8px;
+        color: rgba(243, 201, 105, 0.6);
+        font-size: 1.2rem;
+        font-weight: 600;
+        text-align: center;
+        margin: 0 auto;
+    }
+    .amiibo-table td.name-col {
+        font-weight: 600;
+        color: var(--cream);
+    }
+    .amiibo-table td:last-child {
+        color: var(--muted);
+        font-size: 0.88rem;
+    }
 
-        .amiibo-table thead {
-            background: rgba(15, 118, 110, 0.2);
-            border-bottom: 2px solid rgba(243, 201, 105, 0.4);
-        }
+    /* ---- Pagination ---- */
+    .pagination {
+        margin: 2rem 0 0;
+        padding: 1.25rem;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 0.85rem;
+        align-items: center;
+    }
+    .pagination-info {
+        color: var(--muted);
+        font-size: 0.85rem;
+    }
+    .pagination-controls {
+        display: flex;
+        gap: 0.4rem;
+        align-items: center;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    .page-btn {
+        padding: 0.45rem 0.85rem;
+        background: transparent;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        color: var(--muted-strong);
+        text-decoration: none;
+        font-size: 0.85rem;
+        font-weight: 500;
+        transition: all 0.15s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+    }
+    .page-btn:hover {
+        color: var(--saffron);
+        border-color: rgba(243, 201, 105, 0.45);
+        background: rgba(243, 201, 105, 0.06);
+    }
+    .page-btn.disabled {
+        opacity: 0.35;
+        cursor: not-allowed;
+        pointer-events: none;
+    }
+    .page-current {
+        padding: 0.45rem 0.85rem;
+        background: rgba(243, 201, 105, 0.12);
+        border: 1px solid rgba(243, 201, 105, 0.4);
+        border-radius: 999px;
+        color: var(--saffron);
+        font-weight: 600;
+        font-size: 0.85rem;
+    }
 
-        .amiibo-table th {
-            padding: 0.9rem;
-            text-align: left;
-            font-weight: 600;
-            color: var(--cream);
-        }
+    .error-message {
+        background: rgba(220, 38, 38, 0.1);
+        border: 1px solid rgba(220, 38, 38, 0.35);
+        border-radius: 12px;
+        padding: 1rem 1.2rem;
+        margin: 1.5rem 0;
+        color: var(--muted-strong);
+    }
 
-        .amiibo-table th.img-col {
-            width: 70px;
-            text-align: center;
-        }
+    /* ---- Mobile ---- */
+    @media (max-width: 540px) {
+        .container { padding: 1.75rem 1rem 3rem; }
+        .topbar { flex-wrap: wrap; gap: 0.75rem; }
+        .featured-image { border-radius: 10px; }
 
+        .amiibo-table { display: block; border: none; background: transparent; }
+        .amiibo-table thead { display: none; }
+        .amiibo-table tbody { display: block; }
         .amiibo-table tbody tr {
-            border-bottom: 1px solid rgba(243, 201, 105, 0.15);
-            transition: background 0.2s ease, transform 0.1s ease;
+            display: block;
+            margin-bottom: 0.75rem;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 0.75rem;
+            background: var(--surface);
         }
-
-        .amiibo-table tbody tr.clickable-row {
-            cursor: pointer;
-        }
-
-        .amiibo-table tbody tr.clickable-row:hover {
-            background: rgba(243, 201, 105, 0.08);
-            transform: scale(1.01);
-        }
-
         .amiibo-table td {
-            padding: 0.75rem 0.9rem;
-            color: rgba(253, 247, 227, 0.88);
+            display: block;
+            padding: 0.3rem 0;
+            border-bottom: none;
+            text-align: left !important;
         }
-
-        .amiibo-table td.img-col {
-            text-align: center;
-            position: relative;
-            padding: 0.5rem;
-        }
-
-        .amiibo-thumbnail {
-            width: 48px;
-            height: 48px;
-            object-fit: contain;
-            border-radius: 6px;
-            background: rgba(255, 255, 255, 0.05);
-            padding: 2px;
-        }
-
-        .img-fallback {
-            display: none;
-            width: 48px;
-            height: 48px;
-            line-height: 48px;
-            background: rgba(243, 201, 105, 0.15);
-            border-radius: 6px;
-            color: rgba(243, 201, 105, 0.6);
-            font-size: 1.5rem;
-            font-weight: bold;
-            text-align: center;
-            margin: 0 auto;
-        }
-
-        .amiibo-table td.name-col {
+        .amiibo-table td::before {
+            content: attr(data-label);
             font-weight: 600;
-            color: var(--cream);
+            color: var(--muted);
+            margin-right: 0.5rem;
+            font-size: 0.78rem;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
         }
-
-        .amiibo-table td:last-child {
-            color: rgba(253, 247, 227, 0.7);
-            font-size: 0.9rem;
+        .amiibo-table td.img-col {
+            text-align: center !important;
+            padding: 0.5rem 0;
         }
-
-        /* Pagination Styles */
-        .pagination {
-            margin: 2rem 0;
-            padding: 1.5rem;
-            background: rgba(15, 118, 110, 0.1);
-            border: 1px solid rgba(243, 201, 105, 0.3);
-            border-radius: 14px;
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-            align-items: center;
+        .amiibo-table td.img-col::before { display: none; }
+        .amiibo-thumbnail, .img-fallback {
+            width: 56px;
+            height: 56px;
         }
-
-        .pagination-info {
-            color: rgba(253, 247, 227, 0.8);
-            font-size: 0.95rem;
-        }
-
-        .pagination-controls {
-            display: flex;
-            gap: 0.6rem;
-            align-items: center;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-
-        .page-btn {
-            padding: 0.65rem 1.2rem;
-            background: rgba(255, 255, 255, 0.08);
-            border: 1px solid rgba(243, 201, 105, 0.4);
-            border-radius: 12px;
-            color: var(--cream);
-            text-decoration: none;
-            font-size: 0.95rem;
-            font-weight: 700;
-            transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.4rem;
-            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
-        }
-
-        .page-btn:hover {
-            background: rgba(255, 255, 255, 0.12);
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.18);
-        }
-
-        .page-btn.disabled {
-            opacity: 0.4;
-            cursor: not-allowed;
-            pointer-events: none;
-        }
-
-        .page-current {
-            padding: 0.65rem 1.2rem;
-            background: linear-gradient(135deg, rgba(15, 118, 110, 0.3), rgba(243, 201, 105, 0.2));
-            border: 1px solid rgba(243, 201, 105, 0.5);
-            border-radius: 12px;
-            color: var(--saffron);
-            font-weight: 700;
-            font-size: 0.95rem;
-            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
-        }
-
-        .error-message {
-            background: rgba(220, 38, 38, 0.15);
-            border: 1px solid rgba(220, 38, 38, 0.4);
-            border-radius: 14px;
-            padding: 1.25rem;
-            margin: 1.5rem 0;
-            color: rgba(253, 247, 227, 0.95);
-        }
-
-        .nav-buttons {
-            position: absolute;
-            top: 1.5rem;
-            right: 1.5rem;
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-            align-items: flex-end;
-        }
-
-        .action-btn {
-            text-decoration: none;
-            border: none;
-            cursor: pointer;
-            border-radius: 8px;
-            padding: 0.5rem 0.9rem;
-            font-size: 0.9rem;
-            font-weight: 500;
-            letter-spacing: 0.01em;
-            transition: all 0.2s ease;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.4rem;
-            background: rgba(15, 118, 110, 0.15);
-            color: rgba(253, 247, 227, 0.7);
-            border: 1px solid rgba(243, 201, 105, 0.2);
-        }
-
-        .action-btn:hover {
-            color: var(--saffron);
-            background: rgba(15, 118, 110, 0.25);
-            border-color: rgba(243, 201, 105, 0.4);
-            transform: translateX(-2px);
-        }
-
-        @media (max-width: 720px) {
-            body {
-                padding: 1.5rem 0.75rem;
-            }
-
-            .canvas {
-                padding: 1.75rem 1.5rem;
-                width: 95vw;
-            }
-
-            .content {
-                padding-top: 0;
-            }
-
-            h1 {
-                font-size: 1.8rem;
-            }
-
-            .post-date {
-                font-size: 0.85rem;
-            }
-
-            .featured-image {
-                margin: 1rem auto 1.5rem;
-                border-radius: 12px;
-            }
-
-            .post-content {
-                font-size: 1rem;
-            }
-
-            .post-content h2 {
-                font-size: 1.5rem;
-                margin-top: 1.5rem;
-            }
-
-            .post-content h3 {
-                font-size: 1.2rem;
-                margin-top: 1.2rem;
-            }
-
-            .amiibo-list-intro {
-                padding: 1rem;
-                font-size: 0.95rem;
-            }
-
-            .total-count {
-                font-size: 1.05rem;
-            }
-
-            .amiibo-table {
-                font-size: 0.8rem;
-                display: block;
-                overflow-x: auto;
-            }
-
-            .amiibo-table thead {
-                display: none;
-            }
-
-            .amiibo-table tbody {
-                display: block;
-            }
-
-            .amiibo-table tbody tr {
-                display: block;
-                margin-bottom: 1rem;
-                border: 1px solid rgba(243, 201, 105, 0.3);
-                border-radius: 12px;
-                padding: 0.75rem;
-                background: rgba(255, 255, 255, 0.03);
-            }
-
-            .amiibo-table td {
-                display: block;
-                padding: 0.4rem 0;
-                text-align: left !important;
-            }
-
-            .amiibo-table td::before {
-                content: attr(data-label);
-                font-weight: 600;
-                color: var(--cream);
-                margin-right: 0.5rem;
-            }
-
-            .amiibo-table td.img-col {
-                text-align: center !important;
-                padding: 0.5rem 0;
-            }
-
-            .amiibo-table td.img-col::before {
-                display: none;
-            }
-
-            .amiibo-thumbnail {
-                width: 60px;
-                height: 60px;
-            }
-
-            .img-fallback {
-                width: 60px;
-                height: 60px;
-                line-height: 60px;
-                font-size: 1.5rem;
-            }
-
-            .pagination {
-                padding: 1rem;
-            }
-
-            .pagination-info {
-                font-size: 0.85rem;
-            }
-
-            .pagination-controls {
-                gap: 0.4rem;
-            }
-
-            .page-btn,
-            .page-current {
-                padding: 0.5rem 0.85rem;
-                font-size: 0.85rem;
-            }
-
-            .nav-buttons {
-                position: static;
-                margin-bottom: 1.5rem;
-                flex-direction: column;
-                gap: 0.6rem;
-            }
-
-            .action-btn {
-                width: 100%;
-                justify-content: center;
-                padding: 0.85rem 1.2rem;
-                font-size: 1rem;
-            }
-        }
-
-        @media (max-width: 480px) {
-            body {
-                padding: 1rem 0.5rem;
-            }
-
-            .canvas {
-                padding: 1.5rem 1.25rem;
-            }
-
-            h1 {
-                font-size: 1.6rem;
-            }
-
-            .post-content {
-                font-size: 0.95rem;
-            }
-
-            .post-content h2 {
-                font-size: 1.35rem;
-            }
-
-            .post-content h3 {
-                font-size: 1.1rem;
-            }
-
-            .amiibo-table {
-                font-size: 0.75rem;
-            }
-
-            .amiibo-thumbnail {
-                width: 50px;
-                height: 50px;
-            }
-
-            .img-fallback {
-                width: 50px;
-                height: 50px;
-                line-height: 50px;
-                font-size: 1.3rem;
-            }
-
-            .page-btn,
-            .page-current {
-                padding: 0.45rem 0.7rem;
-                font-size: 0.8rem;
-            }
-
-            .action-btn {
-                padding: 0.8rem 1rem;
-                font-size: 0.95rem;
-            }
-        }
-    </style>
+        .img-fallback { line-height: 56px; }
+    }
+</style>
 {% endblock %}
 
 {% block content %}
-<div class="canvas">
-    <div class="nav-buttons">
-        <a href="javascript:history.back()" class="action-btn" data-track="blog-back">← Back</a>
-        <a href="{% url 'index' %}" class="action-btn" data-track="blog-home">← Home</a>
+<div class="container">
+    <div class="topbar">
+        <div class="crumb"><a href="{% url 'blog_list' %}">← amiibo blog</a></div>
+        <div class="nav-actions">
+            <a href="{% url 'blog_list' %}" class="action-btn" data-track="blog-back">All posts</a>
+            <a href="{% url 'index' %}" class="action-btn" data-track="blog-home">Home</a>
+        </div>
     </div>
-    <div class="content">
+
+    <article>
+        <div class="article-meta">
+            <span class="badge">post</span>
+            <span class="date">{{ post.date|iso_long_date }}</span>
+        </div>
         <h1>{{ post.title }}</h1>
-        <div class="post-date">{{ post.date }}</div>
 
         {% if post.featured_image %}
         <img src="{% static post.featured_image %}" alt="{{ post.title }}" class="featured-image" loading="lazy">
@@ -571,7 +420,7 @@
                         <p><strong>Error:</strong> Unable to load amiibo data. Please try again later.</p>
                     </div>
                 {% else %}
-                    <p class="total-count">Total Amiibo Released: {{ total_count }}</p>
+                    <p class="total-count">Total released: {{ total_count }}</p>
 
                     <table class="amiibo-table">
                         <thead>
@@ -581,7 +430,7 @@
                                 <th>Game Series</th>
                                 <th>Amiibo Series</th>
                                 <th>Type</th>
-                                <th>Release Date</th>
+                                <th>Release</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -595,11 +444,11 @@
                                          onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
                                     <div class="img-fallback">?</div>
                                 </td>
-                                <td class="name-col" data-label="Name:">{{ amiibo.name }}</td>
-                                <td data-label="Game Series:">{{ amiibo.gameSeries|default:"N/A" }}</td>
-                                <td data-label="Amiibo Series:">{{ amiibo.amiiboSeries|default:"N/A" }}</td>
-                                <td data-label="Type:">{{ amiibo.type|default:"N/A" }}</td>
-                                <td data-label="Release Date:">{{ amiibo.display_release|default:"TBA" }}</td>
+                                <td class="name-col" data-label="Name">{{ amiibo.name }}</td>
+                                <td data-label="Game Series">{{ amiibo.gameSeries|default:"N/A" }}</td>
+                                <td data-label="Amiibo Series">{{ amiibo.amiiboSeries|default:"N/A" }}</td>
+                                <td data-label="Type">{{ amiibo.type|default:"N/A" }}</td>
+                                <td data-label="Release">{{ amiibo.display_release|default:"TBA" }}</td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -637,14 +486,13 @@
                 {{ post.content|safe }}
             {% endif %}
         </div>
-    </div>
+    </article>
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script>
     function navigateToAmiibo(amiiboId, amiiboName) {
-        // Track with Google Ads (gtag)
         if (typeof gtag !== 'undefined') {
             gtag('event', 'amiibo_click', {
                 'event_category': 'engagement',
@@ -653,8 +501,6 @@
                 'page_location': 'all_amiibo_list'
             });
         }
-
-        // Navigate to detail page
         window.location.href = `/blog/number-released/amiibo/${amiiboId}/`;
     }
 </script>
