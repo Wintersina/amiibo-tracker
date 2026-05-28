@@ -1,4 +1,4 @@
-.PHONY: help test test-watch test-coverage lint format clean build run stop logs shell scrape deploy
+.PHONY: help test test-watch test-coverage lint format clean build run stop logs shell scrape deploy report-daily report-daily-dry install-certs
 
 # Default target - show help
 help:
@@ -35,6 +35,15 @@ help:
 	@echo "  make makemigrations    - Create new migrations"
 	@echo "  make collectstatic     - Collect static files"
 	@echo ""
+	@echo "Daily DAU report:"
+	@echo "  make report-daily-dry  - Dry run (no email/upload); auto-loads .env"
+	@echo "  make report-daily      - Send + archive the report; auto-loads .env"
+	@echo "  (override day with DATE=YYYY-MM-DD; default is yesterday UTC)"
+	@echo ""
+	@echo "macOS Python TLS fix:"
+	@echo "  make install-certs     - Run Python.org's Install Certificates.command"
+	@echo "                           (one-time; fixes SSL_CERT_FILE for SMTP/HTTPS)"
+	@echo ""
 	@echo "Utilities:"
 	@echo "  make clean             - Clean up cache and temp files"
 	@echo "  make install           - Install dependencies"
@@ -52,8 +61,18 @@ DOCKER_COMPOSE := $(shell \
 	elif command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then echo "docker compose"; \
 	fi)
 
-# PYTHON resolves to ./env/bin/python when a venv exists, else system python3
-PYTHON := $(shell if [ -x env/bin/python ]; then echo ./env/bin/python; else echo python3; fi)
+# PYTHON resolves to ./env/bin/python when a venv exists, else ./.venv/bin/python, else system python3
+PYTHON := $(shell \
+	if [ -x env/bin/python ]; then echo ./env/bin/python; \
+	elif [ -x .venv/bin/python ]; then echo ./.venv/bin/python; \
+	else echo python3; fi)
+
+# Shell snippet that exports every var in .env to the child process. The
+# `set -a` flag auto-exports anything assigned until `set +a`. The leading
+# `-` on the file test is a no-op shim so the command stays a single
+# semicolon-joined chain inside make recipes (one shell invocation = one
+# environment).
+ENV_LOAD := set -a; [ -f .env ] && . ./.env; set +a;
 
 test:
 	@echo "🧪 Running tests..."
@@ -123,6 +142,46 @@ scrape-force:
 scrape-docker:
 	@echo "🎮 Running scraper in Docker..."
 	docker-compose run --rm app python manage.py auto_scrape_nintendo --scraper=amiibolife --force
+
+# Daily DAU report
+#
+# Auto-loads .env so LOKI_QUERY_*, EMAIL_*, GCS_REPORTS_BUCKET, etc. are
+# in the environment without manual exports. Copy .env.example to .env
+# and fill in the secrets before running.
+#
+# Usage:
+#   make report-daily-dry           # yesterday UTC, no email/upload
+#   make report-daily-dry DATE=2026-05-27
+#   make report-daily               # actually email + archive
+report-daily-dry:
+	@echo "📨 Generating dry-run daily DAU report$(if $(DATE), for $(DATE),)..."
+	@$(ENV_LOAD) \
+	$(PYTHON) manage.py report_daily_users $(if $(DATE),--date $(DATE),) --dry-run
+
+report-daily:
+	@echo "📨 Sending daily DAU report$(if $(DATE), for $(DATE),)..."
+	@$(ENV_LOAD) \
+	$(PYTHON) manage.py report_daily_users $(if $(DATE),--date $(DATE),)
+
+# macOS Python TLS fix
+#
+# Python.org's installer ships an "Install Certificates.command" that pip
+# installs `certifi` and symlinks the CA bundle so the stdlib `ssl` module
+# can verify HTTPS / SMTP TLS handshakes. Runs once per Python minor version.
+# Picks the newest Python.framework version it finds under /Applications.
+install-certs:
+	@echo "🔐 Installing TLS certificates for Python.org Python..."
+	@SCRIPT=$$(ls -d "/Applications/Python "* 2>/dev/null \
+		| sort -V | tail -1)/"Install Certificates.command"; \
+	if [ ! -f "$$SCRIPT" ]; then \
+		echo "❌ Could not find an Install Certificates.command under /Applications/Python*."; \
+		echo "   If you're on Homebrew Python instead, certs are usually already wired."; \
+		echo "   Fallback: pip install certifi && set SSL_CERT_FILE in .env."; \
+		exit 1; \
+	fi; \
+	echo "   Using: $$SCRIPT"; \
+	"$$SCRIPT"
+	@echo "✅ TLS certs installed. Retry 'make report-daily'."
 
 # Code Quality
 lint:

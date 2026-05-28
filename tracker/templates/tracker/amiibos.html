@@ -890,7 +890,7 @@
             <div>Welcome, {{ user_name }}.</div>
             <div id="collectionTotal" class="collection-pill">Collected: 0</div>
         </div>
-        <button class="hamburger-btn" id="hamburgerToggle" aria-label="Toggle Menu">☰</button>
+        <button class="hamburger-btn" id="hamburgerToggle" aria-label="Toggle Menu" data-track="collection-menu-toggle">☰</button>
     </div>
     <div class="control-row" id="mobileMenu">
         <input id="searchInput" class="search-input" type="text" placeholder="Search Amiibo or date...">
@@ -908,7 +908,7 @@
                 </label>
             {% endfor %}
         </div>
-        <button id="darkModeToggle" class="dark-toggle" aria-label="Toggle Dark Mode" data-sheet-action>🌙</button>
+        <button id="darkModeToggle" class="dark-toggle" aria-label="Toggle Dark Mode" data-sheet-action data-track="dark-mode-toggle">🌙</button>
         <a href="{% url 'blog_list' %}" class="blog-btn" aria-label="Blog">📚 Blog</a>
         <a href="{% url 'logout' %}" class="logout-btn" aria-label="Logout">Logout</a>
     </div>
@@ -971,7 +971,7 @@
                             <p class="release-date">
                                 {{ amiibo.display_release|default:"N/A" }}
                             </p>
-                            <button onclick="toggleCollected(this)" data-sheet-action>
+                            <button onclick="toggleCollected(this)" data-sheet-action data-track="collection-toggle">
                                 {% if amiibo.collected %}Collected{% else %}Collect{% endif %}
                             </button>
                         </div>

@@ -294,9 +294,9 @@
 {% block content %}
 <div class="canvas">
     <div class="nav-buttons">
-        <a href="javascript:history.back()" class="action-btn primary" id="backBtn">← Back</a>
-        <a href="{% url 'blog_list' %}" class="action-btn">← Blog</a>
-        <a href="{% url 'index' %}" class="action-btn">← Home</a>
+        <a href="javascript:history.back()" class="action-btn primary" id="backBtn" data-track="detail-back">← Back</a>
+        <a href="{% url 'blog_list' %}" class="action-btn" data-track="detail-blog">← Blog</a>
+        <a href="{% url 'index' %}" class="action-btn" data-track="detail-home">← Home</a>
     </div>
     <div class="content">
         <div class="amiibo-header">

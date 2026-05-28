@@ -553,8 +553,8 @@
 {% block content %}
 <div class="canvas">
     <div class="nav-buttons">
-        <a href="javascript:history.back()" class="action-btn">← Back</a>
-        <a href="{% url 'index' %}" class="action-btn">← Home</a>
+        <a href="javascript:history.back()" class="action-btn" data-track="blog-back">← Back</a>
+        <a href="{% url 'index' %}" class="action-btn" data-track="blog-home">← Home</a>
     </div>
     <div class="content">
         <h1>{{ post.title }}</h1>
@@ -613,8 +613,8 @@
                         </div>
                         <div class="pagination-controls">
                             {% if amiibos.has_previous %}
-                                <a href="?page=1" class="page-btn">« First</a>
-                                <a href="?page={{ amiibos.previous_page_number }}" class="page-btn">‹ Prev</a>
+                                <a href="?page=1" class="page-btn" data-track="blog-paginate-first">« First</a>
+                                <a href="?page={{ amiibos.previous_page_number }}" class="page-btn" data-track="blog-paginate-prev">‹ Prev</a>
                             {% else %}
                                 <span class="page-btn disabled">« First</span>
                                 <span class="page-btn disabled">‹ Prev</span>
@@ -623,8 +623,8 @@
                             <span class="page-current">Page {{ amiibos.number }}</span>
 
                             {% if amiibos.has_next %}
-                                <a href="?page={{ amiibos.next_page_number }}" class="page-btn">Next ›</a>
-                                <a href="?page={{ amiibos.paginator.num_pages }}" class="page-btn">Last »</a>
+                                <a href="?page={{ amiibos.next_page_number }}" class="page-btn" data-track="blog-paginate-next">Next ›</a>
+                                <a href="?page={{ amiibos.paginator.num_pages }}" class="page-btn" data-track="blog-paginate-last">Last »</a>
                             {% else %}
                                 <span class="page-btn disabled">Next ›</span>
                                 <span class="page-btn disabled">Last »</span>

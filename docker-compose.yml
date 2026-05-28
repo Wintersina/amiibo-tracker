@@ -36,12 +36,18 @@ services:
       dockerfile: Dockerfile
     entrypoint: ""
     command: python manage.py runserver 0.0.0.0:8080
+    env_file:
+      - path: .env
+        required: false
     environment:
       - DJANGO_SETTINGS_MODULE=amiibo_tracker.settings
       - PORT=8080
+      - OAUTH_REDIRECT_URI=http://localhost:8080/oauth2callback/
+      - GOOGLE_OAUTH_CLIENT_SECRETS=/app/client_secret.json
     ports:
       - "8080:8080"
     volumes:
       - ./tracker:/app/tracker
       - ./amiibo_tracker:/app/amiibo_tracker
+      - ./client_secret.json:/app/client_secret.json:ro
     working_dir: /app

@@ -79,10 +79,20 @@ class LoggingMixin(object):
                 "user_hash": hash_email(email),
                 "authenticated": bool(email),
             }
+        else:
+            user_context = {"event": event}
 
         # Raw emails/names must not reach the log pipeline.
         context.pop("user_email", None)
         context.pop("user_name", None)
+
+        # Stable marker so the daily DAU report can find every user-action event
+        # with a single LogQL filter, regardless of which code path emitted it.
+        user_context["kind"] = "user-action"
+        user_context["action"] = event
+        if request is not None:
+            user_context.setdefault("path", getattr(request, "path", ""))
+            user_context.setdefault("method", getattr(request, "method", ""))
 
         message = f"{caller}[{event}]"
         merged_context = {**user_context, **context}

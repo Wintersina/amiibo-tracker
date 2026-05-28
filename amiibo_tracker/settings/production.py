@@ -40,3 +40,23 @@ X_FRAME_OPTIONS = "DENY"
 SECURE_SSL_REDIRECT = os.environ.get("SECURE_SSL_REDIRECT", "false").lower() == "true"
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 USE_X_FORWARDED_HOST = True
+
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = "smtp.gmail.com"
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER or "noreply@goozamiibo.com"
+
+DAILY_REPORT_TO_EMAIL = os.environ.get("DAILY_REPORT_TO_EMAIL", "")
+DAILY_REPORT_SCHEDULER_SA_EMAIL = os.environ.get(
+    "DAILY_REPORT_SCHEDULER_SA_EMAIL", ""
+)
+GCS_REPORTS_BUCKET = os.environ.get("GCS_REPORTS_BUCKET", "")
+
+LOKI_QUERY_URL = os.environ.get("LOKI_QUERY_URL") or os.environ.get("LOKI_URL", "")
+LOKI_QUERY_USER = os.environ.get("LOKI_QUERY_USER") or os.environ.get("LOKI_USER", "")
+LOKI_QUERY_API_KEY = os.environ.get("LOKI_QUERY_API_KEY") or os.environ.get(
+    "LOKI_API_KEY", ""
+)

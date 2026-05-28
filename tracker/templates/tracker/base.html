@@ -72,6 +72,8 @@
         })();
     </script>
 
+    <script defer src="{% static 'js/track-clicks.js' %}"></script>
+
     <!-- Google AdSense Integration -->
     <meta name="google-adsense-account" content="ca-pub-6947554333794592">
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6947554333794592" crossorigin="anonymous"></script>
@@ -331,35 +333,35 @@
     <nav class="top-nav">
         <div class="nav-container">
             <div class="nav-section nav-left">
-                <a href="{% url 'index' %}" class="logo-link">
+                <a href="{% url 'index' %}" class="logo-link" data-track="nav-logo">
                     <div class="logo-text">goozamiibo</div>
                 </a>
                 <div class="nav-links">
-                    <a href="{% url 'amiibodex' %}" class="nav-link">AmiiboDex</a>
-                    <a href="{% url 'about' %}" class="nav-link">About</a>
-                    <a href="{% url 'blog_list' %}" class="nav-link">Blog</a>
-                    <a href="{% url 'privacy' %}" class="nav-link">Privacy</a>
+                    <a href="{% url 'amiibodex' %}" class="nav-link" data-track="nav-amiibodex">AmiiboDex</a>
+                    <a href="{% url 'about' %}" class="nav-link" data-track="nav-about">About</a>
+                    <a href="{% url 'blog_list' %}" class="nav-link" data-track="nav-blog">Blog</a>
+                    <a href="{% url 'privacy' %}" class="nav-link" data-track="nav-privacy">Privacy</a>
                 </div>
             </div>
 
             <div class="nav-section nav-right">
-                <a href="{% url 'oauth_login' %}" class="login-btn">
+                <a href="{% url 'oauth_login' %}" class="login-btn" data-track="login-start">
                     <img src="{% static 'images/google-logo.svg' %}" alt="Google logo">
                     Login
                 </a>
             </div>
 
-            <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Toggle Menu">
+            <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Toggle Menu" data-track="mobile-menu-toggle">
                 <span class="hamburger-icon">☰</span>
             </button>
         </div>
 
         <div class="mobile-nav" id="mobileNav">
-            <a href="{% url 'amiibodex' %}" class="mobile-nav-link">AmiiboDex</a>
-            <a href="{% url 'about' %}" class="mobile-nav-link">About</a>
-            <a href="{% url 'blog_list' %}" class="mobile-nav-link">Blog</a>
-            <a href="{% url 'privacy' %}" class="mobile-nav-link">Privacy</a>
-            <a href="{% url 'oauth_login' %}" class="mobile-nav-link login">
+            <a href="{% url 'amiibodex' %}" class="mobile-nav-link" data-track="mobile-nav-amiibodex">AmiiboDex</a>
+            <a href="{% url 'about' %}" class="mobile-nav-link" data-track="mobile-nav-about">About</a>
+            <a href="{% url 'blog_list' %}" class="mobile-nav-link" data-track="mobile-nav-blog">Blog</a>
+            <a href="{% url 'privacy' %}" class="mobile-nav-link" data-track="mobile-nav-privacy">Privacy</a>
+            <a href="{% url 'oauth_login' %}" class="mobile-nav-link login" data-track="mobile-login-start">
                 <img src="{% static 'images/google-logo.svg' %}" alt="Google logo">
                 Login with Google
             </a>

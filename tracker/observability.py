@@ -15,6 +15,7 @@ no-op unless explicitly opted in:
 """
 
 import hashlib
+import json
 import logging
 import os
 
@@ -130,3 +131,43 @@ class PageViewMiddleware:
         except Exception:
             # Observability must never break request handling.
             logger.debug("page-view-log-failed", exc_info=True)
+
+
+_action_logger = logging.getLogger("tracker.useraction")
+
+
+def log_user_action(request, action, **extras):
+    """Emit a `user-action` log entry so daily DAU reports can group by user.
+
+    `action` is a short stable slug (e.g. "login", "collection-add"). Optional
+    `extras` are merged into the structured log record; keep them small and
+    PII-free. Failures are swallowed — observability never breaks requests.
+    """
+    try:
+        session = getattr(request, "session", None) if request is not None else None
+        email = (
+            extras.pop("user_email", None)
+            or (session.get("user_email") if session is not None else None)
+        )
+        path = getattr(request, "path", "") if request is not None else ""
+        method = getattr(request, "method", "") if request is not None else ""
+        payload = {
+            "event": action,
+            "kind": "user-action",
+            "action": action,
+            "path": path,
+            "method": method,
+            "user_hash": hash_email(email),
+            "authenticated": bool(email),
+        }
+        payload.update(extras)
+        # Mirror the LoggingMixin.log() shape so the daily report parser can
+        # extract the JSON context with one regex across both code paths.
+        context = {k: v for k, v in payload.items() if v is not None}
+        message = (
+            f"user-action[{action}] | "
+            f"context={json.dumps(context, default=str, sort_keys=True)}"
+        )
+        _action_logger.info(message, extra=payload)
+    except Exception:
+        logger.debug("user-action-log-failed", exc_info=True)

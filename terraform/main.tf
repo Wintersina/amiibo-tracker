@@ -4,6 +4,9 @@ resource "google_project_service" "enabled" {
     "artifactregistry.googleapis.com",
     "cloudbuild.googleapis.com",
     "secretmanager.googleapis.com",
+    "cloudscheduler.googleapis.com",
+    "storage.googleapis.com",
+    "iam.googleapis.com",
   ])
 
   project = var.project_id
@@ -45,6 +48,7 @@ resource "google_cloud_run_service" "amiibo_tracker" {
     google_secret_manager_secret_iam_member.oauth_client_secret_accessor,
     google_secret_manager_secret_iam_member.loki_api_key_accessor,
     google_secret_manager_secret_iam_member.loki_hash_salt_accessor,
+    google_secret_manager_secret_iam_member.gmail_smtp_password_accessor,
   ]
 
   template {
@@ -105,6 +109,22 @@ resource "google_cloud_run_service" "amiibo_tracker" {
             }
           }
         }
+
+        dynamic "env" {
+          for_each = var.gmail_smtp_password_secret != "" ? [1] : []
+
+          content {
+            name = "EMAIL_HOST_PASSWORD"
+
+            value_from {
+              secret_key_ref {
+                name = var.gmail_smtp_password_secret
+                key  = "latest"
+              }
+            }
+          }
+        }
+
       }
 
       service_account_name = google_service_account.app_sa.email
@@ -159,5 +179,90 @@ resource "google_secret_manager_secret_iam_member" "loki_hash_salt_accessor" {
   secret_id = var.loki_hash_salt_secret
   role      = "roles/secretmanager.secretAccessor"
   member    = "serviceAccount:${google_service_account.app_sa.email}"
+}
+
+resource "google_secret_manager_secret_iam_member" "gmail_smtp_password_accessor" {
+  count = var.gmail_smtp_password_secret != "" ? 1 : 0
+
+  project   = var.project_id
+  secret_id = var.gmail_smtp_password_secret
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${google_service_account.app_sa.email}"
+}
+
+# ---------------------------------------------------------------------------
+# Daily DAU report: GCS archive bucket + Cloud Scheduler trigger
+# ---------------------------------------------------------------------------
+
+resource "google_storage_bucket" "dau_reports" {
+  name                        = var.gcs_reports_bucket
+  location                    = var.region
+  uniform_bucket_level_access = true
+  force_destroy               = false
+
+  lifecycle_rule {
+    condition {
+      age = 730
+    }
+    action {
+      type = "Delete"
+    }
+  }
+
+  depends_on = [google_project_service.enabled]
+}
+
+resource "google_storage_bucket_iam_member" "dau_reports_writer" {
+  bucket = google_storage_bucket.dau_reports.name
+  role   = "roles/storage.objectAdmin"
+  member = "serviceAccount:${google_service_account.app_sa.email}"
+}
+
+resource "google_service_account" "scheduler_sa" {
+  account_id   = "${var.service_name}-scheduler"
+  display_name = "${var.service_name} Cloud Scheduler invoker"
+}
+
+resource "google_cloud_run_service_iam_member" "scheduler_invoker" {
+  location = google_cloud_run_service.amiibo_tracker.location
+  project  = var.project_id
+  service  = google_cloud_run_service.amiibo_tracker.name
+  role     = "roles/run.invoker"
+  member   = "serviceAccount:${google_service_account.scheduler_sa.email}"
+}
+
+resource "google_cloud_scheduler_job" "daily_report" {
+  name        = "${var.service_name}-daily-report"
+  description = "Triggers the prior-day DAU report email and GCS archive"
+  schedule    = var.daily_report_cron_schedule
+  time_zone   = var.daily_report_time_zone
+  region      = var.region
+
+  retry_config {
+    retry_count          = 3
+    min_backoff_duration = "60s"
+    max_backoff_duration = "600s"
+  }
+
+  http_target {
+    http_method = "POST"
+    uri         = "${google_cloud_run_service.amiibo_tracker.status[0].url}/internal/run-daily-report"
+
+    headers = {
+      "Content-Type" = "application/json"
+    }
+
+    body = base64encode("{}")
+
+    oidc_token {
+      service_account_email = google_service_account.scheduler_sa.email
+      audience              = google_cloud_run_service.amiibo_tracker.status[0].url
+    }
+  }
+
+  depends_on = [
+    google_project_service.enabled,
+    google_cloud_run_service_iam_member.scheduler_invoker,
+  ]
 }
 

@@ -6,7 +6,7 @@ variable "project_id" {
 variable "region" {
   description = "The GCP region to deploy resources"
   type        = string
-  default     = "us-central1"
+  default     = "us-east1"
 }
 
 variable "service_name" {
@@ -92,4 +92,40 @@ variable "loki_hash_salt_secret" {
   description = "Secret Manager secret id holding the salt used to hash user emails before shipping logs"
   type        = string
   default     = ""
+}
+
+variable "gmail_smtp_password_secret" {
+  description = "Secret Manager secret id holding the Gmail SMTP app password used to send the daily report email"
+  type        = string
+  default     = "gmail-smtp-password"
+}
+
+variable "gmail_smtp_user" {
+  description = "Gmail address used as both SMTP login and From: header on the daily report email"
+  type        = string
+  default     = "codingsina@gmail.com"
+}
+
+variable "daily_report_to_email" {
+  description = "Recipient of the daily DAU report email"
+  type        = string
+  default     = "codingsina@gmail.com"
+}
+
+variable "gcs_reports_bucket" {
+  description = "GCS bucket that archives one CSV per day of user-action events"
+  type        = string
+  default     = "amiibo-tracker-458804-dau-reports"
+}
+
+variable "daily_report_cron_schedule" {
+  description = "Cron schedule for the daily report job (Cloud Scheduler syntax)"
+  type        = string
+  default     = "0 8 * * *"
+}
+
+variable "daily_report_time_zone" {
+  description = "IANA timezone the cron schedule is evaluated in"
+  type        = string
+  default     = "America/New_York"
 }

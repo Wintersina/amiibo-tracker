@@ -2536,6 +2536,7 @@ class AmiiboListView(View, LoggingMixin, AmiiboLocalFetchMixin):
             # Group counts reflect the initial (non-ignored) visible set.
             enriched_groups = []
             visible_total = 0
+            visible_collected = 0
             for series, group_amiibos in grouped_amiibos.items():
                 visible = [
                     a for a in group_amiibos if a.get("type") not in ignored_types
@@ -2551,11 +2552,13 @@ class AmiiboListView(View, LoggingMixin, AmiiboLocalFetchMixin):
                     }
                 )
                 visible_total += total
+                visible_collected += collected
 
             self.log_action(
                 "render-collection",
                 request,
                 total_amiibos=visible_total,
+                collected_amiibos=visible_collected,
                 grouped_series=len(enriched_groups),
                 ignored_types=len(ignored_types),
                 dark_mode=dark_mode,
@@ -3547,3 +3550,63 @@ class NintendoScraperAPIView(View, LoggingMixin):
                 "info": "Designed for Google Cloud Scheduler",
             }
         )
+
+
+@method_decorator(csrf_exempt, name="dispatch")
+class DailyReportTriggerView(View):
+    """Cloud Scheduler -> this endpoint -> the report_daily_users command.
+
+    Cloud Run is publicly invokable for the rest of the app, so this endpoint
+    must authenticate the caller at the application layer. We verify the OIDC
+    JWT that Cloud Scheduler attaches: issuer must be accounts.google.com,
+    audience must be our Cloud Run URL, and the email claim must equal the
+    scheduler service account this Cloud Run service expects.
+    """
+
+    def post(self, request):
+        from django.conf import settings as dj_settings
+        from django.core.management import call_command
+        from google.auth.transport import requests as ga_requests
+        from google.oauth2 import id_token
+
+        expected_email = dj_settings.DAILY_REPORT_SCHEDULER_SA_EMAIL
+        if not expected_email:
+            return JsonResponse(
+                {"error": "scheduler-sa-email-not-configured"}, status=503
+            )
+
+        auth_header = request.META.get("HTTP_AUTHORIZATION", "")
+        if not auth_header.startswith("Bearer "):
+            return JsonResponse({"error": "missing-bearer-token"}, status=401)
+        token = auth_header[len("Bearer ") :].strip()
+
+        expected_audience = getattr(
+            dj_settings, "DAILY_REPORT_EXPECTED_AUDIENCE", ""
+        ) or os.environ.get("DAILY_REPORT_EXPECTED_AUDIENCE", "")
+        try:
+            claims = id_token.verify_oauth2_token(
+                token,
+                ga_requests.Request(),
+                audience=expected_audience or None,
+            )
+        except ValueError as exc:
+            logger.warning("daily-report-oidc-verify-failed: %s", exc)
+            return JsonResponse({"error": "invalid-token"}, status=401)
+
+        if claims.get("iss") not in (
+            "https://accounts.google.com",
+            "accounts.google.com",
+        ):
+            return JsonResponse({"error": "unexpected-issuer"}, status=401)
+        if claims.get("email") != expected_email:
+            return JsonResponse({"error": "unexpected-sa"}, status=403)
+        if not claims.get("email_verified"):
+            return JsonResponse({"error": "email-not-verified"}, status=403)
+
+        try:
+            call_command("report_daily_users")
+        except Exception as exc:
+            logger.exception("daily-report-command-failed")
+            return JsonResponse({"error": str(exc)}, status=500)
+
+        return HttpResponse(status=204)

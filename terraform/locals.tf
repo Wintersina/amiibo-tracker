@@ -46,6 +46,22 @@ locals {
     {
       name  = "LOKI_USER"
       value = var.loki_user
+    },
+    {
+      name  = "DAILY_REPORT_TO_EMAIL"
+      value = var.daily_report_to_email
+    },
+    {
+      name  = "EMAIL_HOST_USER"
+      value = var.gmail_smtp_user
+    },
+    {
+      name  = "GCS_REPORTS_BUCKET"
+      value = var.gcs_reports_bucket
+    },
+    {
+      name  = "DAILY_REPORT_SCHEDULER_SA_EMAIL"
+      value = "${var.service_name}-scheduler@${var.project_id}.iam.gserviceaccount.com"
     }
   ]
 }
