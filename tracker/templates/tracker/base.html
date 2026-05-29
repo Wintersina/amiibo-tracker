@@ -345,10 +345,16 @@
             </div>
 
             <div class="nav-section nav-right">
+                {% if request.session.user_email %}
+                <a href="{% url 'logout' %}" class="login-btn" data-track="logout-start">
+                    Log out
+                </a>
+                {% else %}
                 <a href="{% url 'oauth_login' %}" class="login-btn" data-track="login-start">
                     <img src="{% static 'images/google-logo.svg' %}" alt="Google logo">
                     Login
                 </a>
+                {% endif %}
             </div>
 
             <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Toggle Menu" data-track="mobile-menu-toggle">
@@ -361,10 +367,16 @@
             <a href="{% url 'about' %}" class="mobile-nav-link" data-track="mobile-nav-about">About</a>
             <a href="{% url 'blog_list' %}" class="mobile-nav-link" data-track="mobile-nav-blog">Blog</a>
             <a href="{% url 'privacy' %}" class="mobile-nav-link" data-track="mobile-nav-privacy">Privacy</a>
+            {% if request.session.user_email %}
+            <a href="{% url 'logout' %}" class="mobile-nav-link login" data-track="mobile-logout-start">
+                Log out
+            </a>
+            {% else %}
             <a href="{% url 'oauth_login' %}" class="mobile-nav-link login" data-track="mobile-login-start">
                 <img src="{% static 'images/google-logo.svg' %}" alt="Google logo">
                 Login with Google
             </a>
+            {% endif %}
         </div>
     </nav>
 

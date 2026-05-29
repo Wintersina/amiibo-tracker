@@ -22,6 +22,7 @@ from tracker.views import (
     DailyReportAPIView,
     DailyReportTriggerView,
     PostCommentView,
+    PostBlogCommentView,
 )
 from tracker.views_image import remove_bg
 
@@ -59,6 +60,11 @@ urlpatterns = [
         name="post_comment",
     ),
     path("blog/<slug:slug>/", BlogPostView.as_view(), name="blog_post"),
+    path(
+        "blog/<slug:slug>/comment/",
+        PostBlogCommentView.as_view(),
+        name="post_blog_comment",
+    ),
     path(
         "api/scrape-nintendo/", NintendoScraperAPIView.as_view(), name="scrape_nintendo"
     ),

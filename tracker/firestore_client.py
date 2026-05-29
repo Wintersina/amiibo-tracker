@@ -3,7 +3,8 @@ from functools import lru_cache
 
 from google.cloud import firestore
 
-COMMENTS_COLLECTION = "amiibo_comments"
+AMIIBO_COMMENTS_COLLECTION = "amiibo_comments"
+BLOG_COMMENTS_COLLECTION = "blog_comments"
 
 
 @lru_cache(maxsize=1)
@@ -12,11 +13,13 @@ def get_client() -> firestore.Client:
     return firestore.Client(project=project) if project else firestore.Client()
 
 
-def list_comments(amiibo_id: str, limit: int = 50) -> list[dict]:
+def list_comments(
+    collection: str, key_field: str, key_value: str, limit: int = 50
+) -> list[dict]:
     docs = (
         get_client()
-        .collection(COMMENTS_COLLECTION)
-        .where(filter=firestore.FieldFilter("amiibo_id", "==", amiibo_id))
+        .collection(collection)
+        .where(filter=firestore.FieldFilter(key_field, "==", key_value))
         .where(filter=firestore.FieldFilter("is_hidden", "==", False))
         .order_by("created_at", direction=firestore.Query.DESCENDING)
         .limit(limit)
@@ -26,11 +29,16 @@ def list_comments(amiibo_id: str, limit: int = 50) -> list[dict]:
 
 
 def add_comment(
-    amiibo_id: str, user_email: str, display_name: str, body: str
+    collection: str,
+    key_field: str,
+    key_value: str,
+    user_email: str,
+    display_name: str,
+    body: str,
 ) -> str:
-    _, doc_ref = get_client().collection(COMMENTS_COLLECTION).add(
+    _, doc_ref = get_client().collection(collection).add(
         {
-            "amiibo_id": amiibo_id,
+            key_field: key_value,
             "user_email": user_email,
             "display_name": display_name,
             "body": body,

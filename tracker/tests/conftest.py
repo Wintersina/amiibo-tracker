@@ -5,6 +5,7 @@ import os
 import sys
 import pathlib
 import django
+import pytest
 from django.conf import settings
 
 # Add project root to path
@@ -18,3 +19,15 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "amiibo_tracker.settings.testing
 # Initialize Django
 if not settings.configured:
     django.setup()
+
+
+@pytest.fixture(autouse=True)
+def clear_rate_limit_cache():
+    # The rate limiter (check_rate_limit) keeps its counters in the Django
+    # cache. LocMemCache is per-process, so without resetting between tests the
+    # counts bleed and later requests get rejected with HTTP 429.
+    from django.core.cache import cache
+
+    cache.clear()
+    yield
+    cache.clear()
