@@ -2213,6 +2213,198 @@ class ToggleCollectedView(View, LoggingMixin):
         return JsonResponse({"status": "invalid method"}, status=400)
 
 
+@method_decorator(csrf_exempt, name="dispatch")
+class ToggleFavoriteView(View, LoggingMixin):
+    """Toggle the Favorite flag for an amiibo in the user's Google Sheet.
+
+    Mirrors ToggleCollectedView; the amiibo_id is the sheet key
+    (head + gameSeries + tail) and the action is 'favorite' / 'unfavorite'.
+    """
+
+    def post(self, request):
+        try:
+            data = json.loads(request.body)
+        except json.JSONDecodeError:
+            self.log_action(
+                "invalid-payload",
+                request,
+                level="warning",
+                http_method="POST",
+                endpoint="toggle-favorite",
+            )
+            return JsonResponse(
+                {"status": "error", "message": "Invalid JSON payload."}, status=400
+            )
+
+        if data.get("demo"):
+            self.log_action("favorite-updated", request, **data)
+            return JsonResponse({"status": "success"})
+
+        creds_json = get_active_credentials_json(request, self.log_action)
+        if not creds_json:
+            self.log_action(
+                "missing-credentials",
+                request,
+                level="warning",
+                http_method="POST",
+                endpoint="toggle-favorite",
+            )
+            return JsonResponse(
+                {
+                    "status": "error",
+                    "message": "Please sign in to favorite amiibo.",
+                    "action_required": "reauth_required",
+                },
+                status=401,
+            )
+
+        amiibo_id = data.get("amiibo_id")
+        action = data.get("action")
+
+        if not amiibo_id or action not in {"favorite", "unfavorite"}:
+            self.log_action(
+                "missing-parameters",
+                request,
+                level="warning",
+                http_method="POST",
+                endpoint="toggle-favorite",
+                amiibo_id=amiibo_id,
+                action=action,
+            )
+            return JsonResponse(
+                {
+                    "status": "error",
+                    "message": "Both amiibo_id and a valid action are required.",
+                },
+                status=400,
+            )
+
+        try:
+            google_sheet_client_manager = build_sheet_client_manager(
+                request, creds_json
+            )
+            ensure_spreadsheet_session(request, google_sheet_client_manager)
+
+            service = AmiiboService(
+                google_sheet_client_manager=google_sheet_client_manager
+            )
+            success = service.toggle_favorite(amiibo_id, action)
+
+            if not success:
+                self.log_action(
+                    "amiibo-not-found",
+                    request,
+                    level="warning",
+                    amiibo_id=amiibo_id,
+                    action=action,
+                )
+                return JsonResponse({"status": "not found"}, status=404)
+
+            self.log_action(
+                "favorite-updated",
+                request,
+                amiibo_id=amiibo_id,
+                action=action,
+            )
+            return JsonResponse({"status": "success"})
+
+        except GoogleSheetsError as error:
+            self.log_action(
+                "sheets-error",
+                request,
+                level="error",
+                endpoint="toggle-favorite",
+                error=str(error),
+            )
+            if isinstance(error, RateLimitError):
+                status_code = 429
+            elif isinstance(error, InvalidCredentialsError):
+                status_code = 401
+            else:
+                status_code = 503
+
+            return JsonResponse(
+                {
+                    "status": "error",
+                    "message": error.user_message,
+                    "action_required": error.action_required,
+                    "retry_after": getattr(error, "retry_after", None),
+                },
+                status=status_code,
+            )
+
+        except APIError as error:
+            if is_rate_limit_error(error):
+                self.log_action(
+                    "rate-limited",
+                    request,
+                    level="warning",
+                    amiibo_id=amiibo_id,
+                    action=action,
+                    retry_after=retry_after_seconds(error),
+                )
+                return rate_limit_json_response(error)
+            return JsonResponse(
+                {"status": "error", "message": "Unexpected Google API error."},
+                status=500,
+            )
+
+        except Exception as e:
+            self.log_action(
+                "favorite-error",
+                request,
+                level="error",
+                amiibo_id=amiibo_id,
+                action=action,
+                error=str(e),
+            )
+            return JsonResponse({"status": "error", "message": str(e)}, status=500)
+
+    def get(self, request):
+        return JsonResponse({"status": "invalid method"}, status=400)
+
+
+class FavoritesAPIView(View, LoggingMixin):
+    """Return the signed-in user's favorited amiibo IDs for lazy hydration.
+
+    Used by the public AmiiboDex page to fill in hearts after load without
+    blocking the catalog render. Always responds 200 so the catalog keeps
+    working even when the user is logged out or Sheets is unavailable.
+    """
+
+    def get(self, request):
+        creds_json = get_active_credentials_json(request, self.log_action)
+        if not creds_json:
+            return JsonResponse({"authenticated": False, "favorites": []})
+
+        try:
+            google_sheet_client_manager = build_sheet_client_manager(
+                request, creds_json
+            )
+            ensure_spreadsheet_session(request, google_sheet_client_manager)
+            service = AmiiboService(
+                google_sheet_client_manager=google_sheet_client_manager
+            )
+            favorite_status = service.get_favorite_status()
+            favorites = [
+                amiibo_id
+                for amiibo_id, value in favorite_status.items()
+                if value == "1"
+            ]
+            return JsonResponse({"authenticated": True, "favorites": favorites})
+        except Exception as error:
+            self.log_action(
+                "favorites-fetch-failed",
+                request,
+                level="warning",
+                endpoint="favorites-api",
+                error=str(error),
+            )
+            return JsonResponse(
+                {"authenticated": True, "favorites": [], "error": True}
+            )
+
+
 class OAuthView(View, LoggingMixin):
     def get(self, request):
         creds_json = get_active_credentials_json(request, self.log_action)
@@ -2445,6 +2637,7 @@ class AmiiboListView(View, LoggingMixin, AmiiboLocalFetchMixin):
             # Mark all as uncollected since we can't read from sheets
             for amiibo in amiibos:
                 amiibo["collected"] = False
+                amiibo["favorite"] = False
                 amiibo["display_release"] = AmiiboService._format_release_date(
                     amiibo.get("release")
                 )
@@ -2538,11 +2731,14 @@ class AmiiboListView(View, LoggingMixin, AmiiboLocalFetchMixin):
             service.seed_new_amiibos(
                 [a for a in amiibos if a.get("type") not in ignored_types]
             )
-            collected_status = service.get_collected_status()
+            collected_status, favorite_status = (
+                service.get_collected_and_favorite_status()
+            )
 
             for amiibo in amiibos:
                 amiibo_id = amiibo["head"] + amiibo["gameSeries"] + amiibo["tail"]
                 amiibo["collected"] = collected_status.get(amiibo_id) == "1"
+                amiibo["favorite"] = favorite_status.get(amiibo_id) == "1"
                 amiibo["display_release"] = AmiiboService._format_release_date(
                     amiibo.get("release")
                 )
@@ -3304,6 +3500,13 @@ class AmiibodexView(View, LoggingMixin, AmiiboLocalFetchMixin):
                 amiibo["amiibo_id"] = (
                     f"{amiibo.get('head', '')}-{amiibo.get('tail', '')}"
                 )
+                # Sheet key (head + gameSeries + tail) used to match favorites,
+                # which are stored per-user in the Google Sheet.
+                amiibo["favorite_id"] = (
+                    f"{amiibo.get('head', '')}"
+                    f"{amiibo.get('gameSeries', '')}"
+                    f"{amiibo.get('tail', '')}"
+                )
 
                 # Extract the earliest release date for sorting
                 release_dates = amiibo.get("release", {})
@@ -3588,6 +3791,24 @@ class RobotsTxtView(View):
             return HttpResponse(content, content_type="text/plain")
         except FileNotFoundError:
             return HttpResponse("User-agent: *\nAllow: /\n", content_type="text/plain")
+
+
+class AdsTxtView(View):
+    """
+    Serves the ads.txt file with proper content type.
+
+    Required at the domain root for Google AdSense to verify authorized
+    sellers of the site's ad inventory.
+    """
+
+    def get(self, request):
+        ads_path = Path(__file__).parent.parent / "static" / "ads.txt"
+        try:
+            with open(ads_path, "r", encoding="utf-8") as f:
+                content = f.read()
+            return HttpResponse(content, content_type="text/plain")
+        except FileNotFoundError:
+            return HttpResponse("", content_type="text/plain")
 
 
 @method_decorator(csrf_exempt, name="dispatch")

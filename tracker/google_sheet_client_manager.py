@@ -327,7 +327,7 @@ class GoogleSheetClientManager(HelperMixin, LoggingMixin):
             created = False
         except gspread.exceptions.WorksheetNotFound:
             sheet = self._retry_with_backoff(
-                spreadsheet.add_worksheet, title=worksheet_name, rows=500, cols=6
+                spreadsheet.add_worksheet, title=worksheet_name, rows=500, cols=7
             )
             created = True
 
@@ -342,6 +342,7 @@ class GoogleSheetClientManager(HelperMixin, LoggingMixin):
                         "Release Date",
                         "Type",
                         "Collected Status",
+                        "Favorite",
                     ],
                 )
 

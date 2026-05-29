@@ -287,6 +287,7 @@
         }
 
         .amiibo-card {
+            position: relative;
             border: 1px solid var(--card-border);
             border-radius: 14px;
             padding: 1.1em 1.1em 1.2em;
@@ -301,6 +302,47 @@
             box-shadow: 0 14px 32px rgba(0, 0, 0, 0.12);
             background: var(--card-bg);
             transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        /* Favorite heart — overrides the generic button styling */
+        .fav-btn {
+            position: absolute;
+            top: 0.55rem;
+            right: 0.55rem;
+            width: 2.1rem;
+            height: 2.1rem;
+            padding: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            line-height: 1;
+            border-radius: 50%;
+            border: 1px solid var(--card-border);
+            background: rgba(255, 255, 255, 0.85);
+            color: #e11d48;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
+            cursor: pointer;
+            z-index: 2;
+            transition: transform 0.15s ease, background 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        body.dark .fav-btn {
+            background: rgba(31, 41, 55, 0.9);
+            border-color: rgba(243, 201, 105, 0.25);
+            color: #fb7185;
+        }
+
+        .fav-btn:hover {
+            transform: scale(1.12);
+            background: rgba(255, 255, 255, 0.95);
+        }
+
+        .amiibo-card.favorited .fav-btn {
+            background: linear-gradient(135deg, #f43f5e, #e11d48);
+            border-color: #e11d48;
+            color: #fff;
+            box-shadow: 0 6px 16px rgba(225, 29, 72, 0.4);
         }
 
         .amiibo-card:hover {
@@ -774,7 +816,7 @@
     <span class="demo-banner-text">You're viewing a demo with sample data &mdash; sign in from the menu above to track your own collection.</span>
 </div>
 
-{% include "tracker/_collection_controls.html" with welcome_name="Demo User" %}
+{% include "tracker/_collection_controls.html" with welcome_name="Demo User" show_favorites=True %}
 
 <main>
     <div id="loading" class="loading-overlay active" role="status" aria-live="polite" aria-label="Loading">
@@ -796,17 +838,24 @@
 {% block scripts %}
 <script>
     const STORAGE_KEY = 'amiibo_demo_collected';
+    const FAVORITES_KEY = 'amiibo_demo_favorites';
     const DARK_MODE_KEY = 'amiibo_demo_dark_mode';
     const TYPE_FILTERS_KEY = 'amiibo_demo_type_filters';
 
     let allAmiibos = [];
     let collectedSet = new Set();
+    let favoritedSet = new Set();
     let typeFilters = new Set();
 
     function loadFromLocalStorage() {
         const stored = localStorage.getItem(STORAGE_KEY);
         if (stored) {
             collectedSet = new Set(JSON.parse(stored));
+        }
+
+        const storedFavorites = localStorage.getItem(FAVORITES_KEY);
+        if (storedFavorites) {
+            favoritedSet = new Set(JSON.parse(storedFavorites));
         }
 
         const darkMode = localStorage.getItem(DARK_MODE_KEY) === 'true';
@@ -825,6 +874,10 @@
 
     function saveToLocalStorage() {
         localStorage.setItem(STORAGE_KEY, JSON.stringify([...collectedSet]));
+    }
+
+    function saveFavorites() {
+        localStorage.setItem(FAVORITES_KEY, JSON.stringify([...favoritedSet]));
     }
 
     function saveTypeFilters() {
@@ -895,12 +948,22 @@
             amiibos.forEach(amiibo => {
                 const id = getAmiiboId(amiibo);
                 const isCollected = collectedSet.has(id);
+                const isFavorited = favoritedSet.has(id);
 
                 const card = document.createElement('div');
-                card.className = `amiibo-card ${isCollected ? 'collected' : ''}`;
+                card.className = `amiibo-card ${isCollected ? 'collected' : ''} ${isFavorited ? 'favorited' : ''}`;
                 card.dataset.id = id;
                 card.dataset.type = amiibo.type || 'Unknown';
                 card.dataset.series = amiibo.amiiboSeries || 'Unknown';
+
+                const favBtn = document.createElement('button');
+                favBtn.type = 'button';
+                favBtn.className = 'fav-btn';
+                favBtn.textContent = isFavorited ? '♥' : '♡';
+                favBtn.setAttribute('aria-pressed', isFavorited ? 'true' : 'false');
+                favBtn.setAttribute('aria-label', isFavorited ? 'Remove from favorites' : 'Add to favorites');
+                favBtn.title = 'Favorite';
+                favBtn.onclick = () => toggleFavorite(card, favBtn);
 
                 const img = document.createElement('img');
                 img.src = amiibo.imgwebp || amiibo.image || '';
@@ -928,6 +991,7 @@
                 button.onmouseenter = () => handleButtonHover(button);
                 button.onmouseleave = () => handleButtonLeave(button);
 
+                card.appendChild(favBtn);
                 card.appendChild(img);
                 card.appendChild(name);
                 card.appendChild(meta);
@@ -965,6 +1029,28 @@
         saveToLocalStorage();
         updateCollectedCount();
         updateGroupCounts();
+    }
+
+    function toggleFavorite(card, favBtn) {
+        const id = card.dataset.id;
+        const wasFavorited = favoritedSet.has(id);
+        if (wasFavorited) {
+            favoritedSet.delete(id);
+            card.classList.remove('favorited');
+        } else {
+            favoritedSet.add(id);
+            card.classList.add('favorited');
+        }
+        const favorited = !wasFavorited;
+        favBtn.textContent = favorited ? '♥' : '♡';
+        favBtn.setAttribute('aria-pressed', favorited ? 'true' : 'false');
+        favBtn.setAttribute('aria-label', favorited ? 'Remove from favorites' : 'Add to favorites');
+        const action = wasFavorited ? 'unfavorite' : 'favorite';
+        logEvent('favorite-updated', '/toggle-favorite/', { amiibo_id: id, action });
+        saveFavorites();
+        if (document.getElementById('filterSelect').value === 'favorites') {
+            filterAndSearch();
+        }
     }
 
     function setButtonState(button, isCollected) {
@@ -1011,6 +1097,13 @@
             pill.textContent = `★ ${collected} collected`;
         } else if (mode === 'uncollected') {
             pill.textContent = `○ ${total - collected} left`;
+        } else if (mode === 'favorites') {
+            let favorited = 0;
+            document.querySelectorAll('.amiibo-card').forEach(card => {
+                if (typeFilters.has(card.dataset.type)) return;
+                if (card.classList.contains('favorited')) favorited++;
+            });
+            pill.textContent = `♥ ${favorited} favorited`;
         } else {
             pill.textContent = `Collected: ${collected}`;
         }
@@ -1058,6 +1151,7 @@
 
             cards.forEach(card => {
                 const isCollected = card.classList.contains('collected');
+                const isFavorited = card.classList.contains('favorited');
                 const name = card.querySelector('.amiibo-name').textContent.toLowerCase();
                 const release = card.querySelector('.release-date').textContent.toLowerCase();
                 const type = (card.dataset.type || '').toLowerCase();
@@ -1068,7 +1162,8 @@
                 const matchesFilter =
                     value === 'all' ||
                     (value === 'collected' && isCollected) ||
-                    (value === 'uncollected' && !isCollected);
+                    (value === 'uncollected' && !isCollected) ||
+                    (value === 'favorites' && isFavorited);
 
                 const typeNotFiltered = !typeFilters.has(card.dataset.type);
 

@@ -274,6 +274,7 @@
         }
 
         .amiibo-card {
+            position: relative;
             border: 1px solid var(--card-border);
             border-radius: 14px;
             padding: 1.1em 1.1em 1.2em;
@@ -288,6 +289,52 @@
             box-shadow: 0 14px 32px rgba(0, 0, 0, 0.12);
             background: var(--card-bg);
             transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        /* Favorite heart — overrides the generic button styling */
+        .fav-btn {
+            position: absolute;
+            top: 0.55rem;
+            right: 0.55rem;
+            width: 2.1rem;
+            height: 2.1rem;
+            padding: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            line-height: 1;
+            border-radius: 50%;
+            border: 1px solid var(--card-border);
+            background: rgba(255, 255, 255, 0.85);
+            color: #e11d48;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
+            cursor: pointer;
+            z-index: 2;
+            transition: transform 0.15s ease, background 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        body.dark .fav-btn {
+            background: rgba(31, 41, 55, 0.9);
+            border-color: rgba(243, 201, 105, 0.25);
+            color: #fb7185;
+        }
+
+        .fav-btn:hover {
+            transform: scale(1.12);
+            background: rgba(255, 255, 255, 0.95);
+        }
+
+        .amiibo-card.favorited .fav-btn {
+            background: linear-gradient(135deg, #f43f5e, #e11d48);
+            border-color: #e11d48;
+            color: #fff;
+            box-shadow: 0 6px 16px rgba(225, 29, 72, 0.4);
+        }
+
+        .amiibo-card.processing .fav-btn {
+            opacity: 0.6;
+            cursor: wait;
         }
 
         .amiibo-card:hover {
@@ -889,7 +936,7 @@
 {% endblock %}
 
 {% block content %}
-{% include "tracker/_collection_controls.html" with welcome_name=user_name amiibo_types=amiibo_types dark_toggle_sheet_action=True %}
+{% include "tracker/_collection_controls.html" with welcome_name=user_name amiibo_types=amiibo_types dark_toggle_sheet_action=True show_favorites=True %}
 
 <div id="rateLimitModal" class="rate-limit-modal" role="alertdialog" aria-modal="true" aria-labelledby="rateLimitTitle" aria-describedby="rateLimitDescription">
     <div class="rate-limit-card">
@@ -933,13 +980,19 @@
             <div class="amiibo-container">
                 <div class="amiibo-grid">
                     {% for amiibo in group.list %}
-                        <div class="amiibo-card {% if amiibo.collected %}collected{% endif %}"
+                        <div class="amiibo-card {% if amiibo.collected %}collected{% endif %} {% if amiibo.favorite %}favorited{% endif %}"
                              data-id="{{ amiibo.head }}{{ amiibo.gameSeries }}{{ amiibo.tail }}"
                              data-head="{{ amiibo.head }}"
                              data-tail="{{ amiibo.tail }}"
                              data-type="{{ amiibo.type|default:'Unknown' }}"
                              data-series="{{ amiibo.amiiboSeries }}"
                              {% if amiibo.type in ignored_types %}style="display: none"{% endif %}>
+                            <button type="button" class="fav-btn" data-sheet-action
+                                    onclick="toggleFavorite(this)"
+                                    data-track="favorite-toggle"
+                                    aria-pressed="{% if amiibo.favorite %}true{% else %}false{% endif %}"
+                                    aria-label="{% if amiibo.favorite %}Remove from favorites{% else %}Add to favorites{% endif %}"
+                                    title="Favorite">{% if amiibo.favorite %}♥{% else %}♡{% endif %}</button>
                             <img src="{{ amiibo|amiibo_image }}"
                                  alt="{{ amiibo.name }}"
                                  onclick="navigateToAmiiboDetail(this.parentElement)">
@@ -1077,6 +1130,88 @@
         }
 
         toggleQueue.processing = false;
+    }
+
+    const favoriteQueue = {
+        items: [],
+        processing: false,
+    };
+
+    function setFavoriteState(card) {
+        const button = card.querySelector('.fav-btn');
+        if (!button) return;
+        const favorited = card.classList.contains('favorited');
+        button.textContent = favorited ? '♥' : '♡';
+        button.setAttribute('aria-pressed', favorited ? 'true' : 'false');
+        button.setAttribute('aria-label', favorited ? 'Remove from favorites' : 'Add to favorites');
+    }
+
+    async function toggleFavorite(button) {
+        if (rateLimitState.active) {
+            return;
+        }
+
+        const card = button.parentElement;
+
+        // Skip if this card is already mid-flight in either queue.
+        if (card.classList.contains('processing') ||
+            favoriteQueue.items.some(item => item.card === card)) {
+            return;
+        }
+
+        const amiiboId = card.dataset.id;
+        const action = card.classList.contains('favorited') ? 'unfavorite' : 'favorite';
+
+        card.classList.add('processing');
+        favoriteQueue.items.push({ card, button, amiiboId, action });
+        processFavoriteQueue();
+    }
+
+    async function processFavoriteQueue() {
+        if (favoriteQueue.processing || favoriteQueue.items.length === 0) {
+            return;
+        }
+
+        favoriteQueue.processing = true;
+
+        while (favoriteQueue.items.length > 0) {
+            const { card, amiiboId, action } = favoriteQueue.items.shift();
+
+            try {
+                const response = await fetch('/toggle-favorite/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify({ amiibo_id: amiiboId, action: action })
+                });
+
+                if (await handleErrorResponse(response)) {
+                    favoriteQueue.items.unshift({ card, button: card.querySelector('.fav-btn'), amiiboId, action });
+                    card.classList.remove('processing');
+                    setFavoriteState(card);
+                    break;
+                }
+
+                if (response.ok) {
+                    card.classList.toggle('favorited');
+                    setFavoriteState(card);
+                    if (document.getElementById('filterSelect').value === 'favorites') {
+                        filterAndSearch();
+                    }
+                }
+            } catch (error) {
+                console.error('Favorite toggle error:', error);
+                setFavoriteState(card);
+            } finally {
+                card.classList.remove('processing');
+            }
+
+            await new Promise(resolve => setTimeout(resolve, 300));
+        }
+
+        favoriteQueue.processing = false;
     }
 
     function startDebouncedAction(minDelay = 1000, maxDelay = 4000) {
@@ -1356,6 +1491,7 @@
 
             cards.forEach(card => {
                 const isCollected = card.classList.contains('collected');
+                const isFavorited = card.classList.contains('favorited');
                 const name = card.querySelector('.amiibo-name').textContent.toLowerCase();
                 const release = card.querySelector('.release-date').textContent.toLowerCase();
                 const type = (card.dataset.type || '').toLowerCase();
@@ -1364,7 +1500,8 @@
                 const matchesFilter =
                     value === 'all' ||
                     (value === 'collected' && isCollected) ||
-                    (value === 'uncollected' && !isCollected);
+                    (value === 'uncollected' && !isCollected) ||
+                    (value === 'favorites' && isFavorited);
                 const matchesType = !typeFilterState.ignored.has(card.dataset.type);
 
                 const shouldDisplay = matchesSearch && matchesFilter && matchesType;
@@ -1408,6 +1545,13 @@
             pill.textContent = `★ ${collected} collected`;
         } else if (mode === 'uncollected') {
             pill.textContent = `○ ${total - collected} left`;
+        } else if (mode === 'favorites') {
+            let favorited = 0;
+            document.querySelectorAll('.amiibo-card').forEach(card => {
+                if (typeFilterState.ignored.has(card.dataset.type)) return;
+                if (card.classList.contains('favorited')) favorited++;
+            });
+            pill.textContent = `♥ ${favorited} favorited`;
         } else {
             pill.textContent = `Collected: ${collected}`;
         }
@@ -1461,7 +1605,7 @@
     });
 
     function initializeButtons() {
-        document.querySelectorAll('.amiibo-card button').forEach(button => {
+        document.querySelectorAll('.amiibo-card button:not(.fav-btn)').forEach(button => {
             const isCollected = button.parentElement.classList.contains('collected');
             setButtonState(button, isCollected);
             button.addEventListener('mouseenter', handleButtonHover);

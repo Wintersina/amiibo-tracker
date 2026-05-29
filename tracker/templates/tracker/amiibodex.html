@@ -205,6 +205,57 @@
             text-align: center;
         }
 
+        .amiibo-table th.fav-col,
+        .amiibo-table td.fav-col {
+            width: 48px;
+            text-align: center;
+            padding-left: 0.4rem;
+            padding-right: 0.4rem;
+        }
+
+        .amiibo-table th.fav-col {
+            color: var(--saffron);
+            font-size: 1.05rem;
+        }
+
+        .dex-fav-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1.4rem;
+            line-height: 1;
+            padding: 0.2rem;
+            color: rgba(253, 247, 227, 0.45);
+            transition: transform 0.15s ease, color 0.2s ease;
+        }
+
+        .dex-fav-btn:hover {
+            transform: scale(1.18);
+            color: #fb7185;
+        }
+
+        .dex-fav-btn.favorited {
+            color: #fb7185;
+        }
+
+        .fav-filter {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            margin-top: 1rem;
+            color: var(--cream);
+            font-weight: 600;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .fav-filter input {
+            width: 18px;
+            height: 18px;
+            accent-color: #e11d48;
+            cursor: pointer;
+        }
+
         .amiibo-table tbody tr {
             border-bottom: 1px solid rgba(243, 201, 105, 0.15);
             transition: background 0.2s ease, transform 0.1s ease;
@@ -564,6 +615,9 @@
                 <div class="search-fields">
                     <input type="text" id="search-input" placeholder="Search by name, type, series, or date..." class="search-input" autofocus>
                 </div>
+                <label class="fav-filter" id="fav-filter" hidden>
+                    <input type="checkbox" id="fav-only"> ♥ Favorites only
+                </label>
             </form>
 
             <p class="total-count" id="total-count">Showing {{ total_count }} of {{ total_count }} amiibos</p>
@@ -571,6 +625,7 @@
             <table class="amiibo-table">
                 <thead>
                     <tr>
+                        <th class="fav-col" aria-label="Favorite">♥</th>
                         <th class="img-col">Image</th>
                         <th>Name</th>
                         <th>Game Series</th>
@@ -581,7 +636,11 @@
                 </thead>
                 <tbody id="amiibo-tbody">
                     {% for amiibo in amiibos %}
-                    <tr class="clickable-row" onclick="navigateToAmiibo('{{ amiibo.amiibo_id }}', '{{ amiibo.name|escapejs }}')">
+                    <tr class="clickable-row" data-fav-id="{{ amiibo.favorite_id }}" onclick="navigateToAmiibo('{{ amiibo.amiibo_id }}', '{{ amiibo.name|escapejs }}')">
+                        <td class="fav-col" data-label="Favorite:">
+                            <button type="button" class="dex-fav-btn" onclick="toggleAmiiboFavorite(event, this)"
+                                    aria-pressed="false" aria-label="Add to favorites" title="Favorite">♡</button>
+                        </td>
                         <td class="img-col">
                             <img src="{{ amiibo|amiibo_image }}"
                                  alt="{{ amiibo.name }}"
@@ -629,6 +688,7 @@
     // Real-time search functionality
     function filterTable() {
         const searchTerm = document.getElementById('search-input').value.toLowerCase();
+        const favOnly = document.getElementById('fav-only')?.checked;
         const rows = document.querySelectorAll('#amiibo-tbody tr');
         let visibleCount = 0;
 
@@ -646,11 +706,95 @@
                                 amiiboSeries.includes(searchTerm) ||
                                 releaseDate.includes(searchTerm);
 
-            row.style.display = matchesSearch ? '' : 'none';
-            if (matchesSearch) visibleCount++;
+            const isFav = row.querySelector('.dex-fav-btn')?.classList.contains('favorited');
+            const matches = matchesSearch && (!favOnly || isFav);
+
+            row.style.display = matches ? '' : 'none';
+            if (matches) visibleCount++;
         });
 
         updateCount(visibleCount, rows.length);
+    }
+
+    // ---- Favorites (lazy-hydrated; stored per-user in Google Sheets) ----
+    let favoritesAuthenticated = false;
+
+    function applyFavoriteRow(row, favorited) {
+        const button = row.querySelector('.dex-fav-btn');
+        if (!button) return;
+        button.classList.toggle('favorited', favorited);
+        button.textContent = favorited ? '♥' : '♡';
+        button.setAttribute('aria-pressed', favorited ? 'true' : 'false');
+        button.setAttribute('aria-label', favorited ? 'Remove from favorites' : 'Add to favorites');
+    }
+
+    async function hydrateFavorites() {
+        let data;
+        try {
+            const response = await fetch('/api/favorites/', { headers: { 'Accept': 'application/json' } });
+            data = await response.json();
+        } catch (error) {
+            return; // Leave hearts in their logged-out state; catalog still works.
+        }
+
+        favoritesAuthenticated = !!data.authenticated;
+
+        if (favoritesAuthenticated) {
+            const favFilter = document.getElementById('fav-filter');
+            if (favFilter) favFilter.hidden = false;
+
+            const favSet = new Set(data.favorites || []);
+            document.querySelectorAll('#amiibo-tbody tr').forEach(row => {
+                if (favSet.has(row.dataset.favId)) {
+                    applyFavoriteRow(row, true);
+                }
+            });
+        }
+    }
+
+    async function toggleAmiiboFavorite(event, button) {
+        event.stopPropagation(); // don't trigger row navigation
+
+        if (!favoritesAuthenticated) {
+            window.location.href = "{% url 'oauth_login' %}";
+            return;
+        }
+
+        if (button.dataset.busy === 'true') return;
+
+        const row = button.closest('tr');
+        const favId = row.dataset.favId;
+        const wasFavorited = button.classList.contains('favorited');
+        const action = wasFavorited ? 'unfavorite' : 'favorite';
+
+        // Optimistic update
+        button.dataset.busy = 'true';
+        applyFavoriteRow(row, !wasFavorited);
+
+        try {
+            const response = await fetch('/toggle-favorite/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ amiibo_id: favId, action: action })
+            });
+
+            if (response.status === 401) {
+                // Session expired — bounce to login.
+                window.location.href = "{% url 'oauth_login' %}";
+                return;
+            }
+
+            if (!response.ok) {
+                applyFavoriteRow(row, wasFavorited); // revert
+            } else if (document.getElementById('fav-only')?.checked) {
+                filterTable();
+            }
+        } catch (error) {
+            console.error('Favorite toggle error:', error);
+            applyFavoriteRow(row, wasFavorited); // revert
+        } finally {
+            button.dataset.busy = 'false';
+        }
     }
 
     function updateCount(visible, total) {
@@ -664,6 +808,12 @@
 
         // Add event listener for real-time search
         document.getElementById('search-input').addEventListener('input', filterTable);
+
+        const favOnly = document.getElementById('fav-only');
+        if (favOnly) favOnly.addEventListener('change', filterTable);
+
+        // Fill in hearts for the signed-in user without blocking the catalog.
+        hydrateFavorites();
     });
 </script>
 {% endblock %}

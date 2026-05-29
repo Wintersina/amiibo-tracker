@@ -226,20 +226,23 @@
     <h2>What Goozamiibo Offers</h2>
     <ul class="feature-list">
         <li><strong>Collection Tracking</strong> — Maintain a complete Amiibo inventory in your own Google Sheet. Mark what you own, filter by series and type, and keep everything organized.</li>
-        <li><strong>Complete Catalog</strong> — Browse an always-updated database of all released Amiibo figures with high-quality images, release dates, and series information.</li>
-        <li><strong>Educational Blog</strong> — Learn about NFC technology, Amiibo history, pronunciation guides, compatibility with games, and collecting tips.</li>
-        <li><strong>Privacy-First Design</strong> — Your data stays in your Google Drive. No shared databases, no tracking beyond basic analytics.</li>
-        <li><strong>Dark Mode</strong> — Easy on the eyes with automatic dark mode support across the entire app.</li>
+        <li><strong>Favorites</strong> — Heart the figures you love most from your collection or the AmiiboDex, then filter to show only your favorites. Favorites are saved right alongside your collection in your Google Sheet.</li>
+        <li><strong>AmiiboDex Catalog</strong> — Browse an always-updated database of every released Amiibo figure, with high-quality images, release dates, and series information. The catalog scrapes the web daily to add newly announced figures.</li>
+        <li><strong>Educational Blog</strong> — Reviews, hunts, and guides covering NFC technology, Amiibo history, rarity tiers, condition grading, game compatibility, spotting fakes, and collecting tips.</li>
+        <li><strong>Comments</strong> — Share your thoughts on individual figures and blog posts, reply to other collectors, and join the conversation.</li>
+        <li><strong>Privacy-First Design</strong> — Your collection data stays in your own Google Drive. No shared databases, no tracking beyond basic analytics.</li>
+        <li><strong>Dark Mode</strong> — Easy on the eyes with dark mode support that remembers your preference.</li>
         <li><strong>Mobile Friendly</strong> — Fully responsive design that works seamlessly on phones, tablets, and desktops.</li>
     </ul>
 
     <h2>How It Works</h2>
     <ol class="step-list">
-        <li><strong>Sign in with Google.</strong> Goozamiibo uses Google authentication to securely access your Google Sheets.</li>
-        <li><strong>Create or select a sheet.</strong> Choose an existing Google Sheet or let Goozamiibo create a new one for your collection.</li>
-        <li><strong>Start tracking.</strong> Browse the catalog, mark Amiibo as collected, and your Google Sheet updates automatically.</li>
-        <li><strong>Stay organized.</strong> Filter by series, search by name or date, and track your progress with real-time collection counts.</li>
+        <li><strong>Sign in with Google.</strong> Goozamiibo uses Google sign-in to securely connect to your Google Sheets — no separate account or password to manage.</li>
+        <li><strong>Your collection sheet is set up automatically.</strong> On first sign-in, Goozamiibo creates a private <em>AmiiboCollection</em> sheet in your Google Drive (and reuses it on every visit after that).</li>
+        <li><strong>Track and favorite.</strong> Browse the catalog, mark figures as collected, and heart your favorites — every change saves straight to your Google Sheet.</li>
+        <li><strong>Stay organized.</strong> Search and filter by series, type, collected status, or favorites, and watch your progress with real-time collection counts.</li>
     </ol>
+    <p>Prefer to look before signing in? The <a href="{% url 'demo' %}" class="inline">interactive demo</a> lets you try collecting and favoriting with sample data — nothing is saved.</p>
 
     <h2>Why Google Sheets?</h2>
     <p>Goozamiibo uses Google Sheets because it gives you complete control over your data. You can:</p>
@@ -269,14 +272,24 @@
     </p>
 
     <div class="cta-section">
-        <p>Ready to start tracking your collection?</p>
-        <a href="{% url 'oauth_login' %}" class="cta-btn" data-track="about-login">
-            <img src="{% static 'images/google-logo.svg' %}" alt="Google logo">
-            Login with Google
-        </a>
-        <p class="cta-aux">
-            or <a href="{% url 'demo' %}" class="inline">view the demo</a>
-        </p>
+        {% if request.session.user_email %}
+            <p>You're signed in — jump back into your collection.</p>
+            <a href="{% url 'amiibo_list' %}" class="cta-btn" data-track="about-collection">
+                Go to Your Collection
+            </a>
+            <p class="cta-aux">
+                or browse the <a href="{% url 'amiibodex' %}" class="inline">AmiiboDex</a>
+            </p>
+        {% else %}
+            <p>Ready to start tracking your collection?</p>
+            <a href="{% url 'oauth_login' %}" class="cta-btn" data-track="about-login">
+                <img src="{% static 'images/google-logo.svg' %}" alt="Google logo">
+                Login with Google
+            </a>
+            <p class="cta-aux">
+                or <a href="{% url 'demo' %}" class="inline">view the demo</a>
+            </p>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

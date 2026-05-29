@@ -10,6 +10,8 @@ from tracker.views import (
     OAuthCallbackView,
     LogoutView,
     ToggleCollectedView,
+    ToggleFavoriteView,
+    FavoritesAPIView,
     PrivacyPolicyView,
     AmiiboDatabaseView,
     DemoView,
@@ -18,6 +20,7 @@ from tracker.views import (
     AmiibodexView,
     AmiiboDetailView,
     RobotsTxtView,
+    AdsTxtView,
     NintendoScraperAPIView,
     DailyReportAPIView,
     DailyReportTriggerView,
@@ -31,12 +34,15 @@ from tracker.views_image import remove_bg
 urlpatterns = [
     path("", IndexView.as_view(), name="index"),
     path("robots.txt", RobotsTxtView.as_view(), name="robots"),
+    path("ads.txt", AdsTxtView.as_view(), name="ads_txt"),
     path(
         "about/", TemplateView.as_view(template_name="tracker/about.html"), name="about"
     ),
     path("demo/", DemoView.as_view(), name="demo"),
     path("tracker/", AmiiboListView.as_view(), name="amiibo_list"),
     path("toggle/", ToggleCollectedView.as_view(), name="toggle_collected"),
+    path("toggle-favorite/", ToggleFavoriteView.as_view(), name="toggle_favorite"),
+    path("api/favorites/", FavoritesAPIView.as_view(), name="favorites_api"),
     path("toggle-dark-mode/", ToggleDarkModeView.as_view(), name="toggle_dark_mode"),
     path(
         "toggle-type-filter/",

@@ -35,6 +35,7 @@ the collection filter All -> Collected -> Uncollected, kept in sync with the
             <option value="all">Show All</option>
             <option value="collected">Collected Only</option>
             <option value="uncollected">Uncollected Only</option>
+            {% if show_favorites %}<option value="favorites">♥ Favorites Only</option>{% endif %}
         </select>
         <div class="type-filters" id="typeFilters" aria-label="Filter by Amiibo type">
             <span style="font-weight: 700;">Types:</span>
