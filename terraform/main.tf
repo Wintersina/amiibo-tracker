@@ -7,6 +7,8 @@ resource "google_project_service" "enabled" {
     "cloudscheduler.googleapis.com",
     "storage.googleapis.com",
     "iam.googleapis.com",
+    "firestore.googleapis.com",
+    "billingbudgets.googleapis.com",
   ])
 
   project = var.project_id
@@ -49,6 +51,8 @@ resource "google_cloud_run_service" "amiibo_tracker" {
     google_secret_manager_secret_iam_member.loki_api_key_accessor,
     google_secret_manager_secret_iam_member.loki_hash_salt_accessor,
     google_secret_manager_secret_iam_member.gmail_smtp_password_accessor,
+    google_firestore_database.default,
+    google_project_iam_member.firestore_user_app_sa,
   ]
 
   template {
@@ -188,6 +192,78 @@ resource "google_secret_manager_secret_iam_member" "gmail_smtp_password_accessor
   secret_id = var.gmail_smtp_password_secret
   role      = "roles/secretmanager.secretAccessor"
   member    = "serviceAccount:${google_service_account.app_sa.email}"
+}
+
+# ---------------------------------------------------------------------------
+# Firestore: amiibo page comments
+# ---------------------------------------------------------------------------
+
+resource "google_firestore_database" "default" {
+  project     = var.project_id
+  name        = "(default)"
+  location_id = var.region
+  type        = "FIRESTORE_NATIVE"
+
+  depends_on = [google_project_service.enabled]
+}
+
+resource "google_project_iam_member" "firestore_user_app_sa" {
+  project = var.project_id
+  role    = "roles/datastore.user"
+  member  = "serviceAccount:${google_service_account.app_sa.email}"
+}
+
+resource "google_billing_budget" "monthly_cap" {
+  count = var.billing_account_id != "" ? 1 : 0
+
+  billing_account = var.billing_account_id
+  display_name    = "${var.service_name} monthly budget"
+
+  budget_filter {
+    projects = ["projects/${var.project_id}"]
+  }
+
+  amount {
+    specified_amount {
+      currency_code = "USD"
+      units         = tostring(var.monthly_budget_usd)
+    }
+  }
+
+  threshold_rules {
+    threshold_percent = 0.5
+  }
+
+  threshold_rules {
+    threshold_percent = 0.9
+  }
+
+  threshold_rules {
+    threshold_percent = 1.0
+  }
+
+  depends_on = [google_project_service.enabled]
+}
+
+resource "google_firestore_index" "amiibo_comments_by_amiibo" {
+  project    = var.project_id
+  database   = google_firestore_database.default.name
+  collection = "amiibo_comments"
+
+  fields {
+    field_path = "amiibo_id"
+    order      = "ASCENDING"
+  }
+
+  fields {
+    field_path = "is_hidden"
+    order      = "ASCENDING"
+  }
+
+  fields {
+    field_path = "created_at"
+    order      = "DESCENDING"
+  }
 }
 
 # ---------------------------------------------------------------------------

@@ -198,7 +198,7 @@
       "gameSeries": "The Legend of Zelda",
       "head": "01010300",
       "image": "https://raw.githubusercontent.com/8bitDream/AmiiboAPI/master/images/icon_01010300-04140902.png",
-      "name": "Zelda & Loftwing",
+      "name": "Zelda and Loftwing",
       "release": {
         "au": "2021-07-16",
         "eu": "2021-07-16",
@@ -1225,7 +1225,7 @@
       "name": "Rudy",
       "release": {
         "au": "2016-06-18",
-        "eu": "2026-03-13",
+        "eu": null,
         "jp": "2016-03-24",
         "na": "2016-06-10"
       },
@@ -1537,6 +1537,54 @@
       "type": "Card"
     },
     {
+      "amiiboSeries": "Monster Hunter",
+      "character": "Razewing Ratha",
+      "gameSeries": "Monster Hunter",
+      "head": "35050000",
+      "image": "https://raw.githubusercontent.com/8bitDream/AmiiboAPI/master/images/icon_35050000-040c0f02.png",
+      "name": "Razewing Ratha",
+      "release": {
+        "au": "2021-07-09",
+        "eu": "2021-07-09",
+        "jp": "2021-07-09",
+        "na": "2021-07-09"
+      },
+      "tail": "040c0f02",
+      "type": "Figure"
+    },
+    {
+      "amiiboSeries": "Monster Hunter",
+      "character": "Ena",
+      "gameSeries": "Monster Hunter",
+      "head": "35060000",
+      "image": "https://raw.githubusercontent.com/8bitDream/AmiiboAPI/master/images/icon_35060000-040d0f02.png",
+      "name": "Ena",
+      "release": {
+        "au": "2021-07-09",
+        "eu": "2021-07-09",
+        "jp": "2021-07-09",
+        "na": "2021-07-09"
+      },
+      "tail": "040d0f02",
+      "type": "Figure"
+    },
+    {
+      "amiiboSeries": "Monster Hunter Rise",
+      "character": "Palico",
+      "gameSeries": "Monster Hunter",
+      "head": "35090000",
+      "image": "https://raw.githubusercontent.com/8bitDream/AmiiboAPI/master/images/icon_35090000-04101802.png",
+      "name": "Palico",
+      "release": {
+        "au": "2021-03-26",
+        "eu": "2021-03-26",
+        "jp": "2021-03-26",
+        "na": "2021-03-26"
+      },
+      "tail": "04101802",
+      "type": "Figure"
+    },
+    {
       "amiiboSeries": "Monster Hunter Rise",
       "character": "Palico",
       "gameSeries": "Monster Hunter",
@@ -1550,6 +1598,86 @@
         "na": "2022-06-30"
       },
       "tail": "042b1802",
+      "type": "Figure"
+    },
+    {
+      "amiiboSeries": "Monster Hunter Rise",
+      "character": "Malzeno",
+      "gameSeries": "Monster Hunter",
+      "head": "350b0000",
+      "image": "https://raw.githubusercontent.com/8bitDream/AmiiboAPI/master/images/icon_350b0000-042d1802.png",
+      "name": "Malzeno",
+      "release": {
+        "au": "2022-06-30",
+        "eu": "2022-06-30",
+        "jp": "2022-06-30",
+        "na": "2022-06-30"
+      },
+      "tail": "042d1802",
+      "type": "Figure"
+    },
+    {
+      "amiiboSeries": "Monster Hunter",
+      "character": "Ratha",
+      "gameSeries": "Monster Hunter",
+      "head": "350c0000",
+      "image": "https://raw.githubusercontent.com/8bitDream/AmiiboAPI/master/images/icon_350c0000-04fa0f02.png",
+      "name": "Ratha",
+      "release": {
+        "au": "2026-03-13",
+        "eu": "2026-03-13",
+        "jp": "2026-03-13",
+        "na": "2026-03-13"
+      },
+      "tail": "04fa0f02",
+      "type": "Figure"
+    },
+    {
+      "amiiboSeries": "Monster Hunter",
+      "character": "Ratha V",
+      "gameSeries": "Monster Hunter",
+      "head": "350d0000",
+      "image": "https://raw.githubusercontent.com/8bitDream/AmiiboAPI/master/images/icon_350d0000-04fb0f02.png",
+      "name": "Ratha V",
+      "release": {
+        "au": "2026-03-13",
+        "eu": "2026-03-13",
+        "jp": "2026-03-13",
+        "na": "2026-03-13"
+      },
+      "tail": "04fb0f02",
+      "type": "Figure"
+    },
+    {
+      "amiiboSeries": "Monster Hunter",
+      "character": "Rudy",
+      "gameSeries": "Monster Hunter",
+      "head": "350e0000",
+      "image": "https://raw.githubusercontent.com/8bitDream/AmiiboAPI/master/images/icon_350e0000-04fc0f02.png",
+      "name": "Rudy",
+      "release": {
+        "au": "2026-03-13",
+        "eu": "2026-03-13",
+        "jp": "2026-03-13",
+        "na": "2026-03-13"
+      },
+      "tail": "04fc0f02",
+      "type": "Figure"
+    },
+    {
+      "amiiboSeries": "Pragmata",
+      "character": "Diana",
+      "gameSeries": "Pragmata",
+      "head": "35800000",
+      "image": "https://raw.githubusercontent.com/8bitDream/AmiiboAPI/master/images/icon_35800000-05062102.png",
+      "name": "Diana",
+      "release": {
+        "au": "2026-04-17",
+        "eu": "2026-06-11",
+        "jp": "2026-04-24",
+        "na": "2026-04-17"
+      },
+      "tail": "05062102",
       "type": "Figure"
     },
     {
@@ -1784,8 +1912,8 @@
       "image": "https://raw.githubusercontent.com/8bitDream/AmiiboAPI/master/images/icon_34800000-03791502.png",
       "name": "Mega Man",
       "release": {
-        "au": "2015-01-29",
-        "eu": "2015-02-20",
+        "au": null,
+        "eu": null,
         "jp": "2018-10-04",
         "na": "2018-10-02"
       },
@@ -2009,7 +2137,7 @@
       "name": "Robin",
       "release": {
         "au": "2016-06-18",
-        "eu": "2015-04-24",
+        "eu": null,
         "jp": "2016-03-24",
         "na": "2016-06-10"
       },
@@ -2078,6 +2206,22 @@
         "na": "2016-11-04"
       },
       "tail": "02620102",
+      "type": "Figure"
+    },
+    {
+      "amiiboSeries": "Super Mario Bros.",
+      "character": "Rosalina",
+      "gameSeries": "Super Mario",
+      "head": "00040100",
+      "image": "https://raw.githubusercontent.com/8bitDream/AmiiboAPI/master/images/icon_00040100-04ea0102.png",
+      "name": "Rosalina and Lumas",
+      "release": {
+        "au": "2026-04-02",
+        "eu": "2026-04-02",
+        "jp": "2026-04-02",
+        "na": "2026-04-02"
+      },
+      "tail": "04ea0102",
       "type": "Figure"
     },
     {
@@ -2510,22 +2654,6 @@
         "na": "2014-12-14"
       },
       "tail": "000d0002",
-      "type": "Figure"
-    },
-    {
-      "amiiboSeries": "Monster Hunter",
-      "character": "Razewing Ratha",
-      "gameSeries": "Monster Hunter",
-      "head": "35050000",
-      "image": "https://raw.githubusercontent.com/8bitDream/AmiiboAPI/master/images/icon_35050000-040c0f02.png",
-      "name": "Razewing Ratha",
-      "release": {
-        "au": "2021-07-09",
-        "eu": "2021-07-09",
-        "jp": "2021-07-09",
-        "na": "2021-07-09"
-      },
-      "tail": "040c0f02",
       "type": "Figure"
     },
     {
@@ -3538,11 +3666,11 @@
     },
     {
       "amiiboSeries": "Super Smash Bros.",
-      "character": "Terry",
+      "character": "Terry Bogard",
       "gameSeries": "Fatal Fury",
       "head": "3c800000",
       "image": "https://raw.githubusercontent.com/8bitDream/AmiiboAPI/master/images/icon_3c800000-03a40002.png",
-      "name": "Terry",
+      "name": "Terry Bogard",
       "release": {
         "au": "2021-03-26",
         "eu": "2021-03-26",
@@ -5330,7 +5458,7 @@
     },
     {
       "amiiboSeries": "Super Smash Bros.",
-      "character": "Banjo",
+      "character": "Banjo & Kazooie",
       "gameSeries": "Banjo Kazooie",
       "head": "3b400000",
       "image": "https://raw.githubusercontent.com/8bitDream/AmiiboAPI/master/images/icon_3b400000-03a30002.png",
@@ -5598,6 +5726,22 @@
         "na": "2015-02-01"
       },
       "tail": "00270002",
+      "type": "Figure"
+    },
+    {
+      "amiiboSeries": "Kirby Air Riders",
+      "character": "Meta Knight",
+      "gameSeries": "Kirby",
+      "head": "1f010000",
+      "image": "https://raw.githubusercontent.com/8bitDream/AmiiboAPI/master/images/icon_1f010000-04c61e03.png",
+      "name": "Meta Knight (& Shadow Star)",
+      "release": {
+        "au": "2026-03-05",
+        "eu": "2026-03-05",
+        "jp": "2026-03-05",
+        "na": "2026-03-05"
+      },
+      "tail": "04c61e03",
       "type": "Figure"
     },
     {
@@ -7416,8 +7560,8 @@
       "image": "https://raw.githubusercontent.com/8bitDream/AmiiboAPI/master/images/icon_38c00000-03911602.png",
       "name": "Loot Goblin",
       "release": {
-        "au": "2018-12-21",
-        "eu": "2018-12-21",
+        "au": null,
+        "eu": null,
         "jp": null,
         "na": "2018-12-21"
       },
@@ -8542,22 +8686,6 @@
         "na": "2016-03-18"
       },
       "tail": "02520002",
-      "type": "Figure"
-    },
-    {
-      "amiiboSeries": "Monster Hunter Rise",
-      "character": "Malzeno",
-      "gameSeries": "Monster Hunter",
-      "head": "350b0000",
-      "image": "https://raw.githubusercontent.com/8bitDream/AmiiboAPI/master/images/icon_350b0000-042d1802.png",
-      "name": "Malzeno",
-      "release": {
-        "au": "2022-06-30",
-        "eu": "2022-06-30",
-        "jp": "2022-06-30",
-        "na": "2022-06-30"
-      },
-      "tail": "042d1802",
       "type": "Figure"
     },
     {
@@ -9729,6 +9857,22 @@
       "type": "Figure"
     },
     {
+      "amiiboSeries": "Super Mario Bros.",
+      "character": "Mario",
+      "gameSeries": "Super Mario",
+      "head": "00000400",
+      "image": "https://raw.githubusercontent.com/8bitDream/AmiiboAPI/master/images/icon_00000400-04c10102.png",
+      "name": "Elephant Mario",
+      "release": {
+        "au": "2026-03-26",
+        "eu": "2026-03-26",
+        "jp": "2026-03-26",
+        "na": "2026-03-26"
+      },
+      "tail": "04c10102",
+      "type": "Figure"
+    },
+    {
       "amiiboSeries": "Super Nintendo World",
       "character": "Toad",
       "gameSeries": "Super Mario",
@@ -9743,6 +9887,38 @@
       },
       "tail": "03a0ff02",
       "type": "Band"
+    },
+    {
+      "amiiboSeries": "Super Mario Bros.",
+      "character": "Toad",
+      "gameSeries": "Super Mario",
+      "head": "000a0100",
+      "image": "https://raw.githubusercontent.com/8bitDream/AmiiboAPI/master/images/icon_000a0100-04c20102.png",
+      "name": "Captain Toad & Talking Flower",
+      "release": {
+        "au": "2026-03-26",
+        "eu": "2026-03-26",
+        "jp": "2026-03-26",
+        "na": "2026-03-26"
+      },
+      "tail": "04c20102",
+      "type": "Figure"
+    },
+    {
+      "amiiboSeries": "Super Mario Bros.",
+      "character": "Poplin",
+      "gameSeries": "Super Mario",
+      "head": "00250100",
+      "image": "https://raw.githubusercontent.com/8bitDream/AmiiboAPI/master/images/icon_00250100-04c30102.png",
+      "name": "Poplin & Prince Florian",
+      "release": {
+        "au": "2026-03-26",
+        "eu": "2026-03-26",
+        "jp": "2026-03-26",
+        "na": "2026-03-26"
+      },
+      "tail": "04c30102",
+      "type": "Figure"
     },
     {
       "amiiboSeries": "Animal Crossing",
@@ -12146,7 +12322,7 @@
     },
     {
       "amiiboSeries": "Street Fighter 6",
-      "character": "Terry",
+      "character": "Terry Bogard",
       "gameSeries": "Fatal Fury",
       "head": "3c800001",
       "image": "https://raw.githubusercontent.com/8bitDream/AmiiboAPI/master/images/icon_3c800001-04e81d02.png",
@@ -12626,7 +12802,7 @@
     },
     {
       "amiiboSeries": "Street Fighter 6",
-      "character": "Terry",
+      "character": "Terry Bogard",
       "gameSeries": "Fatal Fury",
       "head": "3c800001",
       "image": "https://raw.githubusercontent.com/8bitDream/AmiiboAPI/master/images/icon_3c800001-04f11d02.png",
@@ -13182,22 +13358,6 @@
         "na": "2016-06-10"
       },
       "tail": "02560c02",
-      "type": "Figure"
-    },
-    {
-      "amiiboSeries": "Monster Hunter",
-      "character": "Ena",
-      "gameSeries": "Monster Hunter",
-      "head": "35060000",
-      "image": "https://raw.githubusercontent.com/8bitDream/AmiiboAPI/master/images/icon_35060000-040d0f02.png",
-      "name": "Ena",
-      "release": {
-        "au": "2021-07-09",
-        "eu": "2021-07-09",
-        "jp": "2021-07-09",
-        "na": "2021-07-09"
-      },
-      "tail": "040d0f02",
       "type": "Figure"
     },
     {
@@ -13921,6 +14081,22 @@
       "type": "Figure"
     },
     {
+      "amiiboSeries": "Super Mario Bros.",
+      "character": "Mario",
+      "gameSeries": "Super Mario",
+      "head": "00000500",
+      "image": "https://raw.githubusercontent.com/8bitDream/AmiiboAPI/master/images/icon_00000500-04e90102.png",
+      "name": "Mario and Luma",
+      "release": {
+        "au": "2026-04-02",
+        "eu": "2026-04-02",
+        "jp": "2026-04-02",
+        "na": "2026-04-02"
+      },
+      "tail": "04e90102",
+      "type": "Figure"
+    },
+    {
       "amiiboSeries": "Animal Crossing",
       "character": "Olivia",
       "gameSeries": "Animal Crossing",
@@ -14641,22 +14817,6 @@
       "type": "Card"
     },
     {
-      "amiiboSeries": "Monster Hunter Rise",
-      "character": "Palico",
-      "gameSeries": "Monster Hunter",
-      "head": "35090000",
-      "image": "https://raw.githubusercontent.com/8bitDream/AmiiboAPI/master/images/icon_35090000-04101802.png",
-      "name": "Palico",
-      "release": {
-        "au": "2021-03-26",
-        "eu": "2021-03-26",
-        "jp": "2021-03-26",
-        "na": "2021-03-26"
-      },
-      "tail": "04101802",
-      "type": "Figure"
-    },
-    {
       "amiiboSeries": "Mario Sports Superstars",
       "character": "Mario",
       "gameSeries": "Mario Sports Superstars",
@@ -14886,7 +15046,7 @@
       "gameSeries": "Kirby",
       "head": "1f000000",
       "image": "https://raw.githubusercontent.com/8bitDream/AmiiboAPI/master/images/icon_1f000000-04c41e03.png",
-      "name": "Kirby",
+      "name": "Kirby (& Warp Star)",
       "release": {
         "au": "2025-11-20",
         "eu": "2025-11-20",
@@ -14902,7 +15062,7 @@
       "gameSeries": "Kirby",
       "head": "1f030100",
       "image": "https://raw.githubusercontent.com/8bitDream/AmiiboAPI/master/images/icon_1f030100-04c91e03.png",
-      "name": "Bandana Waddle Dee",
+      "name": "Bandana Waddle Dee (& Winged Star)",
       "release": {
         "au": "2025-11-20",
         "eu": "2025-11-20",

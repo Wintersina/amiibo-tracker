@@ -33,6 +33,7 @@ from tracker.helpers import (
 )
 from tracker.service_domain import AmiiboService, GoogleSheetConfigManager
 from tracker.scrapers import AmiiboLifeScraper
+from tracker.firestore_client import add_comment, list_comments
 from tracker.seo_helpers import (
     SEOContext,
     generate_meta_description,
@@ -3453,10 +3454,51 @@ class AmiiboDetailView(View, LoggingMixin, AmiiboLocalFetchMixin):
             ]
             seo.add_schema("BreadcrumbList", generate_breadcrumb_schema(breadcrumbs))
 
+            from django.core.cache import cache
+
+            comments_cache_key = f"comments:{amiibo_id}"
+            comments = cache.get(comments_cache_key)
+            if comments is None:
+                try:
+                    comments = list_comments(amiibo_id, limit=50)
+                except Exception as comments_exc:
+                    self.log_action(
+                        "comments-load-failed",
+                        request,
+                        level="warning",
+                        amiibo_id=amiibo_id,
+                        error=str(comments_exc),
+                    )
+                    comments = []
+                cache.set(comments_cache_key, comments, 60)
+
+            comment_status = request.GET.get("comment")
+            comment_banner = {
+                "ok": ("success", "Comment posted."),
+                "rate_limited": (
+                    "error",
+                    "You're posting too quickly. Try again in a few minutes.",
+                ),
+                "too_long": (
+                    "error",
+                    f"Comment too long (max {COMMENT_BODY_MAX_LEN} characters).",
+                ),
+                "empty": ("error", "Comment can't be empty."),
+                "server_busy": (
+                    "error",
+                    "Comments are temporarily unavailable. Please try again later.",
+                ),
+            }.get(comment_status)
+
             context = {
                 "amiibo": amiibo,
                 "regional_releases": regional_releases,
                 "description": description,
+                "comments": comments,
+                "comment_banner": comment_banner,
+                "current_user_email": request.session.get("user_email"),
+                "current_user_name": request.session.get("user_name"),
+                "comment_body_max_len": COMMENT_BODY_MAX_LEN,
             }
             context.update(seo.build())
 
@@ -3487,6 +3529,7 @@ class AmiiboDetailView(View, LoggingMixin, AmiiboLocalFetchMixin):
         amiibo_name = amiibo.get("name", "")
         character_name = amiibo.get("character", "")
         game_series = amiibo.get("gameSeries", "")
+        amiibo_id = f"{amiibo.get('head', '')}-{amiibo.get('tail', '')}"
 
         # Try to load custom descriptions from JSON file
         descriptions_path = (
@@ -3496,7 +3539,11 @@ class AmiiboDetailView(View, LoggingMixin, AmiiboLocalFetchMixin):
             try:
                 with open(descriptions_path, "r", encoding="utf-8") as f:
                     descriptions = json.load(f)
-                    # Try amiibo name first (for variant-specific descriptions)
+                    # Try amiibo id first (disambiguates same-named amiibos from
+                    # different series, e.g. Animal Crossing vs Monster Hunter)
+                    if amiibo_id in descriptions:
+                        return descriptions[amiibo_id]
+                    # Then amiibo name (for variant-specific descriptions)
                     if amiibo_name in descriptions:
                         return descriptions[amiibo_name]
                     # Fall back to character name
@@ -3700,3 +3747,93 @@ class DailyReportTriggerView(View):
             return JsonResponse({"error": str(exc)}, status=500)
 
         return HttpResponse(status=204)
+
+
+COMMENT_BODY_MAX_LEN = 2000
+COMMENT_PER_USER_MAX = 5
+COMMENT_PER_USER_WINDOW = 600  # 10 minutes
+
+
+class PostCommentView(View, LoggingMixin):
+    """Create a comment on an amiibo detail page."""
+
+    def post(self, request, amiibo_id):
+        import re
+        from django.core.cache import cache
+        from google.api_core.exceptions import ResourceExhausted
+
+        if not re.fullmatch(r"[0-9a-fA-F]{8}-[0-9a-fA-F]{8}", amiibo_id):
+            raise Http404("Invalid amiibo ID")
+
+        user_email = request.session.get("user_email")
+        user_name = request.session.get("user_name") or "Anonymous"
+        if not user_email:
+            return redirect("oauth_login")
+
+        body = (request.POST.get("body") or "").strip()
+        if not body:
+            return redirect(f"/blog/number-released/amiibo/{amiibo_id}/?comment=empty")
+        if len(body) > COMMENT_BODY_MAX_LEN:
+            return redirect(f"/blog/number-released/amiibo/{amiibo_id}/?comment=too_long")
+
+        ip_violation = check_rate_limit(
+            request,
+            bucket="post_comment",
+            per_ip_max=10,
+            per_ip_window=600,
+            global_max=200,
+            global_window=600,
+        )
+        user_key = f"ratelimit:post_comment:user:{user_email}"
+        user_count = cache.get(user_key, 0)
+        if ip_violation or user_count >= COMMENT_PER_USER_MAX:
+            self.log_action(
+                "comment-rate-limited",
+                request,
+                level="warning",
+                amiibo_id=amiibo_id,
+                reason=ip_violation or "per-user limit",
+            )
+            return redirect(
+                f"/blog/number-released/amiibo/{amiibo_id}/?comment=rate_limited"
+            )
+        cache.set(user_key, user_count + 1, COMMENT_PER_USER_WINDOW)
+
+        try:
+            doc_id = add_comment(
+                amiibo_id=amiibo_id,
+                user_email=user_email,
+                display_name=user_name,
+                body=body,
+            )
+        except ResourceExhausted:
+            self.log_action(
+                "comment-quota-exhausted",
+                request,
+                level="error",
+                amiibo_id=amiibo_id,
+            )
+            return redirect(
+                f"/blog/number-released/amiibo/{amiibo_id}/?comment=server_busy"
+            )
+        except Exception as exc:
+            self.log_action(
+                "comment-write-failed",
+                request,
+                level="error",
+                amiibo_id=amiibo_id,
+                error=str(exc),
+            )
+            return redirect(
+                f"/blog/number-released/amiibo/{amiibo_id}/?comment=server_busy"
+            )
+
+        cache.delete(f"comments:{amiibo_id}")
+
+        self.log_action(
+            "comment-posted",
+            request,
+            amiibo_id=amiibo_id,
+            comment_id=doc_id,
+        )
+        return redirect(f"/blog/number-released/amiibo/{amiibo_id}/?comment=ok")

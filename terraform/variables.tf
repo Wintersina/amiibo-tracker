@@ -129,3 +129,15 @@ variable "daily_report_time_zone" {
   type        = string
   default     = "America/New_York"
 }
+
+variable "billing_account_id" {
+  description = "Billing account ID that owns this project (e.g. 01ABCD-234567-89EFGH). Leave empty to skip creating the budget. Find via: gcloud beta billing projects describe <project> --format='value(billingAccountName)'"
+  type        = string
+  default     = ""
+}
+
+variable "monthly_budget_usd" {
+  description = "Monthly budget cap in USD that triggers email alerts at 50/90/100%"
+  type        = number
+  default     = 5
+}
