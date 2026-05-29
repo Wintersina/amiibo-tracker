@@ -313,3 +313,112 @@ class TestAmiiboServicePlaceholderFiltering:
             call_args = mock_log.call_args
             assert "placeholder" in call_args[0][0].lower()
             assert "2" in call_args[0][0]  # 2 placeholders skipped
+
+
+def _service_with_rows(rows):
+    """Build an AmiiboService whose sheet returns the given values."""
+    mock_client = Mock()
+    mock_sheet = MagicMock()
+    mock_sheet.get_all_values.return_value = rows
+    mock_client.get_or_create_worksheet_by_name.return_value = mock_sheet
+    mock_client.execute_worksheet_operation.side_effect = (
+        mock_execute_worksheet_operation
+    )
+    service = AmiiboService(mock_client)
+    service.sheet = mock_sheet
+    return service, mock_sheet
+
+
+class TestAmiiboServiceFavorites:
+    """Favorite column read/write behavior (column G)."""
+
+    HEADER_7 = [
+        "Amiibo ID",
+        "Amiibo Name",
+        "Game Series",
+        "Release Date",
+        "Type",
+        "Collected Status",
+        "Favorite",
+    ]
+
+    def test_new_rows_include_favorite_default(self):
+        """Seeded rows carry a 7th column defaulting the Favorite flag to '0'."""
+        service, mock_sheet = _service_with_rows([self.HEADER_7])
+        service.seed_new_amiibos(
+            [
+                {
+                    "name": "Mario",
+                    "head": "09d00301",
+                    "tail": "02bb0e02",
+                    "gameSeries": "Super Mario",
+                    "type": "Figure",
+                    "release": {"na": "2014-11-21"},
+                }
+            ]
+        )
+        added = mock_sheet.append_rows.call_args[0][0][0]
+        assert len(added) == 7
+        assert added[5] == "0"  # collected
+        assert added[6] == "0"  # favorite
+
+    def test_get_favorite_status_reads_column_g(self):
+        service, _ = _service_with_rows(
+            [
+                self.HEADER_7,
+                ["idA", "A", "S", "", "Figure", "1", "1"],
+                ["idB", "B", "S", "", "Figure", "1", "0"],
+                ["idC", "C", "S", "", "Figure", "0"],  # legacy 6-col row
+            ]
+        )
+        favorites = service.get_favorite_status()
+        assert favorites == {"idA": "1", "idB": "0", "idC": "0"}
+
+    def test_combined_status_reads_once(self):
+        service, mock_sheet = _service_with_rows(
+            [
+                self.HEADER_7,
+                ["idA", "A", "S", "", "Figure", "1", "0"],
+                ["idB", "B", "S", "", "Figure", "0", "1"],
+            ]
+        )
+        collected, favorite = service.get_collected_and_favorite_status()
+        assert collected == {"idA": "1", "idB": "0"}
+        assert favorite == {"idA": "0", "idB": "1"}
+        # Single read of the sheet for both maps.
+        assert mock_sheet.get_all_values.call_count == 1
+
+    def test_toggle_favorite_writes_column_g(self):
+        service, mock_sheet = _service_with_rows(
+            [self.HEADER_7, ["idA", "A", "S", "", "Figure", "0", "0"]]
+        )
+        mock_sheet.col_values.return_value = ["Amiibo ID", "idA"]
+        mock_sheet.find.return_value = Mock(row=2)
+
+        assert service.toggle_favorite("idA", "favorite") is True
+        mock_sheet.update_cell.assert_called_once_with(2, 7, "1")
+
+        mock_sheet.update_cell.reset_mock()
+        assert service.toggle_favorite("idA", "unfavorite") is True
+        mock_sheet.update_cell.assert_called_once_with(2, 7, "0")
+
+    def test_toggle_favorite_missing_amiibo_returns_false(self):
+        service, mock_sheet = _service_with_rows([self.HEADER_7])
+        mock_sheet.col_values.return_value = ["Amiibo ID"]
+        assert service.toggle_favorite("missing", "favorite") is False
+        mock_sheet.update_cell.assert_not_called()
+
+    def test_ensure_structure_widens_legacy_six_column_sheet(self):
+        """Migrating a 6-column sheet adds the missing column before writing."""
+        service = AmiiboService(Mock())
+        mock_sheet = MagicMock()
+        mock_sheet.col_count = 6
+        mock_sheet.row_values.return_value = self.HEADER_7[:6]  # legacy header
+        service.google_sheet_client.execute_worksheet_operation.side_effect = (
+            mock_execute_worksheet_operation
+        )
+
+        service._ensure_sheet_structure(mock_sheet)
+
+        mock_sheet.add_cols.assert_called_once_with(1)
+        mock_sheet.update.assert_called_once_with("A1:G1", [self.HEADER_7])

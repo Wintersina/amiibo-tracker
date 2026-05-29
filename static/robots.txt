@@ -5,6 +5,7 @@ Disallow: /oauth-login/
 Disallow: /oauth2callback/
 Disallow: /logout/
 Disallow: /toggle/
+Disallow: /toggle-favorite/
 Disallow: /toggle-dark-mode/
 Disallow: /toggle-type-filter/
 

@@ -16,8 +16,10 @@ class AmiiboService(LoggingMixin, AmiiboRemoteFetchMixin, AmiiboLocalFetchMixin)
         "Release Date",
         "Type",
         "Collected Status",
+        "Favorite",
     ]
     COLLECTED_STATUS_COL = 6
+    FAVORITE_COL = 7
 
     def __init__(
         self,
@@ -92,6 +94,7 @@ class AmiiboService(LoggingMixin, AmiiboRemoteFetchMixin, AmiiboLocalFetchMixin)
                         release_date,
                         amiibo.get("type", ""),
                         "0",
+                        "0",
                     ]
                 )
                 continue
@@ -117,7 +120,7 @@ class AmiiboService(LoggingMixin, AmiiboRemoteFetchMixin, AmiiboLocalFetchMixin)
 
         if updates:
             update_requests = [
-                {"range": f"A{row_index}:F{row_index}", "values": [row_values]}
+                {"range": f"A{row_index}:G{row_index}", "values": [row_values]}
                 for row_index, row_values in updates.items()
             ]
             self._batched_update(update_requests)
@@ -134,20 +137,33 @@ class AmiiboService(LoggingMixin, AmiiboRemoteFetchMixin, AmiiboLocalFetchMixin)
                 placeholders=skipped_placeholders[:5],  # Show first 5
             )
 
-    def get_collected_status(self):
-        rows = self.google_sheet_client.execute_worksheet_operation(
+    def _status_rows(self):
+        return self.google_sheet_client.execute_worksheet_operation(
             self.sheet.get_all_values
         )[1:]
+
+    @staticmethod
+    def _column_status(rows, column):
+        """Map each row's Amiibo ID to the value in `column` (1-based)."""
         return {
-            row[0]: (
-                row[self.COLLECTED_STATUS_COL - 1]
-                if len(row) >= self.COLLECTED_STATUS_COL
-                else "0"
-            )
-            for row in rows
+            row[0]: (row[column - 1] if len(row) >= column else "0") for row in rows
         }
 
-    def toggle_collected(self, amiibo_id: str, action: str):
+    def get_collected_status(self):
+        return self._column_status(self._status_rows(), self.COLLECTED_STATUS_COL)
+
+    def get_favorite_status(self):
+        return self._column_status(self._status_rows(), self.FAVORITE_COL)
+
+    def get_collected_and_favorite_status(self):
+        """Read the sheet once and return (collected_map, favorite_map)."""
+        rows = self._status_rows()
+        return (
+            self._column_status(rows, self.COLLECTED_STATUS_COL),
+            self._column_status(rows, self.FAVORITE_COL),
+        )
+
+    def _toggle_column(self, amiibo_id: str, column: int, enabled: bool):
         # Use wrapper to handle API errors gracefully
         current_ids = self.google_sheet_client.execute_worksheet_operation(
             self.sheet.col_values, 1
@@ -161,18 +177,36 @@ class AmiiboService(LoggingMixin, AmiiboRemoteFetchMixin, AmiiboLocalFetchMixin)
         self.google_sheet_client.execute_worksheet_operation(
             self.sheet.update_cell,
             cell.row,
-            self.COLLECTED_STATUS_COL,
-            "1" if action == "collect" else "0",
+            column,
+            "1" if enabled else "0",
         )
         return True
+
+    def toggle_collected(self, amiibo_id: str, action: str):
+        return self._toggle_column(
+            amiibo_id, self.COLLECTED_STATUS_COL, action == "collect"
+        )
+
+    def toggle_favorite(self, amiibo_id: str, action: str):
+        return self._toggle_column(
+            amiibo_id, self.FAVORITE_COL, action == "favorite"
+        )
 
     def _ensure_sheet_structure(self, sheet):
         header = self.google_sheet_client.execute_worksheet_operation(
             sheet.row_values, 1
         )
         if header != self.HEADER:
+            # Widen the grid if needed (e.g. migrating a legacy 6-column sheet
+            # to add the Favorite column) before writing the header — the Sheets
+            # API rejects writes to columns beyond the sheet's dimensions.
+            col_count = getattr(sheet, "col_count", len(self.HEADER))
+            if col_count < len(self.HEADER):
+                self.google_sheet_client.execute_worksheet_operation(
+                    sheet.add_cols, len(self.HEADER) - col_count
+                )
             self.google_sheet_client.execute_worksheet_operation(
-                sheet.update, "A1:F1", [self.HEADER]
+                sheet.update, "A1:G1", [self.HEADER]
             )
 
     def _batched_update(self, update_requests: list[dict], batch_size: int = 50):

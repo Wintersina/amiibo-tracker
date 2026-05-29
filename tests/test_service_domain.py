@@ -13,6 +13,7 @@ class DummySheet:
                 "Release Date",
                 "Type",
                 "Collected Status",
+                "Favorite",
             ],
             [
                 "existingseriesexistingtail",
@@ -107,7 +108,7 @@ def test_seed_new_amiibos_appends_missing_rows():
 
     service.seed_new_amiibos(new_amiibos)
 
-    assert ["newseriestail", "New", "series", None, "Figure", "0"] in service.sheet.rows
+    assert ["newseriestail", "New", "series", None, "Figure", "0", "0"] in service.sheet.rows
     assert len(service.sheet.append_rows_calls) == 1
     # ensure the existing amiibo was not duplicated
     assert service.sheet.rows.count(
@@ -140,8 +141,9 @@ def test_seed_new_amiibos_backfills_missing_columns():
         "05/10/2024",
         "Figure",
         "1",
+        "",
     ]
-    assert ("A2:F2", [service.sheet.rows[1]]) in service.sheet.update_calls
+    assert ("A2:G2", [service.sheet.rows[1]]) in service.sheet.update_calls
 
 
 def test_toggle_collected_updates_known_id():
@@ -163,7 +165,7 @@ def test_ensure_sheet_structure_sets_expected_header():
     service._ensure_sheet_structure(service.sheet)
 
     assert service.sheet.rows[0] == AmiiboService.HEADER
-    assert service.sheet.update_calls == [("A1:F1", [AmiiboService.HEADER])]
+    assert service.sheet.update_calls == [("A1:G1", [AmiiboService.HEADER])]
 
 
 def test_seed_new_amiibos_formats_release_date():
@@ -187,6 +189,7 @@ def test_seed_new_amiibos_formats_release_date():
         "series",
         "05/10/2024",
         "Figure",
+        "0",
         "0",
     ] in service.sheet.rows
 

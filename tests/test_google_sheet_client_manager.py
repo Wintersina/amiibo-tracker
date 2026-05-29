@@ -77,6 +77,7 @@ def test_get_or_create_worksheet_by_name_creates_defaults():
             "Release Date",
             "Type",
             "Collected Status",
+            "Favorite",
         ]
     ]
     assert config_sheet.rows == [
@@ -172,6 +173,7 @@ def test_initialize_default_worksheets_populates_missing():
             "Release Date",
             "Type",
             "Collected Status",
+            "Favorite",
         ]
     ]
     assert config_sheet.rows == [

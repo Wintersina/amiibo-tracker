@@ -14,6 +14,9 @@
     <!-- Canonical URL -->
     <link rel="canonical" href="{% block canonical_url %}{{ canonical_url|default:request.build_absolute_uri }}{% endblock %}">
 
+    <!-- Robots directives (per-page override) -->
+    {% block robots %}{% endblock %}
+
     <!-- OpenGraph Tags for Social Sharing -->
     <meta property="og:type" content="{% block og_type %}website{% endblock %}">
     <meta property="og:title" content="{% block og_title %}{% block title_plain %}Amiibo Tracker{% endblock %}{% endblock %}">
