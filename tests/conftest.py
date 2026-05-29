@@ -28,12 +28,20 @@ def configure_settings():
 
 @pytest.fixture(autouse=True)
 def clear_caches():
+    from django.core.cache import cache
+
     # GoogleSheetConfigManager's cache is per-instance (see service_domain.py),
     # so test isolation there happens naturally when each test builds a fresh
     # manager. Only the still-class-level GoogleSheetClientManager caches need
     # explicit reset between tests.
+    #
+    # The Django cache is also reset because the rate limiter (check_rate_limit)
+    # keeps its counters there; LocMemCache is per-process, so without this the
+    # counts bleed across tests and later requests get rejected with HTTP 429.
     GoogleSheetClientManager._spreadsheet_cache.clear()
     GoogleSheetClientManager._worksheet_cache.clear()
+    cache.clear()
     yield
     GoogleSheetClientManager._spreadsheet_cache.clear()
     GoogleSheetClientManager._worksheet_cache.clear()
+    cache.clear()
