@@ -95,7 +95,7 @@ def test_post_success_calls_wrapper_and_busts_cache(rf, monkeypatch):
 
     monkeypatch.setattr(views, "add_comment", fake_add)
 
-    cache.set(f"comments:{AMIIBO_ID}", ["stale"], 60)
+    cache.set(f"comments:amiibo:{AMIIBO_ID}", ["stale"], 60)
 
     response = views.PostCommentView.as_view()(
         _post(rf, body="great figure", session=_logged_in_session()),
@@ -104,11 +104,13 @@ def test_post_success_calls_wrapper_and_busts_cache(rf, monkeypatch):
 
     assert response.status_code == 302
     assert response.url.endswith("?comment=ok")
-    assert captured["amiibo_id"] == AMIIBO_ID
+    assert captured["collection"] == "amiibo_comments"
+    assert captured["key_field"] == "amiibo_id"
+    assert captured["key_value"] == AMIIBO_ID
     assert captured["user_email"] == "fan@example.com"
     assert captured["display_name"] == "Mario Fan"
     assert captured["body"] == "great figure"
-    assert cache.get(f"comments:{AMIIBO_ID}") is None
+    assert cache.get(f"comments:amiibo:{AMIIBO_ID}") is None
 
 
 def test_post_handles_quota_exhausted(rf, monkeypatch):
@@ -210,3 +212,139 @@ def test_detail_view_falls_back_to_empty_when_firestore_fails(rf, monkeypatch):
 
     assert response.status_code == 200
     assert b"No comments yet" in response.content
+
+
+# ---------------------------------------------------------------------------
+# PostBlogCommentView
+# ---------------------------------------------------------------------------
+
+
+BLOG_SLUG = "resident-evil-amiibo-complete-guide"
+BLOG_PATH = f"/blog/{BLOG_SLUG}/"
+BLOG_POST_PATH = f"{BLOG_PATH}comment/"
+
+
+def _blog_post(rf, body="Loved this", session=None):
+    request = rf.post(BLOG_POST_PATH, data={"body": body})
+    request.session = session if session is not None else {}
+    return request
+
+
+def test_blog_post_404_for_unknown_slug(rf):
+    with pytest.raises(Http404):
+        views.PostBlogCommentView.as_view()(
+            _blog_post(rf, session=_logged_in_session()),
+            slug="this-slug-does-not-exist",
+        )
+
+
+def test_blog_post_redirects_to_login_when_anonymous(rf):
+    response = views.PostBlogCommentView.as_view()(_blog_post(rf), slug=BLOG_SLUG)
+    assert response.status_code == 302
+    assert response.url.endswith("/oauth-login/")
+
+
+def test_blog_post_success_writes_with_slug_key_and_busts_cache(rf, monkeypatch):
+    captured = {}
+
+    def fake_add(**kwargs):
+        captured.update(kwargs)
+        return "blog-doc-id"
+
+    monkeypatch.setattr(views, "add_comment", fake_add)
+
+    cache.set(f"comments:blog:{BLOG_SLUG}", ["stale"], 60)
+
+    response = views.PostBlogCommentView.as_view()(
+        _blog_post(rf, body="nice writeup", session=_logged_in_session()),
+        slug=BLOG_SLUG,
+    )
+
+    assert response.status_code == 302
+    assert response.url.endswith(f"/blog/{BLOG_SLUG}/?comment=ok")
+    assert captured["collection"] == "blog_comments"
+    assert captured["key_field"] == "slug"
+    assert captured["key_value"] == BLOG_SLUG
+    assert captured["body"] == "nice writeup"
+    assert cache.get(f"comments:blog:{BLOG_SLUG}") is None
+
+
+def test_blog_post_handles_quota_exhausted(rf, monkeypatch):
+    def boom(**kwargs):
+        raise ResourceExhausted("quota")
+
+    monkeypatch.setattr(views, "add_comment", boom)
+
+    response = views.PostBlogCommentView.as_view()(
+        _blog_post(rf, session=_logged_in_session()),
+        slug=BLOG_SLUG,
+    )
+
+    assert response.status_code == 302
+    assert response.url.endswith(f"/blog/{BLOG_SLUG}/?comment=server_busy")
+
+
+# ---------------------------------------------------------------------------
+# BlogPostView — comment loading + banner
+# ---------------------------------------------------------------------------
+
+
+def test_blog_view_renders_comments(rf, monkeypatch):
+    fake_comments = [
+        {
+            "id": "1",
+            "slug": BLOG_SLUG,
+            "display_name": "Peach",
+            "body": "Great post",
+            "user_email": "p@example.com",
+            "created_at": None,
+            "is_hidden": False,
+        }
+    ]
+    monkeypatch.setattr(views, "list_comments", lambda *a, **kw: fake_comments)
+
+    request = rf.get(BLOG_PATH)
+    request.session = {}
+    response = views.BlogPostView.as_view()(request, slug=BLOG_SLUG)
+
+    assert response.status_code == 200
+    assert b"Peach" in response.content
+    assert b"Great post" in response.content
+
+
+def test_blog_view_renders_banner(rf, monkeypatch):
+    monkeypatch.setattr(views, "list_comments", lambda *a, **kw: [])
+
+    request = rf.get(BLOG_PATH + "?comment=ok")
+    request.session = {}
+    response = views.BlogPostView.as_view()(request, slug=BLOG_SLUG)
+
+    assert response.status_code == 200
+    assert b"Comment posted." in response.content
+
+
+# ---------------------------------------------------------------------------
+# Header login/logout swap
+# ---------------------------------------------------------------------------
+
+
+def test_header_shows_login_when_anonymous(rf, monkeypatch):
+    monkeypatch.setattr(views, "list_comments", lambda *a, **kw: [])
+
+    request = rf.get(BLOG_PATH)
+    request.session = {}
+    response = views.BlogPostView.as_view()(request, slug=BLOG_SLUG)
+
+    assert b"login-start" in response.content
+    assert b"logout-start" not in response.content
+
+
+def test_header_shows_logout_when_logged_in(rf, monkeypatch):
+    monkeypatch.setattr(views, "list_comments", lambda *a, **kw: [])
+
+    request = rf.get(BLOG_PATH)
+    request.session = _logged_in_session()
+    response = views.BlogPostView.as_view()(request, slug=BLOG_SLUG)
+
+    assert b"logout-start" in response.content
+    assert b"login-start" not in response.content
