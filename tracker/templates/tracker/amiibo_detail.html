@@ -27,7 +27,7 @@
 
         body {
             margin: 0;
-            padding: 120px 1rem 2rem 1rem;
+            padding: 90px 1rem 2rem 1rem;
             font-family: 'Vazirmatn', system-ui, sans-serif;
             background: linear-gradient(180deg, rgba(6, 10, 14, 0.95), rgba(12, 18, 24, 0.9)),
             url('{% static "images/amiibo_bg.png" %}') center/420px repeat;
@@ -75,16 +75,21 @@
         .content {
             position: relative;
             z-index: 1;
-            padding-top: 4rem;
-            /* Reserve space for absolutely positioned nav buttons on desktop */
-            padding-right: 0;
         }
 
-        /* On larger screens, add padding to prevent title collision with nav buttons */
-        @media (min-width: 721px) {
-            .content {
-                padding-right: 200px;
-            }
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.82rem;
+            color: rgba(253, 247, 227, 0.7);
+            margin-bottom: 1.5rem;
+            text-decoration: none;
+            transition: color 0.15s ease;
+        }
+
+        .back-link:hover {
+            color: var(--saffron);
         }
 
         h1 {
@@ -189,16 +194,6 @@
             font-size: 0.9rem;
         }
 
-        .nav-buttons {
-            position: absolute;
-            top: 1.5rem;
-            right: 1.5rem;
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-            align-items: flex-end;
-        }
-
         .action-btn {
             text-decoration: none;
             border: none;
@@ -275,12 +270,6 @@
 
             .regional-releases {
                 grid-template-columns: 1fr;
-            }
-
-            .nav-buttons {
-                position: static;
-                margin-bottom: 2rem;
-                justify-content: center;
             }
 
             .action-btn {
@@ -391,12 +380,8 @@
 
 {% block content %}
 <div class="canvas">
-    <div class="nav-buttons">
-        <a href="javascript:history.back()" class="action-btn primary" id="backBtn" data-track="detail-back">← Back</a>
-        <a href="{% url 'blog_list' %}" class="action-btn" data-track="detail-blog">← Blog</a>
-        <a href="{% url 'index' %}" class="action-btn" data-track="detail-home">← Home</a>
-    </div>
     <div class="content">
+        <a href="javascript:history.back()" class="back-link" id="backBtn" data-track="detail-back">← Back</a>
         <div class="amiibo-header">
             <div class="amiibo-image-container">
                 <img src="{{ amiibo|amiibo_image }}"
@@ -449,41 +434,8 @@
 
         <div class="section comments-section">
             <h2 class="section-title">Comments</h2>
-
-            {% if comment_banner %}
-            <div class="comment-banner comment-banner-{{ comment_banner.0 }}">{{ comment_banner.1 }}</div>
-            {% endif %}
-
-            {% if current_user_email %}
-            <form method="post" action="{% url 'post_comment' amiibo_id=amiibo.head|add:'-'|add:amiibo.tail %}" class="comment-form" data-track="comment-submit">
-                {% csrf_token %}
-                <textarea name="body" maxlength="{{ comment_body_max_len }}" rows="3" placeholder="Share your thoughts about {{ amiibo.name }}..." required></textarea>
-                <div class="comment-form-row">
-                    <span class="comment-form-user">Posting as {{ current_user_name|default:current_user_email }}</span>
-                    <button type="submit" class="action-btn primary">Post comment</button>
-                </div>
-            </form>
-            {% else %}
-            <div class="comment-login-cta">
-                <a href="{% url 'oauth_login' %}" class="action-btn primary" data-track="comment-login">Log in to comment</a>
-            </div>
-            {% endif %}
-
-            {% if comments %}
-            <ul class="comment-list">
-                {% for c in comments %}
-                <li class="comment-item">
-                    <div class="comment-meta">
-                        <span class="comment-author">{{ c.display_name|default:"Anonymous" }}</span>
-                        {% if c.created_at %}<span class="comment-time">{{ c.created_at|date:"M j, Y, g:i a" }}</span>{% endif %}
-                    </div>
-                    <div class="comment-body">{{ c.body|linebreaksbr }}</div>
-                </li>
-                {% endfor %}
-            </ul>
-            {% else %}
-            <p class="comment-empty">No comments yet — be the first to say something.</p>
-            {% endif %}
+            {% url 'post_comment' amiibo_id=amiibo.head|add:'-'|add:amiibo.tail as comment_post_url %}
+            {% include "tracker/_comments.html" with comment_post_url=comment_post_url comment_placeholder="Share your thoughts about "|add:amiibo.name|add:"..." comment_track_prefix="comment" comment_btn_class="action-btn primary" %}
         </div>
     </div>
 </div>

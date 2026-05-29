@@ -34,6 +34,7 @@ pyparsing==3.2.3
 requests==2.32.4
 requests-oauthlib==2.0.0
 beautifulsoup4==4.12.3
+better-profanity==0.7.0
 rsa==4.9
 six==1.17.0
 sqlparse==0.5.3

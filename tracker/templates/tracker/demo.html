@@ -5,14 +5,8 @@
 
 {% block meta_description %}Track your Nintendo Amiibo collection with ease. View the demo to see how Amiibo Tracker helps you organize your figures, cards, and plushes.{% endblock %}
 
-{% block header_styles %}{% endblock %}
-{% block navigation %}{% endblock %}
-
 {% block head_extra %}
 <style>
-        body {
-            padding-top: 0 !important;
-        }
         @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600;700&display=swap');
 
         :root {
@@ -58,7 +52,10 @@
         body {
             font-family: 'Vazirmatn', system-ui, sans-serif;
             margin: 0;
-            padding: 0 1.2rem 3rem;
+            /* padding-top inherited from the global header (.top-nav offset) */
+            padding-left: 1.2rem;
+            padding-right: 1.2rem;
+            padding-bottom: 3rem;
             background: linear-gradient(135deg, rgba(15, 118, 110, 0.12), rgba(243, 201, 105, 0.12)),
                         url('/static/images/amiibo_bg.png') center/600px repeat;
             background-attachment: fixed;
@@ -118,32 +115,6 @@
             margin: 0;
         }
 
-        .demo-banner-btn {
-            background: #ffffff;
-            color: #3c4043;
-            border: 1px solid #dadce0;
-            text-decoration: none;
-            border-radius: 12px;
-            padding: 0.7rem 1.2rem;
-            font-weight: 700;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.6rem;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
-        }
-
-        .demo-banner-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 22px rgba(0, 0, 0, 0.18);
-        }
-
-        .demo-banner-btn img {
-            width: 18px;
-            height: 18px;
-        }
-
         .top-controls {
             display: flex;
             align-items: center;
@@ -178,6 +149,30 @@
             border: 1px solid rgba(243, 201, 105, 0.2);
             color: var(--text);
             font-weight: 600;
+            cursor: pointer;
+            user-select: none;
+            transition: transform 0.15s ease, box-shadow 0.15s ease,
+                border-color 0.15s ease, background 0.15s ease;
+        }
+
+        .collection-pill:hover {
+            transform: translateY(-1px);
+            border-color: rgba(243, 201, 105, 0.75);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18);
+        }
+
+        .collection-pill:active {
+            transform: translateY(0);
+        }
+
+        .collection-pill:focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 2px;
+        }
+
+        .collection-pill.filtered {
+            border-color: var(--button-bg);
+            box-shadow: 0 0 0 2px rgba(15, 118, 110, 0.3);
         }
 
         .control-row {
@@ -259,8 +254,7 @@
             cursor: text;
         }
 
-        .dark-toggle,
-        .back-btn {
+        .dark-toggle {
             border: none;
             border-radius: 12px;
             padding: 0.65rem 1.2rem;
@@ -282,35 +276,14 @@
             height: 46px;
         }
 
-        body.dark .dark-toggle,
-        body.dark .back-btn {
+        body.dark .dark-toggle {
             background: rgba(31, 41, 55, 0.85);
             border-color: rgba(243, 201, 105, 0.25);
         }
 
-        .dark-toggle:hover,
-        .back-btn:hover {
+        .dark-toggle:hover {
             transform: translateY(-2px);
             box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
-        }
-
-        .back-btn {
-            background: rgba(15, 118, 110, 0.15);
-            color: rgba(51, 51, 51, 0.7);
-            border-color: rgba(243, 201, 105, 0.2);
-            font-weight: 500;
-            padding: 0.55rem 1rem;
-            font-size: 0.9rem;
-        }
-
-        body.dark .back-btn {
-            color: rgba(253, 247, 227, 0.7);
-        }
-
-        .back-btn:hover {
-            background: rgba(15, 118, 110, 0.25);
-            border-color: rgba(243, 201, 105, 0.4);
-            color: var(--saffron);
         }
 
         .amiibo-card {
@@ -572,7 +545,9 @@
 
         @media (max-width: 720px) {
             body {
-                padding: 0 0.75rem 2rem;
+                padding-left: 0.75rem;
+                padding-right: 0.75rem;
+                padding-bottom: 2rem;
             }
 
             h1 {
@@ -593,12 +568,6 @@
             }
 
             .demo-banner-text {
-                font-size: 0.95rem;
-            }
-
-            .demo-banner-btn {
-                width: 100%;
-                padding: 0.7rem 1rem;
                 font-size: 0.95rem;
             }
 
@@ -674,8 +643,7 @@
                 height: 46px;
             }
 
-            .dark-toggle,
-            .back-btn {
+            .dark-toggle {
                 width: 100%;
                 justify-content: center;
                 padding: 0.6rem 1rem;
@@ -803,36 +771,10 @@
 
 {% block content %}
 <div class="demo-banner">
-    <span class="demo-banner-text">This is a demo version with sample data.</span>
-    <a href="{% url 'oauth_login' %}" class="demo-banner-btn">
-        <img src="{% static 'images/google-logo.svg' %}" alt="Google logo">
-        Sign in with Google
-    </a>
-    <span class="demo-banner-text">to track your own collection!</span>
+    <span class="demo-banner-text">You're viewing a demo with sample data &mdash; sign in from the menu above to track your own collection.</span>
 </div>
 
-<div class="top-controls">
-    <div class="welcome">
-        <div>
-            <div>Welcome, Demo User.</div>
-            <div id="collectionTotal" class="collection-pill">Collected: 0</div>
-        </div>
-        <button class="hamburger-btn" id="hamburgerToggle" aria-label="Toggle Menu">☰</button>
-    </div>
-    <div class="control-row" id="mobileMenu">
-        <input id="searchInput" class="search-input" type="text" placeholder="Search Amiibo or date...">
-        <select id="filterSelect" class="filter-select">
-            <option value="all">Show All</option>
-            <option value="collected">Collected Only</option>
-            <option value="uncollected">Uncollected Only</option>
-        </select>
-        <div class="type-filters" aria-label="Filter by Amiibo type" id="typeFilters">
-            <span style="font-weight: 700;">Types:</span>
-        </div>
-        <button id="darkModeToggle" class="dark-toggle" aria-label="Toggle Dark Mode">🌙</button>
-        <a href="{% url 'index' %}" class="back-btn" aria-label="Back to Home">← Back</a>
-    </div>
-</div>
+{% include "tracker/_collection_controls.html" with welcome_name="Demo User" %}
 
 <main>
     <div id="loading" class="loading-overlay active" role="status" aria-live="polite" aria-label="Loading">
@@ -1050,9 +992,48 @@
     }
 
     function updateCollectedCount() {
-        const collectedTotal = document.querySelectorAll('.amiibo-card.collected').length;
-        document.getElementById('collectionTotal').textContent = `Collected: ${collectedTotal}`;
+        let collected = 0;
+        let total = 0;
+        document.querySelectorAll('.amiibo-card').forEach(card => {
+            if (typeFilters.has(card.dataset.type)) return;
+            total++;
+            if (card.classList.contains('collected')) collected++;
+        });
+        setCollectionPillLabel(collected, total);
     }
+
+    // Reflect the active filter in the clickable pill.
+    function setCollectionPillLabel(collected, total) {
+        const pill = document.getElementById('collectionTotal');
+        const mode = document.getElementById('filterSelect').value;
+        pill.classList.toggle('filtered', mode !== 'all');
+        if (mode === 'collected') {
+            pill.textContent = `★ ${collected} collected`;
+        } else if (mode === 'uncollected') {
+            pill.textContent = `○ ${total - collected} left`;
+        } else {
+            pill.textContent = `Collected: ${collected}`;
+        }
+    }
+
+    // Clicking the pill cycles the collection filter, kept in sync with the dropdown.
+    function cycleCollectionFilter() {
+        const select = document.getElementById('filterSelect');
+        const cycle = ['all', 'collected', 'uncollected'];
+        select.value = cycle[(cycle.indexOf(select.value) + 1) % cycle.length];
+        filterAndSearch();
+    }
+
+    (function () {
+        const pill = document.getElementById('collectionTotal');
+        pill.addEventListener('click', cycleCollectionFilter);
+        pill.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                cycleCollectionFilter();
+            }
+        });
+    })();
 
     function updateGroupCounts() {
         document.querySelectorAll('.game-series-group').forEach(group => {

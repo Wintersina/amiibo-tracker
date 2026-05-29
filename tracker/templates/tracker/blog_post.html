@@ -669,41 +669,8 @@
 
         <section class="comments-section">
             <h2>Comments</h2>
-
-            {% if comment_banner %}
-            <div class="comment-banner comment-banner-{{ comment_banner.0 }}">{{ comment_banner.1 }}</div>
-            {% endif %}
-
-            {% if current_user_email %}
-            <form method="post" action="{% url 'post_blog_comment' slug=post.slug %}" class="comment-form" data-track="blog-comment-submit">
-                {% csrf_token %}
-                <textarea name="body" maxlength="{{ comment_body_max_len }}" rows="3" placeholder="Share your thoughts on this post..." required></textarea>
-                <div class="comment-form-row">
-                    <span class="comment-form-user">Posting as {{ current_user_name|default:current_user_email }}</span>
-                    <button type="submit">Post comment</button>
-                </div>
-            </form>
-            {% else %}
-            <div class="comment-login-cta">
-                <a href="{% url 'oauth_login' %}" data-track="blog-comment-login">Log in to comment</a>
-            </div>
-            {% endif %}
-
-            {% if comments %}
-            <ul class="comment-list">
-                {% for c in comments %}
-                <li class="comment-item">
-                    <div class="comment-meta">
-                        <span class="comment-author">{{ c.display_name|default:"Anonymous" }}</span>
-                        {% if c.created_at %}<span class="comment-time">{{ c.created_at|date:"M j, Y, g:i a" }}</span>{% endif %}
-                    </div>
-                    <div class="comment-body">{{ c.body|linebreaksbr }}</div>
-                </li>
-                {% endfor %}
-            </ul>
-            {% else %}
-            <p class="comment-empty">No comments yet — be the first to say something.</p>
-            {% endif %}
+            {% url 'post_blog_comment' slug=post.slug as comment_post_url %}
+            {% include "tracker/_comments.html" with comment_post_url=comment_post_url comment_placeholder="Share your thoughts on this post..." comment_track_prefix="blog-comment" comment_btn_class="" %}
         </section>
 
         {% if prev_post or next_post %}

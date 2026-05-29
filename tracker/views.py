@@ -34,10 +34,16 @@ from tracker.helpers import (
 from tracker.service_domain import AmiiboService, GoogleSheetConfigManager
 from tracker.scrapers import AmiiboLifeScraper
 from tracker.firestore_client import (
-    add_comment,
-    list_comments,
     AMIIBO_COMMENTS_COLLECTION,
     BLOG_COMMENTS_COLLECTION,
+)
+from tracker.comments import (
+    CommentPostView,
+    load_comments,
+    comment_banner_for,
+    COMMENT_BODY_MAX_LEN,
+    COMMENT_PER_USER_MAX,
+    COMMENT_PER_USER_WINDOW,
 )
 from tracker.seo_helpers import (
     SEOContext,
@@ -71,7 +77,9 @@ def load_blog_posts():
             data = json.load(f)
             return data.get("posts", [])
     except (FileNotFoundError, json.JSONDecodeError) as e:
-        logger.error("load-blog-posts-failed | context=%s", json.dumps({"error": str(e)}))
+        logger.error(
+            "load-blog-posts-failed | context=%s", json.dumps({"error": str(e)})
+        )
         return []
 
 
@@ -2036,7 +2044,9 @@ class ToggleCollectedView(View, LoggingMixin):
         try:
             body = json.loads(request.body)
         except json.JSONDecodeError:
-            return JsonResponse({"status": "error", "message": "Invalid JSON payload."}, status=400)
+            return JsonResponse(
+                {"status": "error", "message": "Invalid JSON payload."}, status=400
+            )
 
         if body.get("demo"):
             self.log_action("collection-updated", request, **body)
@@ -2622,7 +2632,9 @@ class ToggleDarkModeView(View, LoggingMixin):
         try:
             body = json.loads(request.body)
         except json.JSONDecodeError:
-            return JsonResponse({"status": "error", "message": "Invalid JSON payload."}, status=400)
+            return JsonResponse(
+                {"status": "error", "message": "Invalid JSON payload."}, status=400
+            )
 
         if body.get("demo"):
             self.log_action("dark-mode-updated", request, **body)
@@ -2717,7 +2729,9 @@ class ToggleTypeFilterView(View, LoggingMixin):
         try:
             body = json.loads(request.body)
         except json.JSONDecodeError:
-            return JsonResponse({"status": "error", "message": "Invalid JSON payload."}, status=400)
+            return JsonResponse(
+                {"status": "error", "message": "Invalid JSON payload."}, status=400
+            )
 
         if body.get("demo"):
             self.log_action("type-filter-updated", request, **body)
@@ -3147,43 +3161,16 @@ class BlogPostView(View, LoggingMixin, AmiiboLocalFetchMixin):
         ]
         seo.add_schema("BreadcrumbList", generate_breadcrumb_schema(breadcrumbs))
 
-        from django.core.cache import cache
-
-        comments_cache_key = f"comments:blog:{slug}"
-        comments = cache.get(comments_cache_key)
-        if comments is None:
-            try:
-                comments = list_comments(
-                    BLOG_COMMENTS_COLLECTION, "slug", slug, limit=50
-                )
-            except Exception as comments_exc:
-                self.log_action(
-                    "blog-comments-load-failed",
-                    request,
-                    level="warning",
-                    slug=slug,
-                    error=str(comments_exc),
-                )
-                comments = []
-            cache.set(comments_cache_key, comments, 60)
-
-        comment_status = request.GET.get("comment")
-        comment_banner = {
-            "ok": ("success", "Comment posted."),
-            "rate_limited": (
-                "error",
-                "You're posting too quickly. Try again in a few minutes.",
-            ),
-            "too_long": (
-                "error",
-                f"Comment too long (max {COMMENT_BODY_MAX_LEN} characters).",
-            ),
-            "empty": ("error", "Comment can't be empty."),
-            "server_busy": (
-                "error",
-                "Comments are temporarily unavailable. Please try again later.",
-            ),
-        }.get(comment_status)
+        comments = load_comments(
+            BLOG_COMMENTS_COLLECTION,
+            "slug",
+            slug,
+            f"comments:blog:{slug}",
+            logger=self,
+            request=request,
+            log_event="blog-comments-load-failed",
+        )
+        comment_banner = comment_banner_for(request.GET.get("comment"))
 
         context = {
             "post": post,
@@ -3502,43 +3489,15 @@ class AmiiboDetailView(View, LoggingMixin, AmiiboLocalFetchMixin):
             ]
             seo.add_schema("BreadcrumbList", generate_breadcrumb_schema(breadcrumbs))
 
-            from django.core.cache import cache
-
-            comments_cache_key = f"comments:amiibo:{amiibo_id}"
-            comments = cache.get(comments_cache_key)
-            if comments is None:
-                try:
-                    comments = list_comments(
-                        AMIIBO_COMMENTS_COLLECTION, "amiibo_id", amiibo_id, limit=50
-                    )
-                except Exception as comments_exc:
-                    self.log_action(
-                        "comments-load-failed",
-                        request,
-                        level="warning",
-                        amiibo_id=amiibo_id,
-                        error=str(comments_exc),
-                    )
-                    comments = []
-                cache.set(comments_cache_key, comments, 60)
-
-            comment_status = request.GET.get("comment")
-            comment_banner = {
-                "ok": ("success", "Comment posted."),
-                "rate_limited": (
-                    "error",
-                    "You're posting too quickly. Try again in a few minutes.",
-                ),
-                "too_long": (
-                    "error",
-                    f"Comment too long (max {COMMENT_BODY_MAX_LEN} characters).",
-                ),
-                "empty": ("error", "Comment can't be empty."),
-                "server_busy": (
-                    "error",
-                    "Comments are temporarily unavailable. Please try again later.",
-                ),
-            }.get(comment_status)
+            comments = load_comments(
+                AMIIBO_COMMENTS_COLLECTION,
+                "amiibo_id",
+                amiibo_id,
+                f"comments:amiibo:{amiibo_id}",
+                logger=self,
+                request=request,
+            )
+            comment_banner = comment_banner_for(request.GET.get("comment"))
 
             context = {
                 "amiibo": amiibo,
@@ -3651,9 +3610,7 @@ class NintendoScraperAPIView(View, LoggingMixin):
             self.log_action(
                 "scraper-api-rate-limited", request, level="warning", reason=denial
             )
-            return JsonResponse(
-                {"status": "error", "message": denial}, status=429
-            )
+            return JsonResponse({"status": "error", "message": denial}, status=429)
 
         try:
             scraper = AmiiboLifeScraper()
@@ -3714,9 +3671,7 @@ class DailyReportAPIView(View, LoggingMixin):
             self.log_action(
                 "daily-report-api-rate-limited", request, level="warning", reason=denial
             )
-            return JsonResponse(
-                {"status": "error", "message": denial}, status=429
-            )
+            return JsonResponse({"status": "error", "message": denial}, status=429)
 
         try:
             call_command("report_daily_users")
@@ -3726,9 +3681,7 @@ class DailyReportAPIView(View, LoggingMixin):
             self.log_action(
                 "daily-report-api-error", request, level="error", error=str(e)
             )
-            return JsonResponse(
-                {"status": "error", "message": str(e)}, status=500
-            )
+            return JsonResponse({"status": "error", "message": str(e)}, status=500)
 
     def get(self, request):
         return JsonResponse(
@@ -3799,174 +3752,42 @@ class DailyReportTriggerView(View):
         return HttpResponse(status=204)
 
 
-COMMENT_BODY_MAX_LEN = 2000
-COMMENT_PER_USER_MAX = 5
-COMMENT_PER_USER_WINDOW = 600  # 10 minutes
-
-
-class PostCommentView(View, LoggingMixin):
+class PostCommentView(CommentPostView):
     """Create a comment on an amiibo detail page."""
 
-    def post(self, request, amiibo_id):
+    collection = AMIIBO_COMMENTS_COLLECTION
+    key_field = "amiibo_id"
+    log_prefix = "comment"
+
+    def resolve_key(self, request, amiibo_id=None, **kwargs):
         import re
-        from django.core.cache import cache
-        from google.api_core.exceptions import ResourceExhausted
 
-        if not re.fullmatch(r"[0-9a-fA-F]{8}-[0-9a-fA-F]{8}", amiibo_id):
+        if not re.fullmatch(r"[0-9a-fA-F]{8}-[0-9a-fA-F]{8}", amiibo_id or ""):
             raise Http404("Invalid amiibo ID")
+        return amiibo_id
 
-        user_email = request.session.get("user_email")
-        user_name = request.session.get("user_name") or "Anonymous"
-        if not user_email:
-            return redirect("oauth_login")
+    def redirect_to(self, key_value, status):
+        return redirect(f"/blog/number-released/amiibo/{key_value}/?comment={status}")
 
-        body = (request.POST.get("body") or "").strip()
-        if not body:
-            return redirect(f"/blog/number-released/amiibo/{amiibo_id}/?comment=empty")
-        if len(body) > COMMENT_BODY_MAX_LEN:
-            return redirect(f"/blog/number-released/amiibo/{amiibo_id}/?comment=too_long")
-
-        ip_violation = check_rate_limit(
-            request,
-            bucket="post_comment",
-            per_ip_max=10,
-            per_ip_window=600,
-            global_max=200,
-            global_window=600,
-        )
-        user_key = f"ratelimit:post_comment:user:{user_email}"
-        user_count = cache.get(user_key, 0)
-        if ip_violation or user_count >= COMMENT_PER_USER_MAX:
-            self.log_action(
-                "comment-rate-limited",
-                request,
-                level="warning",
-                amiibo_id=amiibo_id,
-                reason=ip_violation or "per-user limit",
-            )
-            return redirect(
-                f"/blog/number-released/amiibo/{amiibo_id}/?comment=rate_limited"
-            )
-        cache.set(user_key, user_count + 1, COMMENT_PER_USER_WINDOW)
-
-        try:
-            doc_id = add_comment(
-                collection=AMIIBO_COMMENTS_COLLECTION,
-                key_field="amiibo_id",
-                key_value=amiibo_id,
-                user_email=user_email,
-                display_name=user_name,
-                body=body,
-            )
-        except ResourceExhausted:
-            self.log_action(
-                "comment-quota-exhausted",
-                request,
-                level="error",
-                amiibo_id=amiibo_id,
-            )
-            return redirect(
-                f"/blog/number-released/amiibo/{amiibo_id}/?comment=server_busy"
-            )
-        except Exception as exc:
-            self.log_action(
-                "comment-write-failed",
-                request,
-                level="error",
-                amiibo_id=amiibo_id,
-                error=str(exc),
-            )
-            return redirect(
-                f"/blog/number-released/amiibo/{amiibo_id}/?comment=server_busy"
-            )
-
-        cache.delete(f"comments:amiibo:{amiibo_id}")
-
-        self.log_action(
-            "comment-posted",
-            request,
-            amiibo_id=amiibo_id,
-            comment_id=doc_id,
-        )
-        return redirect(f"/blog/number-released/amiibo/{amiibo_id}/?comment=ok")
+    def cache_key(self, key_value):
+        return f"comments:amiibo:{key_value}"
 
 
-class PostBlogCommentView(View, LoggingMixin):
+class PostBlogCommentView(CommentPostView):
     """Create a comment on a blog post."""
 
-    def post(self, request, slug):
-        from django.core.cache import cache
-        from google.api_core.exceptions import ResourceExhausted
+    collection = BLOG_COMMENTS_COLLECTION
+    key_field = "slug"
+    log_prefix = "blog-comment"
 
+    def resolve_key(self, request, slug=None, **kwargs):
         posts = load_blog_posts()
         if not any(p.get("slug") == slug for p in posts):
             raise Http404("Blog post not found")
+        return slug
 
-        user_email = request.session.get("user_email")
-        user_name = request.session.get("user_name") or "Anonymous"
-        if not user_email:
-            return redirect("oauth_login")
+    def redirect_to(self, key_value, status):
+        return redirect(f"/blog/{key_value}/?comment={status}")
 
-        body = (request.POST.get("body") or "").strip()
-        if not body:
-            return redirect(f"/blog/{slug}/?comment=empty")
-        if len(body) > COMMENT_BODY_MAX_LEN:
-            return redirect(f"/blog/{slug}/?comment=too_long")
-
-        ip_violation = check_rate_limit(
-            request,
-            bucket="post_comment",
-            per_ip_max=10,
-            per_ip_window=600,
-            global_max=200,
-            global_window=600,
-        )
-        user_key = f"ratelimit:post_comment:user:{user_email}"
-        user_count = cache.get(user_key, 0)
-        if ip_violation or user_count >= COMMENT_PER_USER_MAX:
-            self.log_action(
-                "blog-comment-rate-limited",
-                request,
-                level="warning",
-                slug=slug,
-                reason=ip_violation or "per-user limit",
-            )
-            return redirect(f"/blog/{slug}/?comment=rate_limited")
-        cache.set(user_key, user_count + 1, COMMENT_PER_USER_WINDOW)
-
-        try:
-            doc_id = add_comment(
-                collection=BLOG_COMMENTS_COLLECTION,
-                key_field="slug",
-                key_value=slug,
-                user_email=user_email,
-                display_name=user_name,
-                body=body,
-            )
-        except ResourceExhausted:
-            self.log_action(
-                "blog-comment-quota-exhausted",
-                request,
-                level="error",
-                slug=slug,
-            )
-            return redirect(f"/blog/{slug}/?comment=server_busy")
-        except Exception as exc:
-            self.log_action(
-                "blog-comment-write-failed",
-                request,
-                level="error",
-                slug=slug,
-                error=str(exc),
-            )
-            return redirect(f"/blog/{slug}/?comment=server_busy")
-
-        cache.delete(f"comments:blog:{slug}")
-
-        self.log_action(
-            "blog-comment-posted",
-            request,
-            slug=slug,
-            comment_id=doc_id,
-        )
-        return redirect(f"/blog/{slug}/?comment=ok")
+    def cache_key(self, key_value):
+        return f"comments:blog:{key_value}"

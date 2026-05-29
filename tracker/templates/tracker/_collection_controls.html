@@ -1,0 +1,50 @@
+{% comment %}
+Shared collection controls bar for the tracker (/tracker/) and demo (/demo/)
+pages. The markup is identical; the per-page difference (real Google Sheets
+API vs. localStorage) lives entirely in each page's JavaScript, not here.
+
+Include with:
+    {% include "tracker/_collection_controls.html" with welcome_name=user_name amiibo_types=amiibo_types dark_toggle_sheet_action=True %}   {# tracker #}
+    {% include "tracker/_collection_controls.html" with welcome_name="Demo User" %}                                                      {# demo: type chips + counts come from JS #}
+
+Params:
+* welcome_name            — name shown after "Welcome,".
+* amiibo_types            — optional; server-rendered type chips (tracker).
+                            Omit for demo, whose JS populates #typeFilters.
+* dark_toggle_sheet_action — optional True to tag the dark toggle as a
+                            sheet-action (tracker disables it during API calls).
+
+The "Collected" pill is a clickable control: clicking (or Enter/Space) cycles
+the collection filter All -> Collected -> Uncollected, kept in sync with the
+#filterSelect dropdown by each page's script.
+{% endcomment %}
+<div class="top-controls">
+    <div class="welcome">
+        <div>
+            <div>Welcome, {{ welcome_name }}.</div>
+            <div id="collectionTotal" class="collection-pill" role="button" tabindex="0"
+                 aria-label="Filter by collection status; click to cycle all, collected, uncollected"
+                 title="Click to filter: All → Collected → Uncollected"
+                 data-track="collection-pill-toggle">Collected: 0</div>
+        </div>
+        <button class="hamburger-btn" id="hamburgerToggle" aria-label="Toggle Menu" data-track="collection-menu-toggle">☰</button>
+    </div>
+    <div class="control-row" id="mobileMenu">
+        <input id="searchInput" class="search-input" type="text" placeholder="Search Amiibo or date...">
+        <select id="filterSelect" class="filter-select">
+            <option value="all">Show All</option>
+            <option value="collected">Collected Only</option>
+            <option value="uncollected">Uncollected Only</option>
+        </select>
+        <div class="type-filters" id="typeFilters" aria-label="Filter by Amiibo type">
+            <span style="font-weight: 700;">Types:</span>
+            {% for type in amiibo_types %}
+                <label class="type-chip">
+                    <input type="checkbox" data-type="{{ type.name }}" data-sheet-action {% if not type.ignored %}checked{% endif %}>
+                    {{ type.name }}
+                </label>
+            {% endfor %}
+        </div>
+        <button id="darkModeToggle" class="dark-toggle" aria-label="Toggle Dark Mode" {% if dark_toggle_sheet_action %}data-sheet-action {% endif %}data-track="dark-mode-toggle">🌙</button>
+    </div>
+</div>

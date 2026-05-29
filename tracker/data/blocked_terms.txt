@@ -1,0 +1,43 @@
+# Blocked hate-speech terms for comment moderation (base64-encoded, one per line).
+# Purpose: reject racist/ethnic slurs only. Ordinary profanity is allowed.
+# To add a term:  python -c "import base64;print(base64.b64encode(b'term'))"
+YWJv
+YmVhbmVy
+Y2hpbms=
+Y29vbg==
+Y3JhY2tlcg==
+ZGFnbw==
+ZGFya2ll
+Z29sbGl3b2c=
+Z29vaw==
+Z3Jpbmdv
+Z3lw
+Z3lwc3k=
+aG9ua3k=
+aW5qdW4=
+amFw
+amlnYWJvbw==
+a2FmZmly
+a2lrZQ==
+bWljaw==
+bmVncm8=
+bmlnZ2E=
+bmlnZ2Vy
+bmlw
+cGFraQ==
+cG9sYWNr
+cG9yY2htb25rZXk=
+cmFnaGVhZA==
+cmVkc2tpbg==
+c2FtYm8=
+c2FuZG5pZ2dlcg==
+c2xvcGU=
+c3BpYw==
+c3Bvb2s=
+c3F1YXc=
+dGFyYmFieQ==
+dG93ZWxoZWFk
+d2V0YmFjaw==
+d29n
+d29w
+emlwcGVyaGVhZA==

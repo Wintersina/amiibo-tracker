@@ -8,7 +8,34 @@ from pathlib import Path
 import requests
 from bs4 import BeautifulSoup
 
+from tracker.firestore_client import AMIIBO_COMMENTS_COLLECTION, rekey_comments
 from tracker.helpers import LoggingMixin
+
+
+def migrate_comments_on_id_change(scraper, old_id, new_id):
+    """
+    Move amiibo comments from ``old_id`` to ``new_id`` when a placeholder's
+    head-tail changes during backfill, so they are not orphaned. Best-effort:
+    a Firestore failure is logged but never aborts the scrape.
+    """
+    if old_id == new_id:
+        return
+    try:
+        moved = rekey_comments(AMIIBO_COMMENTS_COLLECTION, "amiibo_id", old_id, new_id)
+        if moved:
+            scraper.log_info(
+                "Re-keyed amiibo comments after backfill",
+                old_id=old_id,
+                new_id=new_id,
+                count=moved,
+            )
+    except Exception as exc:
+        scraper.log_warning(
+            "Failed to re-key amiibo comments after backfill",
+            old_id=old_id,
+            new_id=new_id,
+            error=str(exc),
+        )
 
 
 class AmiiboLifeScraper(LoggingMixin):
@@ -556,9 +583,17 @@ class AmiiboLifeScraper(LoggingMixin):
 
     def backfill_amiibo_data(self, placeholder, api_amiibo):
         """Update placeholder with complete data from AmiiboAPI"""
+        # Capture the placeholder's identity before we overwrite it so any
+        # comments posted while it was "upcoming" can follow it to the real id.
+        old_id = f"{placeholder.get('head', '')}-{placeholder.get('tail', '')}"
+
         # Update with real IDs
         placeholder["head"] = api_amiibo.get("head", "00000000")
         placeholder["tail"] = api_amiibo.get("tail", "00000000")
+
+        migrate_comments_on_id_change(
+            self, old_id, f"{placeholder['head']}-{placeholder['tail']}"
+        )
 
         # Update with real data
         placeholder["character"] = api_amiibo.get("character", placeholder["character"])
@@ -1133,9 +1168,17 @@ class NintendoDotComScraper(LoggingMixin):
 
     def backfill_amiibo_data(self, placeholder, api_amiibo):
         """Update placeholder with complete data from AmiiboAPI"""
+        # Capture the placeholder's identity before we overwrite it so any
+        # comments posted while it was "upcoming" can follow it to the real id.
+        old_id = f"{placeholder.get('head', '')}-{placeholder.get('tail', '')}"
+
         # Update with real IDs
         placeholder["head"] = api_amiibo.get("head", "00000000")
         placeholder["tail"] = api_amiibo.get("tail", "00000000")
+
+        migrate_comments_on_id_change(
+            self, old_id, f"{placeholder['head']}-{placeholder['tail']}"
+        )
 
         # Update with real data
         placeholder["character"] = api_amiibo.get("character", placeholder["character"])
