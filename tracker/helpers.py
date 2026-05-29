@@ -28,6 +28,50 @@ def import_string(dotted_path):
     return getattr(import_module(module_path), class_name)
 
 
+def _client_ip(request) -> str:
+    fwd = request.META.get("HTTP_X_FORWARDED_FOR", "")
+    if fwd:
+        return fwd.split(",")[0].strip()
+    return request.META.get("REMOTE_ADDR", "unknown")
+
+
+def check_rate_limit(
+    request,
+    bucket: str,
+    per_ip_max: int,
+    per_ip_window: int,
+    global_max: int,
+    global_window: int,
+):
+    """Tiny cache-backed rate limiter.
+
+    Returns None when the request is allowed, or a string describing the
+    violation when it should be rejected with HTTP 429. Counters live in
+    the Django cache, so they're per-process — multiple Cloud Run
+    instances each get their own bucket, which is fine for shedding load.
+
+    The check/increment isn't atomic; under heavy concurrency the cap may
+    overshoot by a handful. Not worth a distributed lock for our scale.
+    """
+    from django.core.cache import cache
+
+    ip = _client_ip(request)
+    ip_key = f"ratelimit:{bucket}:ip:{ip}"
+    global_key = f"ratelimit:{bucket}:global"
+
+    ip_count = cache.get(ip_key, 0)
+    if ip_count >= per_ip_max:
+        return f"per-ip limit reached ({per_ip_max} per {per_ip_window}s)"
+
+    global_count = cache.get(global_key, 0)
+    if global_count >= global_max:
+        return f"global limit reached ({global_max} per {global_window}s)"
+
+    cache.set(ip_key, ip_count + 1, per_ip_window)
+    cache.set(global_key, global_count + 1, global_window)
+    return None
+
+
 class LoggingMixin(object):
     """
     Common tools for class OOP logging

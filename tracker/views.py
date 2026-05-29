@@ -25,7 +25,12 @@ from oauthlib.oauth2.rfc6749.errors import InvalidGrantError
 
 from constants import OauthConstants
 from tracker.google_sheet_client_manager import GoogleSheetClientManager
-from tracker.helpers import LoggingMixin, AmiiboRemoteFetchMixin, AmiiboLocalFetchMixin
+from tracker.helpers import (
+    LoggingMixin,
+    AmiiboRemoteFetchMixin,
+    AmiiboLocalFetchMixin,
+    check_rate_limit,
+)
 from tracker.service_domain import AmiiboService, GoogleSheetConfigManager
 from tracker.scrapers import AmiiboLifeScraper
 from tracker.seo_helpers import (
@@ -3057,6 +3062,8 @@ class BlogPostView(View, LoggingMixin, AmiiboLocalFetchMixin):
     def get(self, request, slug):
         # Load blog posts from JSON and find by slug
         posts = load_blog_posts()
+        # Sort newest-first so prev/next are stable
+        posts = sorted(posts, key=lambda p: p.get("date", ""), reverse=True)
         post = next((p for p in posts if p.get("slug") == slug), None)
 
         if not post:
@@ -3067,6 +3074,20 @@ class BlogPostView(View, LoggingMixin, AmiiboLocalFetchMixin):
                 slug=slug,
             )
             raise Http404("Blog post not found")
+
+        idx = next(i for i, p in enumerate(posts) if p.get("slug") == slug)
+        prev_post = posts[idx + 1] if idx + 1 < len(posts) else None
+        next_post = posts[idx - 1] if idx > 0 else None
+
+        # Rough read-time estimate from text content
+        import re as _re
+
+        raw = post.get("content") or ""
+        if isinstance(raw, str) and raw != "dynamic":
+            words = len(_re.findall(r"\w+", _re.sub(r"<[^>]+>", " ", raw)))
+            read_minutes = max(1, round(words / 230))
+        else:
+            read_minutes = None
 
         self.log_action(
             "blog-post-view",
@@ -3120,7 +3141,12 @@ class BlogPostView(View, LoggingMixin, AmiiboLocalFetchMixin):
         ]
         seo.add_schema("BreadcrumbList", generate_breadcrumb_schema(breadcrumbs))
 
-        context = {"post": post}
+        context = {
+            "post": post,
+            "prev_post": prev_post,
+            "next_post": next_post,
+            "read_minutes": read_minutes,
+        }
         context.update(seo.build())
 
         # Handle dynamic content for posts with content="dynamic"
@@ -3516,6 +3542,22 @@ class NintendoScraperAPIView(View, LoggingMixin):
 
     def post(self, request):
         """Trigger the scraper"""
+        denial = check_rate_limit(
+            request,
+            bucket="scrape",
+            per_ip_max=3,
+            per_ip_window=600,
+            global_max=20,
+            global_window=3600,
+        )
+        if denial:
+            self.log_action(
+                "scraper-api-rate-limited", request, level="warning", reason=denial
+            )
+            return JsonResponse(
+                {"status": "error", "message": denial}, status=429
+            )
+
         try:
             scraper = AmiiboLifeScraper()
             result = scraper.run(force=True)
@@ -3548,6 +3590,54 @@ class NintendoScraperAPIView(View, LoggingMixin):
                 "status": "ready",
                 "endpoint": "POST to this URL to trigger scraper",
                 "info": "Designed for Google Cloud Scheduler",
+            }
+        )
+
+
+@method_decorator(csrf_exempt, name="dispatch")
+class DailyReportAPIView(View, LoggingMixin):
+    """Public on-demand trigger for the daily DAU report email.
+
+    Mirrors NintendoScraperAPIView: plain POST, no auth, fires the
+    report_daily_users management command synchronously.
+    """
+
+    def post(self, request):
+        from django.core.management import call_command
+
+        denial = check_rate_limit(
+            request,
+            bucket="daily-report",
+            per_ip_max=3,
+            per_ip_window=600,
+            global_max=20,
+            global_window=3600,
+        )
+        if denial:
+            self.log_action(
+                "daily-report-api-rate-limited", request, level="warning", reason=denial
+            )
+            return JsonResponse(
+                {"status": "error", "message": denial}, status=429
+            )
+
+        try:
+            call_command("report_daily_users")
+            self.log_action("daily-report-api-triggered", request, level="info")
+            return JsonResponse({"status": "ok"}, status=200)
+        except Exception as e:
+            self.log_action(
+                "daily-report-api-error", request, level="error", error=str(e)
+            )
+            return JsonResponse(
+                {"status": "error", "message": str(e)}, status=500
+            )
+
+    def get(self, request):
+        return JsonResponse(
+            {
+                "status": "ready",
+                "endpoint": "POST to this URL to send the daily DAU report",
             }
         )
 

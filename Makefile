@@ -1,4 +1,4 @@
-.PHONY: help test test-watch test-coverage lint format clean build run stop logs shell scrape deploy report-daily report-daily-dry install-certs
+.PHONY: help test test-watch test-coverage lint format clean build run stop logs shell scrape scrape-remote deploy report-daily report-daily-dry report-daily-remote install-certs update-amiibo-db update-amiibo-db-dry
 
 # Default target - show help
 help:
@@ -15,6 +15,13 @@ help:
 	@echo "  make scrape-amiibo     - Run amiibo.life scraper"
 	@echo "  make scrape-nintendo   - Run Nintendo.com scraper (deprecated)"
 	@echo "  make scrape-force      - Force run scraper (ignore cache)"
+	@echo ""
+	@echo "Amiibo database:"
+	@echo "  make update-amiibo-db      - Sync tracker/data/amiibo_database.json"
+	@echo "                               from https://goozamiibo.com/api/amiibo/"
+	@echo "                               (writes only when content changes)"
+	@echo "  make update-amiibo-db-dry  - Show the diff without writing"
+	@echo "  (override endpoint with API_URL=https://...; e.g. for staging)"
 	@echo ""
 	@echo "Code Quality:"
 	@echo "  make lint              - Run linting checks (black check)"
@@ -39,6 +46,10 @@ help:
 	@echo "  make report-daily-dry  - Dry run (no email/upload); auto-loads .env"
 	@echo "  make report-daily      - Send + archive the report; auto-loads .env"
 	@echo "  (override day with DATE=YYYY-MM-DD; default is yesterday UTC)"
+	@echo ""
+	@echo "  make report-daily-remote  - Hit the public endpoint and fire the email now"
+	@echo "  make scrape-remote        - Hit the public endpoint and trigger a scrape"
+	@echo "  (override SITE_URL=https://staging.example.com)"
 	@echo ""
 	@echo "macOS Python TLS fix:"
 	@echo "  make install-certs     - Run Python.org's Install Certificates.command"
@@ -143,6 +154,24 @@ scrape-docker:
 	@echo "🎮 Running scraper in Docker..."
 	docker-compose run --rm app python manage.py auto_scrape_nintendo --scraper=amiibolife --force
 
+# Amiibo DB sync
+#
+# Hits the live API (default: https://goozamiibo.com/api/amiibo/), diffs
+# against tracker/data/amiibo_database.json keyed by (head, tail), and only
+# writes when the content changed — so no-op runs leave a clean git status.
+#
+# Usage:
+#   make update-amiibo-db
+#   make update-amiibo-db-dry
+#   make update-amiibo-db API_URL=https://staging.example.com/api/amiibo/
+update-amiibo-db:
+	@echo "🔄 Syncing amiibo database from $(if $(API_URL),$(API_URL),the live API)..."
+	@$(PYTHON) manage.py update_amiibo_db $(if $(API_URL),--api-url $(API_URL),)
+
+update-amiibo-db-dry:
+	@echo "🔍 Previewing amiibo database diff (dry-run)..."
+	@$(PYTHON) manage.py update_amiibo_db --dry-run $(if $(API_URL),--api-url $(API_URL),)
+
 # Daily DAU report
 #
 # Auto-loads .env so LOKI_QUERY_*, EMAIL_*, GCS_REPORTS_BUCKET, etc. are
@@ -162,6 +191,17 @@ report-daily:
 	@echo "📨 Sending daily DAU report$(if $(DATE), for $(DATE),)..."
 	@$(ENV_LOAD) \
 	$(PYTHON) manage.py report_daily_users $(if $(DATE),--date $(DATE),)
+
+# Remote triggers — public endpoints, plain curl. Override SITE_URL for staging.
+SITE_URL ?= https://goozamiibo.com
+
+scrape-remote:
+	@echo "🎮 Triggering remote scrape at $(SITE_URL)/api/scrape-nintendo/"
+	@curl -sS -X POST -w "\nHTTP %{http_code}\n" $(SITE_URL)/api/scrape-nintendo/
+
+report-daily-remote:
+	@echo "📨 Triggering remote daily report at $(SITE_URL)/api/run-daily-report/"
+	@curl -sS -X POST -w "\nHTTP %{http_code}\n" $(SITE_URL)/api/run-daily-report/
 
 # macOS Python TLS fix
 #

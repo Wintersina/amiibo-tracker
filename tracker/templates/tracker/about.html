@@ -45,35 +45,18 @@
         padding: 2.5rem 1.25rem 4rem;
     }
 
-    /* ---- Top bar ---- */
-    .topbar {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 0.75rem;
-        padding-bottom: 1.5rem;
-        border-bottom: 1px solid var(--border);
-        margin-bottom: 2rem;
-    }
-    .crumb {
-        font-size: 0.85rem;
-        color: var(--muted);
-        letter-spacing: 0.02em;
-    }
+    /* ---- Back link ---- */
     .back-link {
-        font-size: 0.85rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 0.82rem;
         color: var(--muted);
-        padding: 0.45rem 0.85rem;
-        border: 1px solid var(--border);
-        border-radius: 999px;
+        margin-bottom: 1.5rem;
         text-decoration: none;
-        transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+        transition: color 0.15s ease;
     }
-    .back-link:hover {
-        color: var(--saffron);
-        border-color: rgba(243, 201, 105, 0.45);
-        background: rgba(243, 201, 105, 0.06);
-    }
+    .back-link:hover { color: var(--saffron); }
 
     /* ---- Header ---- */
     .article-meta {
@@ -222,7 +205,6 @@
 
     @media (max-width: 540px) {
         .container { padding: 1.75rem 1rem 3rem; }
-        .topbar { flex-wrap: wrap; }
         .cta-section { padding: 1.25rem; }
     }
 </style>
@@ -230,10 +212,7 @@
 
 {% block content %}
 <div class="container">
-    <div class="topbar">
-        <div class="crumb">about</div>
-        <a href="{% url 'index' %}" class="back-link" data-track="about-back">← Back</a>
-    </div>
+    <a href="{% url 'index' %}" class="back-link" data-track="about-back">← back to home</a>
 
     <div class="article-meta">
         <span class="badge">about</span>

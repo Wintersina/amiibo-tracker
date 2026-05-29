@@ -19,6 +19,7 @@ from tracker.views import (
     AmiiboDetailView,
     RobotsTxtView,
     NintendoScraperAPIView,
+    DailyReportAPIView,
     DailyReportTriggerView,
 )
 from tracker.views_image import remove_bg
@@ -54,6 +55,11 @@ urlpatterns = [
     path("blog/<slug:slug>/", BlogPostView.as_view(), name="blog_post"),
     path(
         "api/scrape-nintendo/", NintendoScraperAPIView.as_view(), name="scrape_nintendo"
+    ),
+    path(
+        "api/run-daily-report/",
+        DailyReportAPIView.as_view(),
+        name="run_daily_report_api",
     ),
     path(
         "internal/run-daily-report",

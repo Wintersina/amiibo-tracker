@@ -34,8 +34,8 @@
         color: var(--cream);
         min-height: 100vh;
         -webkit-font-smoothing: antialiased;
-        font-size: 16px;
-        line-height: 1.7;
+        font-size: 17px;
+        line-height: 1.75;
     }
 
     a { color: inherit; }
@@ -46,45 +46,28 @@
         padding: 2.5rem 1.25rem 4rem;
     }
 
-    /* ---- Top bar ---- */
-    .topbar {
-        display: flex;
-        justify-content: space-between;
+    /* ---- Back link ---- */
+    .back-link {
+        display: inline-flex;
         align-items: center;
-        gap: 0.75rem;
-        padding-bottom: 1.5rem;
-        border-bottom: 1px solid var(--border);
-        margin-bottom: 2rem;
-    }
-    .crumb {
-        font-size: 0.85rem;
+        gap: 4px;
+        font-size: 0.82rem;
         color: var(--muted);
-        letter-spacing: 0.02em;
-    }
-    .crumb a { color: var(--muted); text-decoration: none; }
-    .crumb a:hover { color: var(--saffron); }
-    .nav-actions { display: flex; gap: 0.5rem; }
-    .action-btn {
-        font-size: 0.85rem;
-        color: var(--muted);
-        padding: 0.45rem 0.85rem;
-        border: 1px solid var(--border);
-        border-radius: 999px;
+        margin-bottom: 1.5rem;
         text-decoration: none;
-        transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+        transition: color 0.15s ease;
     }
-    .action-btn:hover {
-        color: var(--saffron);
-        border-color: rgba(243, 201, 105, 0.45);
-        background: rgba(243, 201, 105, 0.06);
-    }
+    .back-link:hover { color: var(--saffron); }
 
     /* ---- Article header ---- */
     .article-meta {
         display: flex;
         align-items: center;
         gap: 10px;
-        margin-bottom: 0.75rem;
+        font-size: 0.82rem;
+        color: var(--muted);
+        margin-bottom: 0.85rem;
+        flex-wrap: wrap;
     }
     .badge {
         font-size: 11px;
@@ -96,91 +79,218 @@
         letter-spacing: 0.03em;
         text-transform: lowercase;
     }
-    .date {
-        font-size: 12px;
-        color: var(--muted);
-    }
+    .article-meta .dot { color: rgba(253, 247, 227, 0.3); }
 
-    h1 {
-        margin: 0 0 1.5rem;
-        font-size: clamp(1.8rem, 4vw, 2.4rem);
+    .article-title {
+        font-size: clamp(1.9rem, 4.4vw, 2.2rem);
         font-weight: 600;
         line-height: 1.2;
         letter-spacing: -0.015em;
+        margin: 0 0 0.85rem;
         color: var(--cream);
     }
-
-    .featured-image {
-        width: 100%;
-        max-width: 100%;
-        height: auto;
-        border-radius: 14px;
+    .article-subtitle {
+        font-size: 1.05rem;
+        color: var(--muted);
         margin: 0 0 2rem;
-        display: block;
+        line-height: 1.55;
+    }
+
+    /* ---- Hero image ---- */
+    .hero {
+        width: 100%;
+        aspect-ratio: 16 / 10;
+        border-radius: 14px;
+        overflow: hidden;
+        margin-bottom: 0.6rem;
+        background: var(--surface);
         border: 1px solid var(--border);
     }
+    .hero img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+    }
+    .hero-caption {
+        font-size: 0.78rem;
+        color: var(--muted);
+        text-align: center;
+        margin-bottom: 2.5rem;
+    }
+    .hero-spacer { margin-bottom: 2.5rem; }
 
-    /* ---- Body ---- */
-    .post-content {
+    /* ---- Specs card ---- */
+    .specs {
+        background: var(--surface-strong);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 1.2rem 1.4rem;
+        margin: 0 0 2.5rem;
+    }
+    .specs-title {
+        font-size: 0.7rem;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin: 0 0 0.85rem;
+        font-weight: 600;
+    }
+    .specs-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.85rem 1.5rem;
+    }
+    .spec-row { display: flex; flex-direction: column; }
+    .spec-label {
+        font-size: 0.72rem;
+        color: var(--muted);
+        margin-bottom: 2px;
+        letter-spacing: 0.02em;
+    }
+    .spec-value {
+        font-size: 0.92rem;
+        color: var(--cream);
+    }
+
+    /* ---- Article body ---- */
+    .article-body {
         font-size: 1.02rem;
-        line-height: 1.75;
+        line-height: 1.78;
         color: var(--muted-strong);
     }
-
-    .post-content h2 {
-        margin-top: 2.5rem;
-        margin-bottom: 0.75rem;
+    .article-body p { margin: 0 0 1.25rem; }
+    .article-body h2 {
         font-size: 1.4rem;
         font-weight: 600;
-        color: var(--cream);
         letter-spacing: -0.01em;
-    }
-
-    .post-content h3 {
-        margin-top: 2rem;
-        margin-bottom: 0.5rem;
-        font-size: 1.15rem;
-        font-weight: 600;
+        margin: 2.5rem 0 0.9rem;
         color: var(--cream);
     }
-
-    .post-content p { margin: 1.05rem 0; }
-
-    .post-content ul,
-    .post-content ol {
-        margin: 1rem 0;
-        padding-left: 1.4rem;
+    .article-body h3 {
+        font-size: 1.12rem;
+        font-weight: 600;
+        margin: 2rem 0 0.6rem;
+        color: var(--cream);
     }
-
-    .post-content li { margin: 0.5rem 0; }
-
-    .post-content strong { color: var(--cream); font-weight: 600; }
-
-    .post-content a {
+    .article-body strong { color: var(--cream); font-weight: 600; }
+    .article-body em { font-style: italic; }
+    .article-body a {
         color: var(--saffron);
         text-decoration: underline;
         text-decoration-thickness: 1px;
         text-underline-offset: 3px;
     }
-    .post-content a:hover { color: #ffd37a; }
-
-    .post-content code {
+    .article-body a:hover { color: #ffd37a; }
+    .article-body code {
         background: rgba(255, 255, 255, 0.06);
         padding: 1px 6px;
         border-radius: 4px;
         font-size: 0.9em;
     }
-
-    .post-content blockquote {
-        margin: 1.5rem 0;
-        padding: 0.5rem 1.25rem;
-        border-left: 3px solid rgba(243, 201, 105, 0.4);
+    .article-body blockquote {
+        margin: 1.75rem 0;
+        padding: 0.25rem 0 0.25rem 1.25rem;
+        border-left: 3px solid rgba(243, 201, 105, 0.45);
         color: var(--muted);
-        background: rgba(243, 201, 105, 0.04);
-        border-radius: 0 8px 8px 0;
+        font-style: italic;
+    }
+    .article-body ul,
+    .article-body ol {
+        margin: 0 0 1.25rem;
+        padding-left: 1.4rem;
+    }
+    .article-body li { margin-bottom: 0.45rem; }
+
+    .article-body figure {
+        margin: 2rem 0;
+    }
+    .article-body figure img {
+        width: 100%;
+        border-radius: 12px;
+        display: block;
+    }
+    .article-body figure figcaption {
+        font-size: 0.78rem;
+        color: var(--muted);
+        text-align: center;
+        margin-top: 0.5rem;
     }
 
-    /* ---- Dynamic-list callouts ---- */
+    /* ---- Verdict ---- */
+    .verdict {
+        background: var(--surface-strong);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 1.5rem;
+        margin: 2.5rem 0 0;
+        display: flex;
+        align-items: center;
+        gap: 1.25rem;
+    }
+    .verdict-score {
+        font-size: 2.4rem;
+        font-weight: 600;
+        color: var(--saffron);
+        letter-spacing: -0.02em;
+        line-height: 1;
+        flex-shrink: 0;
+    }
+    .verdict-label {
+        font-size: 0.7rem;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-bottom: 4px;
+        font-weight: 600;
+    }
+    .verdict-text {
+        font-size: 0.92rem;
+        color: var(--muted-strong);
+        line-height: 1.55;
+        margin: 0;
+    }
+
+    /* ---- Prev/Next nav ---- */
+    .post-nav {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.85rem;
+        margin-top: 3rem;
+        padding-top: 2rem;
+        border-top: 1px solid var(--border);
+    }
+    .post-nav-link {
+        display: block;
+        padding: 1rem 1.1rem;
+        border-radius: 12px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        text-decoration: none;
+        transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+    }
+    .post-nav-link:hover {
+        border-color: rgba(243, 201, 105, 0.45);
+        background: var(--surface-strong);
+        transform: translateY(-1px);
+    }
+    .post-nav-label {
+        font-size: 0.7rem;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-bottom: 6px;
+        font-weight: 600;
+    }
+    .post-nav-title {
+        font-size: 0.92rem;
+        color: var(--cream);
+        line-height: 1.4;
+    }
+    .post-nav-link.next { text-align: right; }
+    .post-nav-spacer { display: block; }
+
+    /* ---- Dynamic content (amiibo table) ---- */
     .amiibo-list-intro {
         background: var(--surface-strong);
         border: 1px solid var(--border);
@@ -188,21 +298,17 @@
         padding: 1.1rem 1.25rem;
         margin: 1.5rem 0;
     }
-    .amiibo-list-intro p {
-        margin: 0;
-        color: var(--muted-strong);
-    }
+    .amiibo-list-intro p { margin: 0; color: var(--muted-strong); }
 
     .total-count {
-        font-size: 0.9rem;
+        font-size: 0.85rem;
         font-weight: 600;
         color: var(--saffron);
         margin: 1.75rem 0 1rem;
-        letter-spacing: 0.02em;
+        letter-spacing: 0.04em;
         text-transform: uppercase;
     }
 
-    /* ---- Amiibo table ---- */
     .amiibo-table {
         width: 100%;
         border-collapse: separate;
@@ -214,42 +320,30 @@
         border-radius: 14px;
         overflow: hidden;
     }
-    .amiibo-table thead {
-        background: rgba(255, 255, 255, 0.03);
-    }
+    .amiibo-table thead { background: rgba(255, 255, 255, 0.03); }
     .amiibo-table th {
         padding: 0.85rem 0.9rem;
         text-align: left;
         font-weight: 600;
-        font-size: 0.78rem;
+        font-size: 0.74rem;
         text-transform: uppercase;
-        letter-spacing: 0.04em;
+        letter-spacing: 0.06em;
         color: var(--muted);
         border-bottom: 1px solid var(--border);
     }
-    .amiibo-table th.img-col {
-        width: 72px;
-        text-align: center;
-    }
+    .amiibo-table th.img-col { width: 72px; text-align: center; }
     .amiibo-table tbody tr {
-        border-bottom: 1px solid rgba(243, 201, 105, 0.08);
         transition: background 0.15s ease;
     }
-    .amiibo-table tbody tr:last-child { border-bottom: none; }
     .amiibo-table tbody tr.clickable-row { cursor: pointer; }
-    .amiibo-table tbody tr.clickable-row:hover {
-        background: rgba(243, 201, 105, 0.05);
-    }
+    .amiibo-table tbody tr.clickable-row:hover { background: rgba(243, 201, 105, 0.05); }
     .amiibo-table td {
         padding: 0.7rem 0.9rem;
         color: var(--muted-strong);
         border-bottom: 1px solid rgba(243, 201, 105, 0.08);
     }
     .amiibo-table tbody tr:last-child td { border-bottom: none; }
-    .amiibo-table td.img-col {
-        text-align: center;
-        padding: 0.5rem;
-    }
+    .amiibo-table td.img-col { text-align: center; padding: 0.5rem; }
     .amiibo-thumbnail {
         width: 44px;
         height: 44px;
@@ -271,16 +365,9 @@
         text-align: center;
         margin: 0 auto;
     }
-    .amiibo-table td.name-col {
-        font-weight: 600;
-        color: var(--cream);
-    }
-    .amiibo-table td:last-child {
-        color: var(--muted);
-        font-size: 0.88rem;
-    }
+    .amiibo-table td.name-col { font-weight: 600; color: var(--cream); }
+    .amiibo-table td:last-child { color: var(--muted); font-size: 0.88rem; }
 
-    /* ---- Pagination ---- */
     .pagination {
         margin: 2rem 0 0;
         padding: 1.25rem;
@@ -292,10 +379,7 @@
         gap: 0.85rem;
         align-items: center;
     }
-    .pagination-info {
-        color: var(--muted);
-        font-size: 0.85rem;
-    }
+    .pagination-info { color: var(--muted); font-size: 0.85rem; }
     .pagination-controls {
         display: flex;
         gap: 0.4rem;
@@ -313,20 +397,13 @@
         font-size: 0.85rem;
         font-weight: 500;
         transition: all 0.15s ease;
-        display: inline-flex;
-        align-items: center;
-        gap: 0.3rem;
     }
     .page-btn:hover {
         color: var(--saffron);
         border-color: rgba(243, 201, 105, 0.45);
         background: rgba(243, 201, 105, 0.06);
     }
-    .page-btn.disabled {
-        opacity: 0.35;
-        cursor: not-allowed;
-        pointer-events: none;
-    }
+    .page-btn.disabled { opacity: 0.35; cursor: not-allowed; pointer-events: none; }
     .page-current {
         padding: 0.45rem 0.85rem;
         background: rgba(243, 201, 105, 0.12);
@@ -336,7 +413,6 @@
         font-weight: 600;
         font-size: 0.85rem;
     }
-
     .error-message {
         background: rgba(220, 38, 38, 0.1);
         border: 1px solid rgba(220, 38, 38, 0.35);
@@ -348,9 +424,15 @@
 
     /* ---- Mobile ---- */
     @media (max-width: 540px) {
+        body { font-size: 16px; }
         .container { padding: 1.75rem 1rem 3rem; }
-        .topbar { flex-wrap: wrap; gap: 0.75rem; }
-        .featured-image { border-radius: 10px; }
+        .article-title { font-size: 1.6rem; }
+        .article-subtitle { font-size: 0.98rem; }
+        .specs-grid { grid-template-columns: 1fr; }
+        .verdict { flex-direction: column; align-items: flex-start; }
+        .verdict-score { font-size: 2rem; }
+        .post-nav { grid-template-columns: 1fr; }
+        .post-nav-link.next { text-align: left; }
 
         .amiibo-table { display: block; border: none; background: transparent; }
         .amiibo-table thead { display: none; }
@@ -374,19 +456,13 @@
             font-weight: 600;
             color: var(--muted);
             margin-right: 0.5rem;
-            font-size: 0.78rem;
+            font-size: 0.74rem;
             text-transform: uppercase;
-            letter-spacing: 0.04em;
+            letter-spacing: 0.06em;
         }
-        .amiibo-table td.img-col {
-            text-align: center !important;
-            padding: 0.5rem 0;
-        }
+        .amiibo-table td.img-col { text-align: center !important; padding: 0.5rem 0; }
         .amiibo-table td.img-col::before { display: none; }
-        .amiibo-thumbnail, .img-fallback {
-            width: 56px;
-            height: 56px;
-        }
+        .amiibo-thumbnail, .img-fallback { width: 56px; height: 56px; }
         .img-fallback { line-height: 56px; }
     }
 </style>
@@ -394,26 +470,45 @@
 
 {% block content %}
 <div class="container">
-    <div class="topbar">
-        <div class="crumb"><a href="{% url 'blog_list' %}">← amiibo blog</a></div>
-        <div class="nav-actions">
-            <a href="{% url 'blog_list' %}" class="action-btn" data-track="blog-back">All posts</a>
-            <a href="{% url 'index' %}" class="action-btn" data-track="blog-home">Home</a>
-        </div>
-    </div>
+    <a href="{% url 'blog_list' %}" class="back-link" data-track="blog-back">← back to all posts</a>
 
     <article>
         <div class="article-meta">
-            <span class="badge">post</span>
-            <span class="date">{{ post.date|iso_long_date }}</span>
+            <span class="badge">{% if post.badge %}{{ post.badge }}{% else %}post{% endif %}</span>
+            <span>{{ post.date|iso_long_date }}</span>
+            {% if read_minutes %}<span class="dot">·</span><span>{{ read_minutes }} min read</span>{% endif %}
         </div>
-        <h1>{{ post.title }}</h1>
-
-        {% if post.featured_image %}
-        <img src="{% static post.featured_image %}" alt="{{ post.title }}" class="featured-image" loading="lazy">
+        <h1 class="article-title">{{ post.title }}</h1>
+        {% if post.subtitle %}
+            <p class="article-subtitle">{{ post.subtitle }}</p>
         {% endif %}
 
-        <div class="post-content">
+        {% if post.featured_image %}
+            <div class="hero">
+                <img src="{% static post.featured_image %}" alt="{{ post.title }}" loading="lazy">
+            </div>
+            {% if post.hero_caption %}
+                <p class="hero-caption">{{ post.hero_caption }}</p>
+            {% else %}
+                <div class="hero-spacer"></div>
+            {% endif %}
+        {% endif %}
+
+        {% if post.specs %}
+        <div class="specs">
+            <div class="specs-title">At a glance</div>
+            <div class="specs-grid">
+                {% for row in post.specs %}
+                <div class="spec-row">
+                    <span class="spec-label">{{ row.label }}</span>
+                    <span class="spec-value">{{ row.value }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="article-body">
             {% if amiibos %}
                 {% if error %}
                     <div class="error-message">
@@ -486,6 +581,39 @@
                 {{ post.content|safe }}
             {% endif %}
         </div>
+
+        {% if post.verdict %}
+        <div class="verdict">
+            {% if post.verdict.score %}
+                <div class="verdict-score">{{ post.verdict.score }}</div>
+            {% endif %}
+            <div>
+                <div class="verdict-label">Verdict</div>
+                <p class="verdict-text">{{ post.verdict.text }}</p>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if prev_post or next_post %}
+        <nav class="post-nav">
+            {% if prev_post %}
+                <a href="{% url 'blog_post' prev_post.slug %}" class="post-nav-link prev" data-track="blog-prev">
+                    <div class="post-nav-label">← Previous</div>
+                    <div class="post-nav-title">{{ prev_post.title }}</div>
+                </a>
+            {% else %}
+                <span class="post-nav-spacer"></span>
+            {% endif %}
+            {% if next_post %}
+                <a href="{% url 'blog_post' next_post.slug %}" class="post-nav-link next" data-track="blog-next">
+                    <div class="post-nav-label">Next →</div>
+                    <div class="post-nav-title">{{ next_post.title }}</div>
+                </a>
+            {% else %}
+                <span class="post-nav-spacer"></span>
+            {% endif %}
+        </nav>
+        {% endif %}
     </article>
 </div>
 {% endblock %}
