@@ -141,6 +141,15 @@ resource "google_cloud_run_service" "amiibo_tracker" {
   }
 
   autogenerate_revision_name = true
+
+  # The container image is deployed out-of-band by the build pipeline
+  # (gcloud run services update in build.yml). Terraform must not revert it
+  # back to the value pinned in terraform.tfvars on every apply.
+  lifecycle {
+    ignore_changes = [
+      template[0].spec[0].containers[0].image,
+    ]
+  }
 }
 
 resource "google_cloud_run_service_iam_member" "public" {
@@ -252,6 +261,27 @@ resource "google_firestore_index" "amiibo_comments_by_amiibo" {
 
   fields {
     field_path = "amiibo_id"
+    order      = "ASCENDING"
+  }
+
+  fields {
+    field_path = "is_hidden"
+    order      = "ASCENDING"
+  }
+
+  fields {
+    field_path = "created_at"
+    order      = "DESCENDING"
+  }
+}
+
+resource "google_firestore_index" "blog_comments_by_slug" {
+  project    = var.project_id
+  database   = google_firestore_database.default.name
+  collection = "blog_comments"
+
+  fields {
+    field_path = "slug"
     order      = "ASCENDING"
   }
 
