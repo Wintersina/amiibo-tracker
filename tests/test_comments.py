@@ -5,7 +5,7 @@ from django.test import RequestFactory
 
 from google.api_core.exceptions import ResourceExhausted
 
-from tracker import views
+from tracker import comments, views
 
 
 @pytest.fixture
@@ -59,7 +59,7 @@ def test_post_rejects_malformed_amiibo_id(rf):
 
 def test_post_rejects_empty_body(rf, monkeypatch):
     called = []
-    monkeypatch.setattr(views, "add_comment", lambda **kw: called.append(kw) or "x")
+    monkeypatch.setattr(comments, "add_comment", lambda **kw: called.append(kw) or "x")
 
     response = views.PostCommentView.as_view()(
         _post(rf, body="   ", session=_logged_in_session()),
@@ -73,7 +73,7 @@ def test_post_rejects_empty_body(rf, monkeypatch):
 
 def test_post_rejects_overlong_body(rf, monkeypatch):
     called = []
-    monkeypatch.setattr(views, "add_comment", lambda **kw: called.append(kw) or "x")
+    monkeypatch.setattr(comments, "add_comment", lambda **kw: called.append(kw) or "x")
 
     long_body = "a" * (views.COMMENT_BODY_MAX_LEN + 1)
     response = views.PostCommentView.as_view()(
@@ -86,6 +86,41 @@ def test_post_rejects_overlong_body(rf, monkeypatch):
     assert called == []
 
 
+def test_post_rejects_hate_speech(rf, monkeypatch):
+    called = []
+    monkeypatch.setattr(comments, "add_comment", lambda **kw: called.append(kw) or "x")
+    # Simulate the moderation filter flagging the body as hate speech.
+    monkeypatch.setattr(comments, "contains_hate_speech", lambda text: True)
+
+    response = views.PostCommentView.as_view()(
+        _post(rf, body="some slur here", session=_logged_in_session()),
+        amiibo_id=AMIIBO_ID,
+    )
+
+    assert response.status_code == 302
+    assert response.url.endswith("?comment=blocked")
+    assert called == []  # nothing written when blocked
+
+
+def test_post_allows_ordinary_profanity(rf, monkeypatch):
+    # Real moderation filter (not patched): cussing must pass through.
+    called = []
+    monkeypatch.setattr(comments, "add_comment", lambda **kw: called.append(kw) or "x")
+
+    response = views.PostCommentView.as_view()(
+        _post(
+            rf,
+            body="this damn figure is so freaking expensive",
+            session=_logged_in_session(),
+        ),
+        amiibo_id=AMIIBO_ID,
+    )
+
+    assert response.status_code == 302
+    assert response.url.endswith("?comment=ok")
+    assert len(called) == 1
+
+
 def test_post_success_calls_wrapper_and_busts_cache(rf, monkeypatch):
     captured = {}
 
@@ -93,7 +128,7 @@ def test_post_success_calls_wrapper_and_busts_cache(rf, monkeypatch):
         captured.update(kwargs)
         return "new-doc-id"
 
-    monkeypatch.setattr(views, "add_comment", fake_add)
+    monkeypatch.setattr(comments, "add_comment", fake_add)
 
     cache.set(f"comments:amiibo:{AMIIBO_ID}", ["stale"], 60)
 
@@ -117,7 +152,7 @@ def test_post_handles_quota_exhausted(rf, monkeypatch):
     def boom(**kwargs):
         raise ResourceExhausted("quota")
 
-    monkeypatch.setattr(views, "add_comment", boom)
+    monkeypatch.setattr(comments, "add_comment", boom)
 
     response = views.PostCommentView.as_view()(
         _post(rf, session=_logged_in_session()),
@@ -132,7 +167,7 @@ def test_post_handles_unexpected_firestore_error(rf, monkeypatch):
     def boom(**kwargs):
         raise RuntimeError("network died")
 
-    monkeypatch.setattr(views, "add_comment", boom)
+    monkeypatch.setattr(comments, "add_comment", boom)
 
     response = views.PostCommentView.as_view()(
         _post(rf, session=_logged_in_session()),
@@ -144,7 +179,7 @@ def test_post_handles_unexpected_firestore_error(rf, monkeypatch):
 
 
 def test_per_user_rate_limit_trips_after_max(rf, monkeypatch):
-    monkeypatch.setattr(views, "add_comment", lambda **kw: "id")
+    monkeypatch.setattr(comments, "add_comment", lambda **kw: "id")
 
     session = _logged_in_session()
     for i in range(views.COMMENT_PER_USER_MAX):
@@ -178,7 +213,7 @@ def test_detail_view_passes_comments_to_template(rf, monkeypatch):
             "is_hidden": False,
         }
     ]
-    monkeypatch.setattr(views, "list_comments", lambda *a, **kw: fake_comments)
+    monkeypatch.setattr(comments, "list_comments", lambda *a, **kw: fake_comments)
 
     request = rf.get(DETAIL_PATH)
     request.session = {}
@@ -190,7 +225,7 @@ def test_detail_view_passes_comments_to_template(rf, monkeypatch):
 
 
 def test_detail_view_renders_banner_from_query_string(rf, monkeypatch):
-    monkeypatch.setattr(views, "list_comments", lambda *a, **kw: [])
+    monkeypatch.setattr(comments, "list_comments", lambda *a, **kw: [])
 
     request = rf.get(DETAIL_PATH + "?comment=rate_limited")
     request.session = {}
@@ -204,7 +239,7 @@ def test_detail_view_falls_back_to_empty_when_firestore_fails(rf, monkeypatch):
     def boom(*a, **kw):
         raise RuntimeError("firestore down")
 
-    monkeypatch.setattr(views, "list_comments", boom)
+    monkeypatch.setattr(comments, "list_comments", boom)
 
     request = rf.get(DETAIL_PATH)
     request.session = {}
@@ -251,7 +286,7 @@ def test_blog_post_success_writes_with_slug_key_and_busts_cache(rf, monkeypatch)
         captured.update(kwargs)
         return "blog-doc-id"
 
-    monkeypatch.setattr(views, "add_comment", fake_add)
+    monkeypatch.setattr(comments, "add_comment", fake_add)
 
     cache.set(f"comments:blog:{BLOG_SLUG}", ["stale"], 60)
 
@@ -273,7 +308,7 @@ def test_blog_post_handles_quota_exhausted(rf, monkeypatch):
     def boom(**kwargs):
         raise ResourceExhausted("quota")
 
-    monkeypatch.setattr(views, "add_comment", boom)
+    monkeypatch.setattr(comments, "add_comment", boom)
 
     response = views.PostBlogCommentView.as_view()(
         _blog_post(rf, session=_logged_in_session()),
@@ -301,7 +336,7 @@ def test_blog_view_renders_comments(rf, monkeypatch):
             "is_hidden": False,
         }
     ]
-    monkeypatch.setattr(views, "list_comments", lambda *a, **kw: fake_comments)
+    monkeypatch.setattr(comments, "list_comments", lambda *a, **kw: fake_comments)
 
     request = rf.get(BLOG_PATH)
     request.session = {}
@@ -313,7 +348,7 @@ def test_blog_view_renders_comments(rf, monkeypatch):
 
 
 def test_blog_view_renders_banner(rf, monkeypatch):
-    monkeypatch.setattr(views, "list_comments", lambda *a, **kw: [])
+    monkeypatch.setattr(comments, "list_comments", lambda *a, **kw: [])
 
     request = rf.get(BLOG_PATH + "?comment=ok")
     request.session = {}
@@ -329,7 +364,7 @@ def test_blog_view_renders_banner(rf, monkeypatch):
 
 
 def test_header_shows_login_when_anonymous(rf, monkeypatch):
-    monkeypatch.setattr(views, "list_comments", lambda *a, **kw: [])
+    monkeypatch.setattr(comments, "list_comments", lambda *a, **kw: [])
 
     request = rf.get(BLOG_PATH)
     request.session = {}
@@ -340,7 +375,7 @@ def test_header_shows_login_when_anonymous(rf, monkeypatch):
 
 
 def test_header_shows_logout_when_logged_in(rf, monkeypatch):
-    monkeypatch.setattr(views, "list_comments", lambda *a, **kw: [])
+    monkeypatch.setattr(comments, "list_comments", lambda *a, **kw: [])
 
     request = rf.get(BLOG_PATH)
     request.session = _logged_in_session()

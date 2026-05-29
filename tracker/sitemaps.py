@@ -17,7 +17,11 @@ class StaticViewSitemap(Sitemap):
     changefreq = "monthly"
 
     def items(self):
-        """Return list of static page URL names."""
+        """Return list of static page URL names.
+
+        "amiibo_list" (/tracker/) is intentionally excluded — it is behind a
+        Google login and renders nothing useful to crawlers.
+        """
         return ["index", "amiibodex", "blog_list", "demo", "about", "privacy"]
 
     def location(self, item):
@@ -97,7 +101,8 @@ class AmiiboSitemap(Sitemap):
                         # Check if it has any release dates
                         release_dates = amiibo.get("release", {})
                         has_release = any(
-                            release_dates.get(region) for region in ["na", "jp", "eu", "au"]
+                            release_dates.get(region)
+                            for region in ["na", "jp", "eu", "au"]
                         )
                         # Only skip if ff placeholder AND no release dates
                         if not has_release:

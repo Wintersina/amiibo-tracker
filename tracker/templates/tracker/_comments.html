@@ -1,0 +1,47 @@
+{% comment %}
+Reusable comment block (banner + form + list). Plug into any page with:
+
+    {% include "tracker/_comments.html" with comment_post_url=<action-url> comment_placeholder="..." comment_track_prefix="comment" comment_btn_class="action-btn primary" %}
+
+The host page supplies the surrounding section + heading and the CSS for the
+shared classes (.comment-banner, .comment-form, .comment-list, .comment-item,
+etc.). Skin the submit button / login link by passing comment_btn_class; leave
+it blank to fall back to the page's own button styling.
+
+Relies on these context vars from the view: comment_banner, comments,
+current_user_email, current_user_name, comment_body_max_len.
+{% endcomment %}
+{% if comment_banner %}
+<div class="comment-banner comment-banner-{{ comment_banner.0 }}">{{ comment_banner.1 }}</div>
+{% endif %}
+
+{% if current_user_email %}
+<form method="post" action="{{ comment_post_url }}" class="comment-form" data-track="{{ comment_track_prefix }}-submit">
+    {% csrf_token %}
+    <textarea name="body" maxlength="{{ comment_body_max_len }}" rows="3" placeholder="{{ comment_placeholder|default:'Share your thoughts...' }}" required></textarea>
+    <div class="comment-form-row">
+        <span class="comment-form-user">Posting as {{ current_user_name|default:current_user_email }}</span>
+        <button type="submit" class="{{ comment_btn_class }}">Post comment</button>
+    </div>
+</form>
+{% else %}
+<div class="comment-login-cta">
+    <a href="{% url 'oauth_login' %}" class="{{ comment_btn_class }}" data-track="{{ comment_track_prefix }}-login">Log in to comment</a>
+</div>
+{% endif %}
+
+{% if comments %}
+<ul class="comment-list">
+    {% for c in comments %}
+    <li class="comment-item">
+        <div class="comment-meta">
+            <span class="comment-author">{{ c.display_name|default:"Anonymous" }}</span>
+            {% if c.created_at %}<span class="comment-time">{{ c.created_at|date:"M j, Y, g:i a" }}</span>{% endif %}
+        </div>
+        <div class="comment-body">{{ c.body|linebreaksbr }}</div>
+    </li>
+    {% endfor %}
+</ul>
+{% else %}
+<p class="comment-empty">No comments yet — be the first to say something.</p>
+{% endif %}
