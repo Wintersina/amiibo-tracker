@@ -222,20 +222,34 @@
             background: none;
             border: none;
             cursor: pointer;
-            font-size: 1.4rem;
-            line-height: 1;
             padding: 0.2rem;
-            color: rgba(253, 247, 227, 0.45);
-            transition: transform 0.15s ease, color 0.2s ease;
+            width: 2rem;
+            height: 2rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.15s ease;
+        }
+
+        .dex-fav-btn .fav-icon {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            pointer-events: none;
+        }
+
+        /* Off state: greyed-out + faded broken heart (white outline keeps it
+           visible against the dark dex) */
+        .dex-fav-btn:not(.favorited) .fav-icon {
+            filter: grayscale(1) opacity(0.6);
         }
 
         .dex-fav-btn:hover {
             transform: scale(1.18);
-            color: #fb7185;
         }
 
-        .dex-fav-btn.favorited {
-            color: #fb7185;
+        .dex-fav-btn.favorited .fav-icon {
+            filter: drop-shadow(0 2px 4px rgba(225, 29, 72, 0.5));
         }
 
         .fav-filter {
@@ -639,7 +653,7 @@
                     <tr class="clickable-row" data-fav-id="{{ amiibo.favorite_id }}" onclick="navigateToAmiibo('{{ amiibo.amiibo_id }}', '{{ amiibo.name|escapejs }}')">
                         <td class="fav-col" data-label="Favorite:">
                             <button type="button" class="dex-fav-btn" onclick="toggleAmiiboFavorite(event, this)"
-                                    aria-pressed="false" aria-label="Add to favorites" title="Favorite">♡</button>
+                                    aria-pressed="false" aria-label="Add to favorites" title="Favorite"><img class="fav-icon" src="{% static 'images/fav-off.png' %}" alt=""></button>
                         </td>
                         <td class="img-col">
                             <img src="{{ amiibo|amiibo_image }}"
@@ -719,11 +733,15 @@
     // ---- Favorites (lazy-hydrated; stored per-user in Google Sheets) ----
     let favoritesAuthenticated = false;
 
+    const FAV_ICON_ON = '{% static "images/fav-on.png" %}';
+    const FAV_ICON_OFF = '{% static "images/fav-off.png" %}';
+
     function applyFavoriteRow(row, favorited) {
         const button = row.querySelector('.dex-fav-btn');
         if (!button) return;
         button.classList.toggle('favorited', favorited);
-        button.textContent = favorited ? '♥' : '♡';
+        const icon = button.querySelector('.fav-icon');
+        if (icon) icon.src = favorited ? FAV_ICON_ON : FAV_ICON_OFF;
         button.setAttribute('aria-pressed', favorited ? 'true' : 'false');
         button.setAttribute('aria-label', favorited ? 'Remove from favorites' : 'Add to favorites');
     }
