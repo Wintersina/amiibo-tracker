@@ -39,6 +39,7 @@ from tracker.firestore_client import (
 )
 from tracker.comments import (
     CommentPostView,
+    CommentDeleteView,
     load_comments,
     comment_banner_for,
     COMMENT_BODY_MAX_LEN,
@@ -3752,8 +3753,8 @@ class DailyReportTriggerView(View):
         return HttpResponse(status=204)
 
 
-class PostCommentView(CommentPostView):
-    """Create a comment on an amiibo detail page."""
+class AmiiboCommentMixin:
+    """Page identity for amiibo-detail comments, shared by post + delete views."""
 
     collection = AMIIBO_COMMENTS_COLLECTION
     key_field = "amiibo_id"
@@ -3773,8 +3774,8 @@ class PostCommentView(CommentPostView):
         return f"comments:amiibo:{key_value}"
 
 
-class PostBlogCommentView(CommentPostView):
-    """Create a comment on a blog post."""
+class BlogCommentMixin:
+    """Page identity for blog-post comments, shared by post + delete views."""
 
     collection = BLOG_COMMENTS_COLLECTION
     key_field = "slug"
@@ -3791,3 +3792,19 @@ class PostBlogCommentView(CommentPostView):
 
     def cache_key(self, key_value):
         return f"comments:blog:{key_value}"
+
+
+class PostCommentView(AmiiboCommentMixin, CommentPostView):
+    """Create a comment (or reply) on an amiibo detail page."""
+
+
+class DeleteCommentView(AmiiboCommentMixin, CommentDeleteView):
+    """Delete one's own comment on an amiibo detail page."""
+
+
+class PostBlogCommentView(BlogCommentMixin, CommentPostView):
+    """Create a comment (or reply) on a blog post."""
+
+
+class DeleteBlogCommentView(BlogCommentMixin, CommentDeleteView):
+    """Delete one's own comment on a blog post."""

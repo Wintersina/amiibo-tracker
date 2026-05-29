@@ -337,6 +337,9 @@
                     <div class="logo-text">goozamiibo</div>
                 </a>
                 <div class="nav-links">
+                    {% if request.session.user_email %}
+                    <a href="{% url 'amiibo_list' %}" class="nav-link" data-track="nav-collection">Your Collection</a>
+                    {% endif %}
                     <a href="{% url 'amiibodex' %}" class="nav-link" data-track="nav-amiibodex">AmiiboDex</a>
                     <a href="{% url 'about' %}" class="nav-link" data-track="nav-about">About</a>
                     <a href="{% url 'blog_list' %}" class="nav-link" data-track="nav-blog">Blog</a>
@@ -363,6 +366,9 @@
         </div>
 
         <div class="mobile-nav" id="mobileNav">
+            {% if request.session.user_email %}
+            <a href="{% url 'amiibo_list' %}" class="mobile-nav-link" data-track="mobile-nav-collection">Your Collection</a>
+            {% endif %}
             <a href="{% url 'amiibodex' %}" class="mobile-nav-link" data-track="mobile-nav-amiibodex">AmiiboDex</a>
             <a href="{% url 'about' %}" class="mobile-nav-link" data-track="mobile-nav-about">About</a>
             <a href="{% url 'blog_list' %}" class="mobile-nav-link" data-track="mobile-nav-blog">Blog</a>

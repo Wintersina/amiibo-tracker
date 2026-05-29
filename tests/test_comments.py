@@ -197,6 +197,209 @@ def test_per_user_rate_limit_trips_after_max(rf, monkeypatch):
 
 
 # ---------------------------------------------------------------------------
+# Replies (parent_id) — PostCommentView
+# ---------------------------------------------------------------------------
+
+
+def _reply(rf, parent_id, body="A reply", session=None):
+    request = rf.post(POST_PATH, data={"body": body, "parent_id": parent_id})
+    request.session = session if session is not None else {}
+    return request
+
+
+def test_reply_to_valid_parent_passes_parent_id(rf, monkeypatch):
+    captured = {}
+    monkeypatch.setattr(comments, "add_comment", lambda **kw: captured.update(kw) or "id")
+    # A visible, top-level parent on the same amiibo.
+    monkeypatch.setattr(
+        comments,
+        "get_comment",
+        lambda collection, doc_id: {
+            "id": doc_id,
+            "amiibo_id": AMIIBO_ID,
+            "is_hidden": False,
+            "parent_id": None,
+        },
+    )
+
+    response = views.PostCommentView.as_view()(
+        _reply(rf, "parent-1", session=_logged_in_session()),
+        amiibo_id=AMIIBO_ID,
+    )
+
+    assert response.url.endswith("?comment=ok")
+    assert captured["parent_id"] == "parent-1"
+
+
+def test_reply_to_missing_parent_is_rejected(rf, monkeypatch):
+    called = []
+    monkeypatch.setattr(comments, "add_comment", lambda **kw: called.append(kw) or "x")
+    monkeypatch.setattr(comments, "get_comment", lambda collection, doc_id: None)
+
+    response = views.PostCommentView.as_view()(
+        _reply(rf, "ghost", session=_logged_in_session()),
+        amiibo_id=AMIIBO_ID,
+    )
+
+    assert response.url.endswith("?comment=bad_parent")
+    assert called == []
+
+
+def test_reply_to_parent_on_other_page_is_rejected(rf, monkeypatch):
+    called = []
+    monkeypatch.setattr(comments, "add_comment", lambda **kw: called.append(kw) or "x")
+    monkeypatch.setattr(
+        comments,
+        "get_comment",
+        lambda collection, doc_id: {
+            "id": doc_id,
+            "amiibo_id": "00000000-00000000",  # different amiibo
+            "is_hidden": False,
+            "parent_id": None,
+        },
+    )
+
+    response = views.PostCommentView.as_view()(
+        _reply(rf, "parent-1", session=_logged_in_session()),
+        amiibo_id=AMIIBO_ID,
+    )
+
+    assert response.url.endswith("?comment=bad_parent")
+    assert called == []
+
+
+def test_reply_to_a_reply_is_rejected(rf, monkeypatch):
+    called = []
+    monkeypatch.setattr(comments, "add_comment", lambda **kw: called.append(kw) or "x")
+    # Parent is itself a reply (has parent_id) → one-level threading guard.
+    monkeypatch.setattr(
+        comments,
+        "get_comment",
+        lambda collection, doc_id: {
+            "id": doc_id,
+            "amiibo_id": AMIIBO_ID,
+            "is_hidden": False,
+            "parent_id": "grandparent",
+        },
+    )
+
+    response = views.PostCommentView.as_view()(
+        _reply(rf, "a-reply", session=_logged_in_session()),
+        amiibo_id=AMIIBO_ID,
+    )
+
+    assert response.url.endswith("?comment=bad_parent")
+    assert called == []
+
+
+# ---------------------------------------------------------------------------
+# build_comment_threads
+# ---------------------------------------------------------------------------
+
+
+def test_build_threads_nests_replies_oldest_first():
+    # list_comments returns newest-first; replies should read oldest-first.
+    flat = [
+        {"id": "top", "body": "parent", "parent_id": None},
+        {"id": "r2", "body": "second reply", "parent_id": "top"},
+        {"id": "r1", "body": "first reply", "parent_id": "top"},
+    ]
+    threads = comments.build_comment_threads(flat)
+
+    assert len(threads) == 1
+    assert threads[0]["id"] == "top"
+    assert threads[0]["removed"] is False
+    assert [r["id"] for r in threads[0]["replies"]] == ["r1", "r2"]
+
+
+def test_build_threads_tombstones_orphaned_replies():
+    # Parent is absent (hidden/deleted) but its reply survives.
+    flat = [{"id": "r1", "body": "orphan reply", "parent_id": "gone"}]
+    threads = comments.build_comment_threads(flat)
+
+    assert len(threads) == 1
+    assert threads[0]["removed"] is True
+    assert threads[0]["id"] == "gone"
+    assert [r["id"] for r in threads[0]["replies"]] == ["r1"]
+
+
+# ---------------------------------------------------------------------------
+# DeleteCommentView
+# ---------------------------------------------------------------------------
+
+
+def _delete(rf, comment_id, session=None):
+    path = f"{POST_PATH}{comment_id}/delete/"
+    request = rf.post(path)
+    request.session = session if session is not None else {}
+    return request
+
+
+def test_delete_redirects_to_login_when_anonymous(rf):
+    response = views.DeleteCommentView.as_view()(
+        _delete(rf, "c1"), amiibo_id=AMIIBO_ID, comment_id="c1"
+    )
+    assert response.status_code == 302
+    assert response.url.endswith("/oauth-login/")
+
+
+def test_delete_success_busts_cache(rf, monkeypatch):
+    captured = {}
+    monkeypatch.setattr(
+        comments,
+        "delete_comment",
+        lambda collection, doc_id, user_email: captured.update(
+            collection=collection, doc_id=doc_id, user_email=user_email
+        )
+        or True,
+    )
+    cache.set(f"comments:amiibo:{AMIIBO_ID}", ["stale"], 60)
+
+    response = views.DeleteCommentView.as_view()(
+        _delete(rf, "c1", session=_logged_in_session()),
+        amiibo_id=AMIIBO_ID,
+        comment_id="c1",
+    )
+
+    assert response.url.endswith("?comment=deleted")
+    assert captured == {
+        "collection": "amiibo_comments",
+        "doc_id": "c1",
+        "user_email": "fan@example.com",
+    }
+    assert cache.get(f"comments:amiibo:{AMIIBO_ID}") is None
+
+
+def test_delete_denied_when_not_owner(rf, monkeypatch):
+    monkeypatch.setattr(
+        comments, "delete_comment", lambda collection, doc_id, user_email: False
+    )
+
+    response = views.DeleteCommentView.as_view()(
+        _delete(rf, "c1", session=_logged_in_session()),
+        amiibo_id=AMIIBO_ID,
+        comment_id="c1",
+    )
+
+    assert response.url.endswith("?comment=forbidden")
+
+
+def test_delete_handles_firestore_error(rf, monkeypatch):
+    def boom(*a, **kw):
+        raise RuntimeError("firestore down")
+
+    monkeypatch.setattr(comments, "delete_comment", boom)
+
+    response = views.DeleteCommentView.as_view()(
+        _delete(rf, "c1", session=_logged_in_session()),
+        amiibo_id=AMIIBO_ID,
+        comment_id="c1",
+    )
+
+    assert response.url.endswith("?comment=server_busy")
+
+
+# ---------------------------------------------------------------------------
 # AmiiboDetailView — comment loading side
 # ---------------------------------------------------------------------------
 

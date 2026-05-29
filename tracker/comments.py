@@ -19,7 +19,12 @@ from django.shortcuts import redirect
 from django.views import View
 from google.api_core.exceptions import ResourceExhausted
 
-from tracker.firestore_client import add_comment, list_comments
+from tracker.firestore_client import (
+    add_comment,
+    delete_comment,
+    get_comment,
+    list_comments,
+)
 from tracker.helpers import LoggingMixin, check_rate_limit
 from tracker.moderation import contains_hate_speech
 
@@ -49,7 +54,51 @@ def comment_banner_for(status):
             "error",
             "Comments are temporarily unavailable. Please try again later.",
         ),
+        "deleted": ("success", "Comment deleted."),
+        "forbidden": ("error", "You can only delete your own comments."),
+        "bad_parent": ("error", "That comment is no longer available to reply to."),
     }.get(status)
+
+
+def build_comment_threads(comments):
+    """Group a flat, newest-first comment list into one-level reply threads.
+
+    Each returned thread is a comment dict with a ``replies`` list (oldest-first,
+    the natural reading order for a conversation). Replies whose parent is not in
+    the visible set — the parent was hidden by moderation, deleted by its author,
+    or fell outside the fetch window — are collected under a ``removed`` tombstone
+    so the surviving replies aren't silently dropped.
+    """
+    replies_by_parent = {}
+    top_level = []
+    for c in comments:
+        parent_id = c.get("parent_id")
+        if parent_id:
+            replies_by_parent.setdefault(parent_id, []).append(c)
+        else:
+            top_level.append(c)
+
+    threads = []
+    seen = set()
+    for c in top_level:
+        seen.add(c["id"])
+        thread = dict(c)
+        thread["removed"] = False
+        thread["replies"] = list(reversed(replies_by_parent.get(c["id"], [])))
+        threads.append(thread)
+
+    for parent_id, replies in replies_by_parent.items():
+        if parent_id in seen:
+            continue
+        threads.append(
+            {
+                "id": parent_id,
+                "removed": True,
+                "replies": list(reversed(replies)),
+            }
+        )
+
+    return threads
 
 
 def load_comments(
@@ -64,6 +113,9 @@ def load_comments(
     limit=50,
 ):
     """Return cached comments for a key, loading from Firestore on a miss.
+
+    The flat Firestore list is cached; threads are assembled per request (cheap)
+    so reply nesting always reflects the current visible set.
 
     Failures degrade to an empty list (optionally logged via ``logger``) so a
     Firestore hiccup never takes down the host page.
@@ -83,7 +135,7 @@ def load_comments(
                 )
             comments = []
         cache.set(cache_key, comments, 60)
-    return comments
+    return build_comment_threads(comments)
 
 
 class CommentPostView(View, LoggingMixin):
@@ -114,6 +166,23 @@ class CommentPostView(View, LoggingMixin):
 
     def _key_context(self, key_value):
         return {self.key_field: key_value}
+
+    def _valid_reply_parent(self, key_value, parent_id):
+        """A reply target must exist on this page, be visible, and be top-level.
+
+        Rejecting parents that already have a ``parent_id`` keeps threading one
+        level deep — a reply to a reply isn't allowed.
+        """
+        try:
+            parent = get_comment(self.collection, parent_id)
+        except Exception:
+            return False
+        return bool(
+            parent
+            and parent.get(self.key_field) == key_value
+            and not parent.get("is_hidden")
+            and not parent.get("parent_id")
+        )
 
     def post(self, request, **kwargs):
         key_value = self.resolve_key(request, **kwargs)
@@ -158,6 +227,17 @@ class CommentPostView(View, LoggingMixin):
             return self.redirect_to(key_value, "rate_limited")
         cache.set(user_key, user_count + 1, COMMENT_PER_USER_WINDOW)
 
+        parent_id = (request.POST.get("parent_id") or "").strip() or None
+        if parent_id and not self._valid_reply_parent(key_value, parent_id):
+            self.log_action(
+                f"{self.log_prefix}-bad-parent",
+                request,
+                level="warning",
+                parent_id=parent_id,
+                **self._key_context(key_value),
+            )
+            return self.redirect_to(key_value, "bad_parent")
+
         try:
             doc_id = add_comment(
                 collection=self.collection,
@@ -166,6 +246,7 @@ class CommentPostView(View, LoggingMixin):
                 user_email=user_email,
                 display_name=user_name,
                 body=body,
+                parent_id=parent_id,
             )
         except ResourceExhausted:
             self.log_action(
@@ -190,6 +271,80 @@ class CommentPostView(View, LoggingMixin):
             f"{self.log_prefix}-posted",
             request,
             comment_id=doc_id,
+            parent_id=parent_id,
             **self._key_context(key_value),
         )
         return self.redirect_to(key_value, "ok")
+
+
+class CommentDeleteView(View, LoggingMixin):
+    """Base POST handler for deleting one's own comment.
+
+    Shares ``collection`` / ``key_field`` / ``resolve_key`` / ``redirect_to`` /
+    ``cache_key`` with the matching :class:`CommentPostView` subclass (supplied
+    via a page-identity mixin). Authorship is enforced in
+    :func:`tracker.firestore_client.delete_comment`; a non-author or missing
+    comment yields a ``forbidden`` banner rather than a hard error.
+    """
+
+    collection: str = ""
+    key_field: str = ""
+    log_prefix: str = "comment"
+
+    def resolve_key(self, request, **kwargs):  # pragma: no cover - abstract
+        raise NotImplementedError
+
+    def redirect_to(self, key_value, status):  # pragma: no cover - abstract
+        raise NotImplementedError
+
+    def cache_key(self, key_value):  # pragma: no cover - abstract
+        raise NotImplementedError
+
+    def _key_context(self, key_value):
+        return {self.key_field: key_value}
+
+    def post(self, request, comment_id=None, **kwargs):
+        key_value = self.resolve_key(request, **kwargs)
+
+        user_email = request.session.get("user_email")
+        if not user_email:
+            return redirect("oauth_login")
+
+        try:
+            deleted = delete_comment(self.collection, comment_id, user_email)
+        except ResourceExhausted:
+            self.log_action(
+                f"{self.log_prefix}-quota-exhausted",
+                request,
+                level="error",
+                **self._key_context(key_value),
+            )
+            return self.redirect_to(key_value, "server_busy")
+        except Exception as exc:
+            self.log_action(
+                f"{self.log_prefix}-delete-failed",
+                request,
+                level="error",
+                error=str(exc),
+                **self._key_context(key_value),
+            )
+            return self.redirect_to(key_value, "server_busy")
+
+        if not deleted:
+            self.log_action(
+                f"{self.log_prefix}-delete-denied",
+                request,
+                level="warning",
+                comment_id=comment_id,
+                **self._key_context(key_value),
+            )
+            return self.redirect_to(key_value, "forbidden")
+
+        cache.delete(self.cache_key(key_value))
+        self.log_action(
+            f"{self.log_prefix}-deleted",
+            request,
+            comment_id=comment_id,
+            **self._key_context(key_value),
+        )
+        return self.redirect_to(key_value, "deleted")

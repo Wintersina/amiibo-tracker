@@ -35,6 +35,7 @@ def add_comment(
     user_email: str,
     display_name: str,
     body: str,
+    parent_id: str | None = None,
 ) -> str:
     _, doc_ref = (
         get_client()
@@ -45,12 +46,37 @@ def add_comment(
                 "user_email": user_email,
                 "display_name": display_name,
                 "body": body,
+                "parent_id": parent_id,
                 "created_at": firestore.SERVER_TIMESTAMP,
                 "is_hidden": False,
             }
         )
     )
     return doc_ref.id
+
+
+def get_comment(collection: str, doc_id: str) -> dict | None:
+    """Return a single comment by document id, or ``None`` if it doesn't exist."""
+    doc = get_client().collection(collection).document(doc_id).get()
+    if not doc.exists:
+        return None
+    return {"id": doc.id, **doc.to_dict()}
+
+
+def delete_comment(collection: str, doc_id: str, user_email: str) -> bool:
+    """Delete a comment only if ``user_email`` is its author.
+
+    Returns ``True`` on a successful delete, ``False`` if the comment is missing
+    or owned by someone else. Replies to a deleted parent are intentionally left
+    in place — the listing renders the orphaned thread under a "removed"
+    placeholder so the conversation stays readable.
+    """
+    ref = get_client().collection(collection).document(doc_id)
+    doc = ref.get()
+    if not doc.exists or doc.to_dict().get("user_email") != user_email:
+        return False
+    ref.delete()
+    return True
 
 
 def rekey_comments(

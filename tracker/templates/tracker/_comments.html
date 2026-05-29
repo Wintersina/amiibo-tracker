@@ -1,14 +1,20 @@
 {% comment %}
-Reusable comment block (banner + form + list). Plug into any page with:
+Reusable comment block (banner + form + threaded list). Plug into any page with:
 
     {% include "tracker/_comments.html" with comment_post_url=<action-url> comment_placeholder="..." comment_track_prefix="comment" comment_btn_class="action-btn primary" %}
 
 The host page supplies the surrounding section + heading and the CSS for the
 shared classes (.comment-banner, .comment-form, .comment-list, .comment-item,
-etc.). Skin the submit button / login link by passing comment_btn_class; leave
-it blank to fall back to the page's own button styling.
+.comment-reply-*, .comment-actions, etc.). Skin the submit button / login link
+by passing comment_btn_class; leave it blank to fall back to the page's own
+button styling.
 
-Relies on these context vars from the view: comment_banner, comments,
+Reply and delete endpoints are derived from comment_post_url (which always ends
+in "comment/"): a reply re-POSTs there with a hidden parent_id, and a delete
+POSTs to "<comment_post_url><comment_id>/delete/".
+
+Relies on these context vars from the view: comment_banner, comments (already
+threaded by load_comments — each item carries .replies and .removed),
 current_user_email, current_user_name, comment_body_max_len.
 {% endcomment %}
 {% if comment_banner %}
@@ -33,15 +39,89 @@ current_user_email, current_user_name, comment_body_max_len.
 {% if comments %}
 <ul class="comment-list">
     {% for c in comments %}
-    <li class="comment-item">
+    <li class="comment-item{% if c.removed %} comment-removed{% endif %}" id="comment-{{ c.id }}">
+        {% if c.removed %}
+        <div class="comment-body comment-removed-text">[comment removed]</div>
+        {% else %}
         <div class="comment-meta">
             <span class="comment-author">{{ c.display_name|default:"Anonymous" }}</span>
             {% if c.created_at %}<span class="comment-time">{{ c.created_at|date:"M j, Y, g:i a" }}</span>{% endif %}
         </div>
         <div class="comment-body">{{ c.body|linebreaksbr }}</div>
+        {% if current_user_email %}
+        <div class="comment-actions">
+            <button type="button" class="comment-action" data-reply-toggle="{{ c.id }}" data-track="{{ comment_track_prefix }}-reply-open">Reply</button>
+            {% if c.user_email == current_user_email %}
+            <form method="post" action="{{ comment_post_url }}{{ c.id }}/delete/" class="comment-delete-form" onsubmit="return confirm('Delete this comment?');" data-track="{{ comment_track_prefix }}-delete">
+                {% csrf_token %}
+                <button type="submit" class="comment-action comment-action-danger">Delete</button>
+            </form>
+            {% endif %}
+        </div>
+        <form method="post" action="{{ comment_post_url }}" class="comment-reply-form" id="reply-form-{{ c.id }}" hidden data-track="{{ comment_track_prefix }}-reply-submit">
+            {% csrf_token %}
+            <input type="hidden" name="parent_id" value="{{ c.id }}">
+            <textarea name="body" maxlength="{{ comment_body_max_len }}" rows="2" placeholder="Reply to {{ c.display_name|default:'this comment' }}..." required></textarea>
+            <div class="comment-form-row">
+                <button type="submit" class="{{ comment_btn_class }}">Post reply</button>
+            </div>
+        </form>
+        {% endif %}
+        {% endif %}
+
+        {% if c.replies %}
+        <button type="button" class="comment-action comment-collapse" data-collapse-toggle="{{ c.id }}" aria-expanded="true" data-track="{{ comment_track_prefix }}-collapse">
+            <span class="comment-collapse-verb">Hide</span> {{ c.replies|length }} repl{{ c.replies|length|pluralize:"y,ies" }}
+        </button>
+        <ul class="comment-reply-list" id="replies-{{ c.id }}">
+            {% for r in c.replies %}
+            <li class="comment-item comment-reply" id="comment-{{ r.id }}">
+                <div class="comment-meta">
+                    <span class="comment-author">{{ r.display_name|default:"Anonymous" }}</span>
+                    {% if r.created_at %}<span class="comment-time">{{ r.created_at|date:"M j, Y, g:i a" }}</span>{% endif %}
+                </div>
+                <div class="comment-body">{{ r.body|linebreaksbr }}</div>
+                {% if current_user_email and r.user_email == current_user_email %}
+                <div class="comment-actions">
+                    <form method="post" action="{{ comment_post_url }}{{ r.id }}/delete/" class="comment-delete-form" onsubmit="return confirm('Delete this reply?');" data-track="{{ comment_track_prefix }}-delete">
+                        {% csrf_token %}
+                        <button type="submit" class="comment-action comment-action-danger">Delete</button>
+                    </form>
+                </div>
+                {% endif %}
+            </li>
+            {% endfor %}
+        </ul>
+        {% endif %}
     </li>
     {% endfor %}
 </ul>
 {% else %}
 <p class="comment-empty">No comments yet — be the first to say something.</p>
 {% endif %}
+
+<script>
+    (function () {
+        document.querySelectorAll('[data-reply-toggle]').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var form = document.getElementById('reply-form-' + btn.getAttribute('data-reply-toggle'));
+                if (!form) return;
+                form.hidden = !form.hidden;
+                if (!form.hidden) {
+                    var ta = form.querySelector('textarea');
+                    if (ta) ta.focus();
+                }
+            });
+        });
+        document.querySelectorAll('[data-collapse-toggle]').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var list = document.getElementById('replies-' + btn.getAttribute('data-collapse-toggle'));
+                if (!list) return;
+                var collapsed = list.hidden = !list.hidden;
+                btn.setAttribute('aria-expanded', String(!collapsed));
+                var verb = btn.querySelector('.comment-collapse-verb');
+                if (verb) verb.textContent = collapsed ? 'Show' : 'Hide';
+            });
+        });
+    })();
+</script>
