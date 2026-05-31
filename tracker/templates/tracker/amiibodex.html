@@ -774,7 +774,8 @@
         event.stopPropagation(); // don't trigger row navigation
 
         if (!favoritesAuthenticated) {
-            window.location.href = "{% url 'oauth_login' %}";
+            const next = encodeURIComponent(window.location.pathname + window.location.search + window.location.hash);
+            window.location.href = "{% url 'oauth_login' %}?next=" + next;
             return;
         }
 
@@ -798,7 +799,8 @@
 
             if (response.status === 401) {
                 // Session expired — bounce to login.
-                window.location.href = "{% url 'oauth_login' %}";
+                const next = encodeURIComponent(window.location.pathname + window.location.search + window.location.hash);
+                window.location.href = "{% url 'oauth_login' %}?next=" + next;
                 return;
             }
 

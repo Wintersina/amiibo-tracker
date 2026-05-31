@@ -32,7 +32,7 @@ current_user_email, current_user_name, comment_body_max_len.
 </form>
 {% else %}
 <div class="comment-login-cta">
-    <a href="{% url 'oauth_login' %}" class="{{ comment_btn_class }}" data-track="{{ comment_track_prefix }}-login">Log in to comment</a>
+    <a href="{% url 'oauth_login' %}?next={{ request.get_full_path|urlencode }}" class="{{ comment_btn_class }}" data-track="{{ comment_track_prefix }}-login">Log in to comment</a>
 </div>
 {% endif %}
 
