@@ -282,7 +282,7 @@
             </p>
         {% else %}
             <p>Ready to start tracking your collection?</p>
-            <a href="{% url 'oauth_login' %}" class="cta-btn" data-track="about-login">
+            <a href="{% url 'oauth_login' %}?next={{ request.get_full_path|urlencode }}" class="cta-btn" data-track="about-login">
                 <img src="{% static 'images/google-logo.svg' %}" alt="Google logo">
                 Login with Google
             </a>

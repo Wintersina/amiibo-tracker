@@ -289,7 +289,7 @@
         <p id="errorDescription">{{ error.message }}</p>
         <div class="error-actions" id="errorActions">
             {% if error.action_required == 'reauth_required' %}
-                <a href="{% url 'oauth_login' %}" class="error-btn error-btn-primary">Login Again</a>
+                <a href="{% url 'oauth_login' %}?next={{ request.get_full_path|urlencode }}" class="error-btn error-btn-primary">Login Again</a>
                 <button onclick="hideErrorModal()" class="error-btn error-btn-secondary">Dismiss</button>
             {% elif error.action_required == 'retry' %}
                 <button onclick="window.location.reload()" class="error-btn error-btn-primary">Retry</button>

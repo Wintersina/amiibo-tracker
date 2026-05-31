@@ -17,6 +17,7 @@ from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.http import JsonResponse, Http404, HttpResponse
 from django.shortcuts import redirect, render
 from django.utils.decorators import method_decorator
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.views import View
 from django.views.decorators.csrf import csrf_exempt
 from google_auth_oauthlib.flow import Flow
@@ -2405,13 +2406,37 @@ class FavoritesAPIView(View, LoggingMixin):
             )
 
 
+def _safe_next_url(request, candidate):
+    """Return candidate if it is a safe same-host relative redirect, else None.
+
+    Why: prevents an attacker from crafting /oauth-login/?next=https://evil.com
+    to phish users after a successful Google login.
+    """
+    if not candidate:
+        return None
+    if url_has_allowed_host_and_scheme(
+        candidate,
+        allowed_hosts={request.get_host()},
+        require_https=request.is_secure(),
+    ):
+        return candidate
+    return None
+
+
 class OAuthView(View, LoggingMixin):
     def get(self, request):
+        next_url = _safe_next_url(request, request.GET.get("next"))
+
         creds_json = get_active_credentials_json(request, self.log_action)
         if creds_json:
-            return redirect("amiibo_list")
+            return redirect(next_url or "amiibo_list")
 
         logout_user(request, self.log_action)
+
+        if next_url:
+            request.session["oauth_next"] = next_url
+        else:
+            request.session.pop("oauth_next", None)
 
         flow = Flow.from_client_secrets_file(
             GoogleSheetClientManager.client_secret_path(),
@@ -2436,6 +2461,7 @@ class OAuthCallbackView(View, LoggingMixin):
         request_state = request.GET.get("state")
         oauth_state = request.session.get("oauth_state")
         oauth_code_verifier = request.session.get("oauth_code_verifier")
+        oauth_next = _safe_next_url(request, request.session.pop("oauth_next", None))
         error = request.GET.get("error")
         authorization_code = request.GET.get("code")
 
@@ -2596,7 +2622,7 @@ class OAuthCallbackView(View, LoggingMixin):
         # happens here — the app has no persistent user store.
         self.log_action("login-success", request)
 
-        return redirect("amiibo_list")
+        return redirect(oauth_next or "amiibo_list")
 
 
 class LogoutView(View, LoggingMixin):
