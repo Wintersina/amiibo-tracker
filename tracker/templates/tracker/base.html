@@ -356,7 +356,7 @@
                     Log out
                 </a>
                 {% else %}
-                <a href="{% url 'oauth_login' %}?next={{ request.get_full_path|urlencode }}" class="login-btn" data-track="login-start">
+                <a href="{% url 'oauth_login' %}{% if request.resolver_match.url_name != 'index' and request.resolver_match.url_name != 'demo' %}?next={{ request.get_full_path|urlencode }}{% endif %}" class="login-btn" data-track="login-start">
                     <img src="{% static 'images/google-logo.svg' %}" alt="Google logo">
                     Login
                 </a>
@@ -381,7 +381,7 @@
                 Log out
             </a>
             {% else %}
-            <a href="{% url 'oauth_login' %}?next={{ request.get_full_path|urlencode }}" class="mobile-nav-link login" data-track="mobile-login-start">
+            <a href="{% url 'oauth_login' %}{% if request.resolver_match.url_name != 'index' and request.resolver_match.url_name != 'demo' %}?next={{ request.get_full_path|urlencode }}{% endif %}" class="mobile-nav-link login" data-track="mobile-login-start">
                 <img src="{% static 'images/google-logo.svg' %}" alt="Google logo">
                 Login with Google
             </a>
