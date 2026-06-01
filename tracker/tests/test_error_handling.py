@@ -47,14 +47,19 @@ class TestExecuteWorksheetOperation:
 
         # Mock operation that raises APIError with insufficient scopes message
         def failing_operation():
-            response = MockResponse(403, text="Request had insufficient authentication scopes.")
+            response = MockResponse(
+                403, text="Request had insufficient authentication scopes."
+            )
             error = APIError(response)
             raise error
 
         with pytest.raises(InsufficientScopesError) as exc_info:
             manager.execute_worksheet_operation(failing_operation)
 
-        assert "grant access to Google Drive and Google Sheets" in exc_info.value.user_message
+        assert (
+            "grant access to Google Drive and Google Sheets"
+            in exc_info.value.user_message
+        )
         assert exc_info.value.action_required == "reauth_required"
         assert not exc_info.value.is_retryable
 
@@ -212,13 +217,17 @@ class TestServiceErrorPropagation:
 class TestOAuthCallbackErrorHandling:
     """Test that OAuthCallbackView handles errors gracefully."""
 
-    @override_settings(ALLOWED_HOSTS=['*', 'testserver', 'localhost'])
+    @override_settings(ALLOWED_HOSTS=["*", "testserver", "localhost"])
     @patch("tracker.views.build_sheet_client_manager")
     @patch("tracker.views.ensure_spreadsheet_session")
     @patch("tracker.views.Flow")
     @patch("tracker.views.googleapiclient")
     def test_oauth_callback_insufficient_scopes_redirects(
-        self, mock_googleapiclient, mock_flow, mock_ensure_spreadsheet, mock_build_manager
+        self,
+        mock_googleapiclient,
+        mock_flow,
+        mock_ensure_spreadsheet,
+        mock_build_manager,
     ):
         """Test that insufficient scopes error redirects to index with error message."""
         from django.test import RequestFactory
@@ -235,13 +244,15 @@ class TestOAuthCallbackErrorHandling:
         # Mock Flow to avoid OAuth flow
         mock_flow_instance = Mock()
         # Include all required scopes so it passes the scope check
-        mock_flow_instance.credentials = Mock(scopes=[
-            "https://www.googleapis.com/auth/userinfo.profile",
-            "https://www.googleapis.com/auth/userinfo.email",
-            "openid",
-            "https://www.googleapis.com/auth/spreadsheets",
-            "https://www.googleapis.com/auth/drive.file",
-        ])
+        mock_flow_instance.credentials = Mock(
+            scopes=[
+                "https://www.googleapis.com/auth/userinfo.profile",
+                "https://www.googleapis.com/auth/userinfo.email",
+                "openid",
+                "https://www.googleapis.com/auth/spreadsheets",
+                "https://www.googleapis.com/auth/drive.file",
+            ]
+        )
         mock_flow.from_client_secrets_file.return_value = mock_flow_instance
 
         # Mock user info
@@ -250,7 +261,9 @@ class TestOAuthCallbackErrorHandling:
             "name": "Test User",
             "email": "test@example.com",
         }
-        mock_googleapiclient.discovery.build.return_value.userinfo.return_value = mock_userinfo
+        mock_googleapiclient.discovery.build.return_value.userinfo.return_value = (
+            mock_userinfo
+        )
 
         # Mock to raise InsufficientScopesError when building manager
         mock_build_manager.side_effect = InsufficientScopesError()
@@ -267,13 +280,17 @@ class TestOAuthCallbackErrorHandling:
         assert "grant access" in request.session["oauth_error"]["message"].lower()
         assert request.session["oauth_error"]["action_required"] == "reauth_required"
 
-    @override_settings(ALLOWED_HOSTS=['*', 'testserver', 'localhost'])
+    @override_settings(ALLOWED_HOSTS=["*", "testserver", "localhost"])
     @patch("tracker.views.build_sheet_client_manager")
     @patch("tracker.views.ensure_spreadsheet_session")
     @patch("tracker.views.Flow")
     @patch("tracker.views.googleapiclient")
     def test_oauth_callback_permission_error_clears_session(
-        self, mock_googleapiclient, mock_flow, mock_ensure_spreadsheet, mock_build_manager
+        self,
+        mock_googleapiclient,
+        mock_flow,
+        mock_ensure_spreadsheet,
+        mock_build_manager,
     ):
         """Test that permission errors clear OAuth session data."""
         from django.test import RequestFactory
@@ -301,7 +318,9 @@ class TestOAuthCallbackErrorHandling:
             "name": "Test User",
             "email": "test@example.com",
         }
-        mock_googleapiclient.discovery.build.return_value.userinfo.return_value = mock_userinfo
+        mock_googleapiclient.discovery.build.return_value.userinfo.return_value = (
+            mock_userinfo
+        )
 
         # Mock to raise SpreadsheetPermissionError
         mock_build_manager.side_effect = SpreadsheetPermissionError("test_id")

@@ -8,8 +8,8 @@ from tracker.sitemaps import StaticViewSitemap, BlogPostSitemap
 # templated pages now served with `noindex`, so listing them in the sitemap
 # would send Google conflicting signals. See AmiiboSitemap (kept for reference).
 sitemaps = {
-    'static': StaticViewSitemap,
-    'blog': BlogPostSitemap,
+    "static": StaticViewSitemap,
+    "blog": BlogPostSitemap,
 }
 
 urlpatterns = [
@@ -18,6 +18,11 @@ urlpatterns = [
         "favicon.ico",
         RedirectView.as_view(url="/static/images/favicon.png", permanent=True),
     ),
-    path('sitemap.xml', sitemap, {'sitemaps': sitemaps}, name='django.contrib.sitemaps.views.sitemap'),
+    path(
+        "sitemap.xml",
+        sitemap,
+        {"sitemaps": sitemaps},
+        name="django.contrib.sitemaps.views.sitemap",
+    ),
     path("", include("tracker.urls")),
 ]

@@ -7,6 +7,7 @@ to allow proper SEO indexing while keeping all other sitemap functionality.
 
 Reference: https://forum.djangoproject.com/t/sitemap-possible-bug-seo-noindex-x-robot-tag/6562
 """
+
 import datetime
 from dataclasses import dataclass
 

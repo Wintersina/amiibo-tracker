@@ -1,6 +1,7 @@
 """
 Test configuration for tracker tests.
 """
+
 import os
 import sys
 import pathlib

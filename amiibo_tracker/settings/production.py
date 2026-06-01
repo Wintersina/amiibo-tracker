@@ -24,9 +24,7 @@ MEDIA_ROOT = BASE_DIR / "mediafiles"
 # works when the app is served on custom domains (required for OAuth callbacks
 # and authenticated form submissions).
 CSRF_TRUSTED_ORIGINS = CSRF_TRUSTED_ORIGINS or [
-    f"https://{host}"
-    for host in ALLOWED_HOSTS
-    if host not in {"*", "localhost"}
+    f"https://{host}" for host in ALLOWED_HOSTS if host not in {"*", "localhost"}
 ]
 
 SECURE_BROWSER_XSS_FILTER = True
@@ -50,9 +48,7 @@ EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER or "noreply@goozamiibo.com"
 
 DAILY_REPORT_TO_EMAIL = os.environ.get("DAILY_REPORT_TO_EMAIL", "")
-DAILY_REPORT_SCHEDULER_SA_EMAIL = os.environ.get(
-    "DAILY_REPORT_SCHEDULER_SA_EMAIL", ""
-)
+DAILY_REPORT_SCHEDULER_SA_EMAIL = os.environ.get("DAILY_REPORT_SCHEDULER_SA_EMAIL", "")
 GCS_REPORTS_BUCKET = os.environ.get("GCS_REPORTS_BUCKET", "")
 
 LOKI_QUERY_URL = os.environ.get("LOKI_QUERY_URL") or os.environ.get("LOKI_URL", "")

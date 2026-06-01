@@ -14,9 +14,7 @@ SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "unsafe-default-key")
 DEBUG = os.environ.get("DEBUG", "True").lower() == "true"
 ALLOWED_HOSTS = [h for h in os.environ.get("ALLOWED_HOSTS", "").split(",") if h]
 CSRF_TRUSTED_ORIGINS = [
-    origin
-    for origin in os.environ.get("CSRF_TRUSTED_ORIGINS", "").split(",")
-    if origin
+    origin for origin in os.environ.get("CSRF_TRUSTED_ORIGINS", "").split(",") if origin
 ]
 
 INSTALLED_APPS = [
@@ -75,9 +73,7 @@ DATABASES = {
         # ephemeral (e.g., Cloud Run). If a database is needed for local
         # development or future features, set DJANGO_DB_ENGINE to a real backend
         # such as "django.db.backends.sqlite3".
-        "ENGINE": os.environ.get(
-            "DJANGO_DB_ENGINE", "django.db.backends.dummy"
-        ),
+        "ENGINE": os.environ.get("DJANGO_DB_ENGINE", "django.db.backends.dummy"),
         "NAME": os.environ.get("DJANGO_DB_NAME", "dummy"),
     }
 }

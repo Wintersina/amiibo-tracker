@@ -36,10 +36,7 @@ class Command(BaseCommand):
             "--date",
             type=str,
             default=None,
-            help=(
-                "Report date in YYYY-MM-DD (UTC). "
-                "Defaults to yesterday."
-            ),
+            help=("Report date in YYYY-MM-DD (UTC). " "Defaults to yesterday."),
         )
         parser.add_argument(
             "--limit",
@@ -72,7 +69,9 @@ class Command(BaseCommand):
             )
 
         report_date = self._resolve_date(options["date"])
-        start_dt = datetime.combine(report_date, datetime.min.time(), tzinfo=timezone.utc)
+        start_dt = datetime.combine(
+            report_date, datetime.min.time(), tzinfo=timezone.utc
+        )
         end_dt = start_dt + timedelta(days=1)
 
         self.stdout.write(
@@ -157,7 +156,9 @@ class Command(BaseCommand):
                 ts_seconds = int(ts_ns) / 1_000_000_000
                 events.append(
                     {
-                        "timestamp": datetime.fromtimestamp(ts_seconds, tz=timezone.utc),
+                        "timestamp": datetime.fromtimestamp(
+                            ts_seconds, tz=timezone.utc
+                        ),
                         "user_hash": ctx.get("user_hash") or "anonymous",
                         "authenticated": bool(ctx.get("authenticated")),
                         "kind": ctx.get("kind") or ctx.get("event") or "unknown",
@@ -209,7 +210,15 @@ class Command(BaseCommand):
         buf = io.StringIO()
         writer = csv.writer(buf)
         writer.writerow(
-            ["timestamp_utc", "user_hash", "authenticated", "kind", "action", "method", "path"]
+            [
+                "timestamp_utc",
+                "user_hash",
+                "authenticated",
+                "kind",
+                "action",
+                "method",
+                "path",
+            ]
         )
         for ev in events:
             writer.writerow(
@@ -235,10 +244,10 @@ class Command(BaseCommand):
             key=lambda kv: (not kv[1]["authenticated"], -kv[1]["events"]),
         )
         for user_hash, bucket in sorted_users:
-            top_actions = sorted(
-                bucket["actions"].items(), key=lambda kv: -kv[1]
-            )[:5]
-            top_actions_str = ", ".join(f"{name} ({count})" for name, count in top_actions)
+            top_actions = sorted(bucket["actions"].items(), key=lambda kv: -kv[1])[:5]
+            top_actions_str = ", ".join(
+                f"{name} ({count})" for name, count in top_actions
+            )
             rows.append(
                 f"<tr>"
                 f"<td><code>{user_hash}</code></td>"
@@ -309,5 +318,7 @@ class Command(BaseCommand):
         blob = bucket.blob(f"{report_date.isoformat()}.csv")
         blob.upload_from_string(csv_bytes, content_type="text/csv")
         self.stdout.write(
-            self.style.SUCCESS(f"Archived to gs://{bucket_name}/{report_date.isoformat()}.csv")
+            self.style.SUCCESS(
+                f"Archived to gs://{bucket_name}/{report_date.isoformat()}.csv"
+            )
         )

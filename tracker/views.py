@@ -2401,9 +2401,7 @@ class FavoritesAPIView(View, LoggingMixin):
                 endpoint="favorites-api",
                 error=str(error),
             )
-            return JsonResponse(
-                {"authenticated": True, "favorites": [], "error": True}
-            )
+            return JsonResponse({"authenticated": True, "favorites": [], "error": True})
 
 
 def _safe_next_url(request, candidate):

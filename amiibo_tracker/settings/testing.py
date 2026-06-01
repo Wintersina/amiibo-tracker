@@ -25,6 +25,7 @@ ALLOWED_HOSTS = ["*"]
 # Use signed cookies for sessions in tests (no database required)
 SESSION_ENGINE = "django.contrib.sessions.backends.signed_cookies"
 
+
 # Disable migrations for faster test execution
 class DisableMigrations:
     def __contains__(self, item):

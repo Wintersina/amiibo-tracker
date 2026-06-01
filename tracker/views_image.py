@@ -84,6 +84,7 @@ def remove_bg(request):
         "amiibo.life images already have transparent backgrounds."
     )
 
+
 # DEPRECATED CODE - kept for reference
 # def remove_bg_original(request):
 #     """

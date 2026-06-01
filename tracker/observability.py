@@ -29,7 +29,9 @@ def hash_email(email):
     if not email:
         return None
     salt = os.environ.get("LOKI_HASH_SALT", "")
-    digest = hashlib.sha256(f"{salt}{email.strip().lower()}".encode("utf-8")).hexdigest()
+    digest = hashlib.sha256(
+        f"{salt}{email.strip().lower()}".encode("utf-8")
+    ).hexdigest()
     return digest[:16]
 
 
@@ -57,7 +59,9 @@ class LokiHandler(logging.Handler):
         try:
             import logging_loki
         except ImportError:
-            logger.warning("loki-handler-missing-dependency | install python-logging-loki")
+            logger.warning(
+                "loki-handler-missing-dependency | install python-logging-loki"
+            )
             return None
 
         handler = logging_loki.LokiHandler(
@@ -145,9 +149,8 @@ def log_user_action(request, action, **extras):
     """
     try:
         session = getattr(request, "session", None) if request is not None else None
-        email = (
-            extras.pop("user_email", None)
-            or (session.get("user_email") if session is not None else None)
+        email = extras.pop("user_email", None) or (
+            session.get("user_email") if session is not None else None
         )
         path = getattr(request, "path", "") if request is not None else ""
         method = getattr(request, "method", "") if request is not None else ""

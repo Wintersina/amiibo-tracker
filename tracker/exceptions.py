@@ -4,7 +4,9 @@
 class GoogleSheetsError(Exception):
     """Base exception for Google Sheets related errors."""
 
-    def __init__(self, message, user_message=None, is_retryable=False, action_required=None):
+    def __init__(
+        self, message, user_message=None, is_retryable=False, action_required=None
+    ):
         """
         Initialize the exception.
 

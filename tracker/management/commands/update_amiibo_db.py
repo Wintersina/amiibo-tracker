@@ -10,6 +10,7 @@ Usage:
     python manage.py update_amiibo_db --dry-run      # show diff, don't write
     python manage.py update_amiibo_db --api-url URL  # point at a different API
 """
+
 import json
 import urllib.error
 import urllib.request
@@ -19,9 +20,7 @@ from django.core.management.base import BaseCommand, CommandError
 
 DEFAULT_API_URL = "https://goozamiibo.com/api/amiibo/"
 
-LOCAL_DB = (
-    Path(__file__).resolve().parents[2] / "data" / "amiibo_database.json"
-)
+LOCAL_DB = Path(__file__).resolve().parents[2] / "data" / "amiibo_database.json"
 
 # Fields we treat as canonical. Anything else returned by the API is ignored
 # so we don't drift on derived/enrichment fields the live app may add.
@@ -184,7 +183,9 @@ class Command(BaseCommand):
                     for f in CANONICAL_FIELDS
                     if l.get(f) != r.get(f)
                 }
-                changed.append((key, r.get("name") or l.get("name") or "?", field_diffs))
+                changed.append(
+                    (key, r.get("name") or l.get("name") or "?", field_diffs)
+                )
 
         return {
             "added": [(k, remote_index[k].get("name") or "?") for k in added],
@@ -226,9 +227,7 @@ class Command(BaseCommand):
             for (head, tail), name, fields in diff["changed"][:MAX_PREVIEW_LINES]:
                 self.stdout.write(f"  ~ {name}  [{head}-{tail}]")
                 for fname, (before, after) in fields.items():
-                    self.stdout.write(
-                        f"      {fname}: {before!r}  →  {after!r}"
-                    )
+                    self.stdout.write(f"      {fname}: {before!r}  →  {after!r}")
             self._print_overflow(len(diff["changed"]))
 
     def _print_overflow(self, total: int) -> None:

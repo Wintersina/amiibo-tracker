@@ -31,7 +31,9 @@ class TestAmiiboServicePlaceholderFiltering:
             ]
         ]
         mock_client.get_or_create_worksheet_by_name.return_value = mock_sheet
-        mock_client.execute_worksheet_operation.side_effect = mock_execute_worksheet_operation
+        mock_client.execute_worksheet_operation.side_effect = (
+            mock_execute_worksheet_operation
+        )
 
         service = AmiiboService(mock_client)
         service.sheet = mock_sheet
@@ -80,7 +82,9 @@ class TestAmiiboServicePlaceholderFiltering:
             ]
         ]
         mock_client.get_or_create_worksheet_by_name.return_value = mock_sheet
-        mock_client.execute_worksheet_operation.side_effect = mock_execute_worksheet_operation
+        mock_client.execute_worksheet_operation.side_effect = (
+            mock_execute_worksheet_operation
+        )
 
         service = AmiiboService(mock_client)
         service.sheet = mock_sheet
@@ -136,7 +140,9 @@ class TestAmiiboServicePlaceholderFiltering:
                 "Collected Status",
             ]
         ]
-        mock_client.execute_worksheet_operation.side_effect = mock_execute_worksheet_operation
+        mock_client.execute_worksheet_operation.side_effect = (
+            mock_execute_worksheet_operation
+        )
         mock_client.get_or_create_worksheet_by_name.return_value = mock_sheet
 
         service = AmiiboService(mock_client)
@@ -180,7 +186,9 @@ class TestAmiiboServicePlaceholderFiltering:
             ]
         ]
         mock_client.get_or_create_worksheet_by_name.return_value = mock_sheet
-        mock_client.execute_worksheet_operation.side_effect = mock_execute_worksheet_operation
+        mock_client.execute_worksheet_operation.side_effect = (
+            mock_execute_worksheet_operation
+        )
 
         service = AmiiboService(mock_client)
         service.sheet = mock_sheet
@@ -221,7 +229,9 @@ class TestAmiiboServicePlaceholderFiltering:
             ]
         ]
         mock_client.get_or_create_worksheet_by_name.return_value = mock_sheet
-        mock_client.execute_worksheet_operation.side_effect = mock_execute_worksheet_operation
+        mock_client.execute_worksheet_operation.side_effect = (
+            mock_execute_worksheet_operation
+        )
 
         service = AmiiboService(mock_client)
         service.sheet = mock_sheet
@@ -276,7 +286,9 @@ class TestAmiiboServicePlaceholderFiltering:
             ]
         ]
         mock_client.get_or_create_worksheet_by_name.return_value = mock_sheet
-        mock_client.execute_worksheet_operation.side_effect = mock_execute_worksheet_operation
+        mock_client.execute_worksheet_operation.side_effect = (
+            mock_execute_worksheet_operation
+        )
 
         service = AmiiboService(mock_client)
         service.sheet = mock_sheet

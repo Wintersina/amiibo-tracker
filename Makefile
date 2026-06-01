@@ -72,11 +72,29 @@ DOCKER_COMPOSE := $(shell \
 	elif command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then echo "docker compose"; \
 	fi)
 
-# PYTHON resolves to ./env/bin/python when a venv exists, else ./.venv/bin/python, else system python3
-PYTHON := $(shell \
-	if [ -x env/bin/python ]; then echo ./env/bin/python; \
-	elif [ -x .venv/bin/python ]; then echo ./.venv/bin/python; \
-	else echo python3; fi)
+# VENV_DIR picks whichever virtualenv directory already exists; falls back
+# to `env` (which `dev-setup` creates) on a fresh checkout.
+VENV_DIR := $(shell \
+	if [ -d env ]; then echo env; \
+	elif [ -d .venv ]; then echo .venv; \
+	else echo env; fi)
+PYTHON := $(VENV_DIR)/bin/python
+PIP := $(VENV_DIR)/bin/pip
+
+# Bootstrap snippet — create the virtualenv if missing, (re)install
+# requirements when requirements.txt is newer than our stamp file, then
+# continue the shell chain. Prepended to every recipe that touches Python
+# so `make <anything>` works on a fresh checkout without manual setup.
+# Stamp file gates pip install on the common no-op path.
+ENSURE_VENV := \
+	if [ ! -x $(PYTHON) ]; then \
+		echo "🐍 Creating virtualenv in $(VENV_DIR)/..."; \
+		python3 -m venv $(VENV_DIR); \
+	fi; \
+	if [ ! -f $(VENV_DIR)/.deps-installed ] || [ requirements.txt -nt $(VENV_DIR)/.deps-installed ]; then \
+		echo "📦 Installing dependencies into $(VENV_DIR)/..."; \
+		$(PIP) install -q -r requirements.txt && touch $(VENV_DIR)/.deps-installed; \
+	fi;
 
 # Shell snippet that exports every var in .env to the child process. The
 # `set -a` flag auto-exports anything assigned until `set +a`. The leading
@@ -99,6 +117,7 @@ test-watch:
 	@if [ -n "$(DOCKER_COMPOSE)" ]; then \
 		$(DOCKER_COMPOSE) run --rm test pytest tracker/tests/ -v --tb=short -f; \
 	else \
+		$(ENSURE_VENV) \
 		$(PYTHON) -m pytest tracker/tests/ -v --tb=short -f; \
 	fi
 
@@ -107,6 +126,7 @@ test-coverage:
 	@if [ -n "$(DOCKER_COMPOSE)" ]; then \
 		$(DOCKER_COMPOSE) run --rm test pytest tracker/tests/ --cov=tracker --cov-report=html --cov-report=term; \
 	else \
+		$(ENSURE_VENV) \
 		$(PYTHON) -m pytest tracker/tests/ --cov=tracker --cov-report=html --cov-report=term; \
 	fi
 	@echo "✅ Coverage report generated in htmlcov/index.html"
@@ -116,11 +136,13 @@ test-file:
 	@if [ -n "$(DOCKER_COMPOSE)" ]; then \
 		$(DOCKER_COMPOSE) run --rm test pytest $(FILE) -v --tb=short; \
 	else \
+		$(ENSURE_VENV) \
 		$(PYTHON) -m pytest $(FILE) -v --tb=short; \
 	fi
 
 test-local:
 	@echo "🧪 Running tests locally (no Docker)..."
+	@$(ENSURE_VENV) \
 	$(PYTHON) -m pytest tracker/tests/ -v --tb=short
 
 # Scraping
@@ -128,27 +150,18 @@ scrape: scrape-amiibo
 
 scrape-amiibo:
 	@echo "🎮 Running amiibo.life scraper..."
-	@if [ -d "env" ]; then \
-		./env/bin/python manage.py auto_scrape_nintendo --scraper=amiibolife --force; \
-	else \
-		python manage.py auto_scrape_nintendo --scraper=amiibolife --force; \
-	fi
+	@$(ENSURE_VENV) \
+	$(PYTHON) manage.py auto_scrape_nintendo --scraper=amiibolife --force
 
 scrape-nintendo:
 	@echo "⚠️  Running Nintendo.com scraper (deprecated)..."
-	@if [ -d "env" ]; then \
-		./env/bin/python manage.py auto_scrape_nintendo --scraper=nintendodotcom --force; \
-	else \
-		python manage.py auto_scrape_nintendo --scraper=nintendodotcom --force; \
-	fi
+	@$(ENSURE_VENV) \
+	$(PYTHON) manage.py auto_scrape_nintendo --scraper=nintendodotcom --force
 
 scrape-force:
 	@echo "🎮 Force running amiibo.life scraper..."
-	@if [ -d "env" ]; then \
-		./env/bin/python manage.py auto_scrape_nintendo --scraper=amiibolife --force; \
-	else \
-		python manage.py auto_scrape_nintendo --scraper=amiibolife --force; \
-	fi
+	@$(ENSURE_VENV) \
+	$(PYTHON) manage.py auto_scrape_nintendo --scraper=amiibolife --force
 
 scrape-docker:
 	@echo "🎮 Running scraper in Docker..."
@@ -166,11 +179,13 @@ scrape-docker:
 #   make update-amiibo-db API_URL=https://staging.example.com/api/amiibo/
 update-amiibo-db:
 	@echo "🔄 Syncing amiibo database from $(if $(API_URL),$(API_URL),the live API)..."
-	@$(PYTHON) manage.py update_amiibo_db $(if $(API_URL),--api-url $(API_URL),)
+	@$(ENSURE_VENV) \
+	$(PYTHON) manage.py update_amiibo_db $(if $(API_URL),--api-url $(API_URL),)
 
 update-amiibo-db-dry:
 	@echo "🔍 Previewing amiibo database diff (dry-run)..."
-	@$(PYTHON) manage.py update_amiibo_db --dry-run $(if $(API_URL),--api-url $(API_URL),)
+	@$(ENSURE_VENV) \
+	$(PYTHON) manage.py update_amiibo_db --dry-run $(if $(API_URL),--api-url $(API_URL),)
 
 # Daily DAU report
 #
@@ -184,12 +199,14 @@ update-amiibo-db-dry:
 #   make report-daily               # actually email + archive
 report-daily-dry:
 	@echo "📨 Generating dry-run daily DAU report$(if $(DATE), for $(DATE),)..."
-	@$(ENV_LOAD) \
+	@$(ENSURE_VENV) \
+	$(ENV_LOAD) \
 	$(PYTHON) manage.py report_daily_users $(if $(DATE),--date $(DATE),) --dry-run
 
 report-daily:
 	@echo "📨 Sending daily DAU report$(if $(DATE), for $(DATE),)..."
-	@$(ENV_LOAD) \
+	@$(ENSURE_VENV) \
+	$(ENV_LOAD) \
 	$(PYTHON) manage.py report_daily_users $(if $(DATE),--date $(DATE),)
 
 # Remote triggers — public endpoints, plain curl. Override SITE_URL for staging.
@@ -226,12 +243,14 @@ install-certs:
 # Code Quality
 lint:
 	@echo "🔍 Running linting checks..."
-	black --check tracker/ amiibo_tracker/
+	@$(ENSURE_VENV) \
+	$(PYTHON) -m black --check tracker/ amiibo_tracker/
 	@echo "✅ Linting passed!"
 
 format:
 	@echo "✨ Formatting code..."
-	black tracker/ amiibo_tracker/
+	@$(ENSURE_VENV) \
+	$(PYTHON) -m black tracker/ amiibo_tracker/
 	@echo "✅ Code formatted!"
 
 check: lint test
@@ -262,11 +281,8 @@ run-dev:
 
 run-local:
 	@echo "🚀 Starting Django dev server..."
-	@if [ -d "env" ]; then \
-		./env/bin/python manage.py runserver 8080; \
-	else \
-		python manage.py runserver 8080; \
-	fi
+	@$(ENSURE_VENV) \
+	$(PYTHON) manage.py runserver 8080
 
 stop:
 	@echo "🛑 Stopping containers..."
@@ -287,27 +303,18 @@ shell-python:
 # Database
 migrate:
 	@echo "🗄️  Running migrations..."
-	@if [ -d "env" ]; then \
-		./env/bin/python manage.py migrate; \
-	else \
-		python manage.py migrate; \
-	fi
+	@$(ENSURE_VENV) \
+	$(PYTHON) manage.py migrate
 
 makemigrations:
 	@echo "🗄️  Creating migrations..."
-	@if [ -d "env" ]; then \
-		./env/bin/python manage.py makemigrations; \
-	else \
-		python manage.py makemigrations; \
-	fi
+	@$(ENSURE_VENV) \
+	$(PYTHON) manage.py makemigrations
 
 collectstatic:
 	@echo "📦 Collecting static files..."
-	@if [ -d "env" ]; then \
-		./env/bin/python manage.py collectstatic --noinput; \
-	else \
-		python manage.py collectstatic --noinput; \
-	fi
+	@$(ENSURE_VENV) \
+	$(PYTHON) manage.py collectstatic --noinput
 
 # Utilities
 clean:
@@ -323,11 +330,9 @@ clean:
 
 install:
 	@echo "📦 Installing dependencies..."
-	@if [ -d "env" ]; then \
-		./env/bin/pip install -r requirements.txt; \
-	else \
-		pip install -r requirements.txt; \
-	fi
+	@$(ENSURE_VENV)
+	@$(PIP) install -r requirements.txt
+	@touch $(VENV_DIR)/.deps-installed
 
 setup: dev-setup
 	@echo "✅ Setup complete! Run 'make run-local' to start the dev server"
@@ -363,6 +368,7 @@ dev-setup:
 	python3 -m venv env
 	@echo "2. Installing dependencies..."
 	./env/bin/pip install -r requirements.txt
+	@touch env/.deps-installed
 	@echo "3. Running migrations..."
 	./env/bin/python manage.py migrate
 	@echo "✅ Development environment ready!"

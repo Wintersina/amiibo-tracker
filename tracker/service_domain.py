@@ -75,7 +75,9 @@ class AmiiboService(LoggingMixin, AmiiboRemoteFetchMixin, AmiiboLocalFetchMixin)
             if has_ff_placeholder:
                 # Check if it has any release dates
                 release_dates = amiibo.get("release", {})
-                has_release = any(release_dates.get(region) for region in ["na", "jp", "eu", "au"])
+                has_release = any(
+                    release_dates.get(region) for region in ["na", "jp", "eu", "au"]
+                )
 
                 # Only skip if it's an ff placeholder AND has no release dates
                 if not has_release:
@@ -188,9 +190,7 @@ class AmiiboService(LoggingMixin, AmiiboRemoteFetchMixin, AmiiboLocalFetchMixin)
         )
 
     def toggle_favorite(self, amiibo_id: str, action: str):
-        return self._toggle_column(
-            amiibo_id, self.FAVORITE_COL, action == "favorite"
-        )
+        return self._toggle_column(amiibo_id, self.FAVORITE_COL, action == "favorite")
 
     def _ensure_sheet_structure(self, sheet):
         header = self.google_sheet_client.execute_worksheet_operation(
@@ -359,7 +359,9 @@ class GoogleSheetConfigManager(LoggingMixin):
             }
             if "DarkMode" not in config_map:
                 self.google_sheet_client.execute_worksheet_operation(
-                    sheet.append_row, ["DarkMode", "0"], value_input_option="USER_ENTERED"
+                    sheet.append_row,
+                    ["DarkMode", "0"],
+                    value_input_option="USER_ENTERED",
                 )
 
             for amiibo_type, default_val in self.DEFAULT_IGNORE_TYPES.items():
