@@ -1,8 +1,11 @@
 """Daily active users + actions report.
 
 Queries Grafana Cloud Loki for the prior calendar day's user-action and
-page-view events, groups by hashed user, emails an HTML table summary with a
-CSV attachment to DAILY_REPORT_TO_EMAIL, and archives the raw CSV in GCS.
+page-view events, keeps only events from authenticated users, groups by hashed
+user, emails an HTML table summary with a CSV attachment to
+DAILY_REPORT_TO_EMAIL, and archives the raw CSV in GCS. Anonymous traffic
+(crawlers, logged-out visitors) is ignored, and the report is only sent when at
+least one authenticated user had activity.
 
 Designed to be invoked by Cloud Scheduler (via /internal/run-daily-report)
 once per day. Safe to run manually for ad-hoc reports via `--date YYYY-MM-DD`.
@@ -153,6 +156,10 @@ class Command(BaseCommand):
                     continue
                 if ctx.get("kind") != "user-action" and ctx.get("event") != "page-view":
                     continue
+                # Only report on authenticated users. Anonymous traffic
+                # (crawlers, logged-out visitors) is intentionally dropped.
+                if not bool(ctx.get("authenticated")):
+                    continue
                 ts_seconds = int(ts_ns) / 1_000_000_000
                 events.append(
                     {
@@ -235,13 +242,14 @@ class Command(BaseCommand):
         return buf.getvalue().encode("utf-8")
 
     def _render_html(self, report_date, per_user, total_events):
-        authed = [u for u, b in per_user.items() if b["authenticated"]]
-        anon = [u for u, b in per_user.items() if not b["authenticated"]]
+        # Every event in the report is from an authenticated user, so per_user
+        # only ever contains authenticated buckets.
+        authed = list(per_user)
 
         rows = []
         sorted_users = sorted(
             per_user.items(),
-            key=lambda kv: (not kv[1]["authenticated"], -kv[1]["events"]),
+            key=lambda kv: -kv[1]["events"],
         )
         for user_hash, bucket in sorted_users:
             top_actions = sorted(bucket["actions"].items(), key=lambda kv: -kv[1])[:5]
@@ -251,7 +259,6 @@ class Command(BaseCommand):
             rows.append(
                 f"<tr>"
                 f"<td><code>{user_hash}</code></td>"
-                f"<td>{'yes' if bucket['authenticated'] else 'no'}</td>"
                 f"<td>{bucket['events']}</td>"
                 f"<td>{top_actions_str}</td>"
                 f"<td>{bucket['first_seen'].strftime('%H:%M:%S') if bucket['first_seen'] else ''}</td>"
@@ -259,20 +266,20 @@ class Command(BaseCommand):
                 f"</tr>"
             )
 
-        table_rows = "\n".join(rows) or '<tr><td colspan="6">No events</td></tr>'
+        table_rows = "\n".join(rows) or '<tr><td colspan="5">No events</td></tr>'
         return f"""<html>
 <body style="font-family: -apple-system, Segoe UI, sans-serif; color: #222;">
 <h2>goozamiibo DAU report &mdash; {report_date.isoformat()}</h2>
 <p>
   <strong>{len(authed)}</strong> authenticated user(s),
-  <strong>{len(anon)}</strong> anonymous bucket(s),
   <strong>{total_events}</strong> total event(s).
 </p>
-<p style="color:#666">Times are UTC. Full event log attached as CSV. Long-term archive in GCS.</p>
+<p style="color:#666">Authenticated users only; anonymous traffic is excluded.
+Times are UTC. Full event log attached as CSV. Long-term archive in GCS.</p>
 <table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse">
   <thead style="background:#f4f4f4">
     <tr>
-      <th>user_hash</th><th>authed</th><th>events</th>
+      <th>user_hash</th><th>events</th>
       <th>top actions</th><th>first</th><th>last</th>
     </tr>
   </thead>
