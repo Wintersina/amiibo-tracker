@@ -2,11 +2,17 @@
 {% load static %}
 {% load amiibo_filters %}
 
-{% block title %}{{ amiibo.name }} - Amiibo Details{% endblock %}
+{% block title %}{{ amiibo.name }} Amiibo{% if amiibo.gameSeries %} – {{ amiibo.gameSeries }}{% endif %} | Release Dates & Details{% endblock %}
 
-{% block meta_description %}Learn about {{ amiibo.name }} Amiibo figure - release date, series, character details and regional information.{% endblock %}
+{% block meta_description %}{{ description|default:"Release date, series, character and regional details for the "|add:amiibo.name|add:" amiibo figure."|truncatechars:160 }}{% endblock %}
 
-{% block robots %}<meta name="robots" content="noindex, follow">{% endblock %}
+{% block robots %}<meta name="robots" content="index, follow, max-image-preview:large">{% endblock %}
+
+{% block og_type %}product{% endblock %}
+{% block og_title %}{{ amiibo.name }} Amiibo{% if amiibo.gameSeries %} – {{ amiibo.gameSeries }}{% endif %}{% endblock %}
+{% block og_description %}{{ description|default:""|truncatechars:200 }}{% endblock %}
+{% block twitter_title %}{{ amiibo.name }} Amiibo{% endblock %}
+{% block twitter_description %}{{ description|default:""|truncatechars:200 }}{% endblock %}
 
 {% block head_extra %}
 <style>
