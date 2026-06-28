@@ -3116,8 +3116,16 @@ class IndexView(View):
         # Add Organization schema
         seo.add_schema("Organization", generate_organization_schema())
 
+        # Surface the latest guides on the homepage so visitors (and AdSense
+        # reviewers) immediately see substantial editorial content rather than
+        # only the collection tool.
+        latest_posts = sorted(
+            load_blog_posts(), key=lambda p: p.get("date", ""), reverse=True
+        )[:6]
+
         # Check for OAuth error from session
         context = seo.build()
+        context["latest_posts"] = latest_posts
         oauth_error = request.session.pop("oauth_error", None)
         if oauth_error:
             context["error"] = oauth_error
@@ -3717,6 +3725,89 @@ class AmiiboDetailView(View, LoggingMixin, AmiiboLocalFetchMixin):
             ]
             seo.add_schema("BreadcrumbList", generate_breadcrumb_schema(breadcrumbs))
 
+            # Related amiibo from the same series — adds internal links and
+            # unique, less templated content to every detail page (helps both
+            # search discovery and AdSense content-value review).
+            related_same_series = []
+            related_same_game = []
+            target_amiibo_series = amiibo.get("amiiboSeries")
+            target_game_series = amiibo.get("gameSeries")
+            for other in amiibos:
+                if other.get("head") == head and other.get("tail") == tail:
+                    continue
+                other_head = other.get("head", "")
+                other_tail = other.get("tail", "")
+                if not other_head or not other_tail:
+                    continue
+                entry = {
+                    "name": other.get("name", "Unknown"),
+                    "image": other.get("image", ""),
+                    "url": f"/blog/number-released/amiibo/{other_head}-{other_tail}/",
+                }
+                if (
+                    target_amiibo_series
+                    and other.get("amiiboSeries") == target_amiibo_series
+                ):
+                    related_same_series.append(entry)
+                elif (
+                    target_game_series and other.get("gameSeries") == target_game_series
+                ):
+                    related_same_game.append(entry)
+            related_amiibo = (related_same_series + related_same_game)[:8]
+
+            # Build an FAQ from real attributes only (no fabricated facts).
+            faqs = []
+            amiibo_type = amiibo.get("type")
+            if amiibo_type:
+                faqs.append(
+                    {
+                        "question": f"What type of amiibo is {amiibo_name}?",
+                        "answer": f"{amiibo_name} is a {amiibo_type.lower()} amiibo.",
+                    }
+                )
+            if target_game_series:
+                faqs.append(
+                    {
+                        "question": f"What game series is the {amiibo_name} amiibo from?",
+                        "answer": f"The {amiibo_name} amiibo is from the {target_game_series} series.",
+                    }
+                )
+            if target_amiibo_series:
+                faqs.append(
+                    {
+                        "question": f"Which amiibo series does {amiibo_name} belong to?",
+                        "answer": f"{amiibo_name} is part of the {target_amiibo_series} amiibo series.",
+                    }
+                )
+            if regional_releases:
+                release_parts = ", ".join(
+                    f"{r['region']} on {r['date']}" for r in regional_releases
+                )
+                faqs.append(
+                    {
+                        "question": f"When was the {amiibo_name} amiibo released?",
+                        "answer": f"The {amiibo_name} amiibo was released in {release_parts}.",
+                    }
+                )
+
+            if faqs:
+                seo.add_schema(
+                    "FAQPage",
+                    {
+                        "mainEntity": [
+                            {
+                                "@type": "Question",
+                                "name": f["question"],
+                                "acceptedAnswer": {
+                                    "@type": "Answer",
+                                    "text": f["answer"],
+                                },
+                            }
+                            for f in faqs
+                        ]
+                    },
+                )
+
             comments = load_comments(
                 AMIIBO_COMMENTS_COLLECTION,
                 "amiibo_id",
@@ -3731,6 +3822,8 @@ class AmiiboDetailView(View, LoggingMixin, AmiiboLocalFetchMixin):
                 "amiibo": amiibo,
                 "regional_releases": regional_releases,
                 "description": description,
+                "related_amiibo": related_amiibo,
+                "faqs": faqs,
                 "comments": comments,
                 "comment_banner": comment_banner,
                 "current_user_email": request.session.get("user_email"),
