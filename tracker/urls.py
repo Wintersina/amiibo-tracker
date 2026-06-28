@@ -18,6 +18,7 @@ from tracker.views import (
     BlogListView,
     BlogPostView,
     AmiibodexView,
+    AmiiboCommentsView,
     AmiiboDetailView,
     RobotsTxtView,
     AdsTxtView,
@@ -61,6 +62,11 @@ urlpatterns = [
         "blog/number-released/amiibo/<str:amiibo_id>/",
         AmiiboDetailView.as_view(),
         name="amiibo_detail",
+    ),
+    path(
+        "blog/number-released/amiibo/<str:amiibo_id>/comments/",
+        AmiiboCommentsView.as_view(),
+        name="amiibo_comments",
     ),
     path(
         "blog/number-released/amiibo/<str:amiibo_id>/comment/",

@@ -609,8 +609,10 @@
 
         <div class="section comments-section">
             <h2 class="section-title">Comments</h2>
-            {% url 'post_comment' amiibo_id=amiibo.head|add:'-'|add:amiibo.tail as comment_post_url %}
-            {% include "tracker/_comments.html" with comment_post_url=comment_post_url comment_placeholder="Share your thoughts about "|add:amiibo.name|add:"..." comment_track_prefix="comment" comment_btn_class="action-btn primary" %}
+            <div id="comments-root"
+                 data-comments-url="{% url 'amiibo_comments' amiibo_id=amiibo.head|add:'-'|add:amiibo.tail %}">
+                <p class="comment-empty">Loading comments…</p>
+            </div>
         </div>
     </div>
 </div>
@@ -625,6 +627,32 @@
             'page_location': window.location.href
         });
     }
+
+    // Lazy-load the comments block so the Firestore fetch never blocks the
+    // main page render. Scripts inside injected HTML don't run automatically,
+    // so re-create them after injection to wire up reply/collapse toggles.
+    (function () {
+        const root = document.getElementById('comments-root');
+        if (!root) return;
+        let url = root.getAttribute('data-comments-url');
+        if (window.location.search) {
+            url += window.location.search;
+        }
+        fetch(url, { headers: { 'X-Requested-With': 'fetch' } })
+            .then((r) => r.text())
+            .then((html) => {
+                root.innerHTML = html;
+                root.querySelectorAll('script').forEach((old) => {
+                    const s = document.createElement('script');
+                    s.textContent = old.textContent;
+                    old.replaceWith(s);
+                });
+            })
+            .catch(() => {
+                root.innerHTML =
+                    '<p class="comment-empty">Couldn\'t load comments. Please refresh to try again.</p>';
+            });
+    })();
 
     // Update back button text based on referrer
     document.addEventListener('DOMContentLoaded', () => {

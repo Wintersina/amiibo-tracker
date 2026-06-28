@@ -3808,27 +3808,14 @@ class AmiiboDetailView(View, LoggingMixin, AmiiboLocalFetchMixin):
                     },
                 )
 
-            comments = load_comments(
-                AMIIBO_COMMENTS_COLLECTION,
-                "amiibo_id",
-                amiibo_id,
-                f"comments:amiibo:{amiibo_id}",
-                logger=self,
-                request=request,
-            )
-            comment_banner = comment_banner_for(request.GET.get("comment"))
-
+            # Comments load asynchronously via AmiiboCommentsView so the
+            # Firestore round-trip never blocks this page's render.
             context = {
                 "amiibo": amiibo,
                 "regional_releases": regional_releases,
                 "description": description,
                 "related_amiibo": related_amiibo,
                 "faqs": faqs,
-                "comments": comments,
-                "comment_banner": comment_banner,
-                "current_user_email": request.session.get("user_email"),
-                "current_user_name": request.session.get("user_name"),
-                "comment_body_max_len": COMMENT_BODY_MAX_LEN,
             }
             context.update(seo.build())
 
@@ -3893,6 +3880,39 @@ class AmiiboDetailView(View, LoggingMixin, AmiiboLocalFetchMixin):
             return f"{character_name} is featured in this amiibo."
         else:
             return "This amiibo features a character from Nintendo's gaming universe."
+
+
+class AmiiboCommentsView(View, LoggingMixin):
+    """Render the comments block for an amiibo as a standalone HTML fragment.
+
+    The detail page loads this asynchronously so the (Firestore-backed) comment
+    fetch never blocks the main page render — the amiibo content paints
+    immediately and comments fill in a moment later.
+    """
+
+    def get(self, request, amiibo_id):
+        comments = load_comments(
+            AMIIBO_COMMENTS_COLLECTION,
+            "amiibo_id",
+            amiibo_id,
+            f"comments:amiibo:{amiibo_id}",
+            logger=self,
+            request=request,
+        )
+        context = {
+            "comments": comments,
+            "comment_banner": comment_banner_for(request.GET.get("comment")),
+            "current_user_email": request.session.get("user_email"),
+            "current_user_name": request.session.get("user_name"),
+            "comment_body_max_len": COMMENT_BODY_MAX_LEN,
+            "comment_post_url": (f"/blog/number-released/amiibo/{amiibo_id}/comment/"),
+            # Send post-login users back to the detail page, not this fragment.
+            "comment_login_next": f"/blog/number-released/amiibo/{amiibo_id}/",
+            "comment_placeholder": "Share your thoughts...",
+            "comment_track_prefix": "comment",
+            "comment_btn_class": "action-btn primary",
+        }
+        return render(request, "tracker/_comments.html", context)
 
 
 class RobotsTxtView(View):
