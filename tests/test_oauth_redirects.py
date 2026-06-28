@@ -83,3 +83,28 @@ def test_oauth_login_flow_receives_local_redirect_uri(
     )
     assert request.session["oauth_state"] == "state-token"
     assert request.session["oauth_code_verifier"] == "code-verifier"
+
+
+@patch("tracker.views.logout_user")
+@patch("tracker.views.get_active_credentials_json", return_value=None)
+@patch("tracker.views.GoogleSheetClientManager.client_secret_path")
+@patch("tracker.views.Flow")
+def test_oauth_login_missing_client_secret_redirects_with_setup_error(
+    mock_flow,
+    mock_client_secret_path,
+    mock_get_active_credentials_json,
+    mock_logout_user,
+):
+    mock_client_secret_path.return_value = "/app/client_secret.json"
+    mock_flow.from_client_secrets_file.side_effect = FileNotFoundError(
+        "/app/client_secret.json"
+    )
+
+    request = RequestFactory().get("/oauth-login/", HTTP_HOST="localhost:8080")
+    request.session = {}
+
+    response = OAuthView().get(request)
+
+    assert response.status_code == 302
+    assert response.url == "/"
+    assert request.session["oauth_error"]["action_required"] == "oauth_config_required"

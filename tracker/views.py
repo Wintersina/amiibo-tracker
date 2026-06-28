@@ -663,6 +663,18 @@ def oauth_redirect_uri_for_request(request):
     return configured_redirect_uri
 
 
+def _set_oauth_configuration_error(request):
+    request.session["oauth_error"] = {
+        "message": (
+            "Google OAuth is not configured for this environment. Add the OAuth "
+            "client JSON file or GOOGLE_OAUTH_CLIENT_SECRETS_DATA, then restart "
+            "the app."
+        ),
+        "action_required": "oauth_config_required",
+        "is_retryable": False,
+    }
+
+
 class OAuthView(View, LoggingMixin):
     def get(self, request):
         next_url = _safe_next_url(request, request.GET.get("next"))
@@ -678,12 +690,23 @@ class OAuthView(View, LoggingMixin):
         else:
             request.session.pop("oauth_next", None)
 
-        flow = Flow.from_client_secrets_file(
-            GoogleSheetClientManager.client_secret_path(),
-            scopes=OauthConstants.SCOPES,
-            redirect_uri=oauth_redirect_uri_for_request(request),
-            autogenerate_code_verifier=True,
-        )
+        try:
+            flow = Flow.from_client_secrets_file(
+                GoogleSheetClientManager.client_secret_path(),
+                scopes=OauthConstants.SCOPES,
+                redirect_uri=oauth_redirect_uri_for_request(request),
+                autogenerate_code_verifier=True,
+            )
+        except (OSError, ValueError) as error:
+            self.log_action(
+                "oauth-config-load-failed",
+                request,
+                level="error",
+                error=str(error),
+                error_type=type(error).__name__,
+            )
+            _set_oauth_configuration_error(request)
+            return redirect("index")
         auth_url, state = flow.authorization_url(
             access_type="offline",
             include_granted_scopes="true",
@@ -732,14 +755,25 @@ class OAuthCallbackView(View, LoggingMixin):
             request.session.pop("oauth_code_verifier", None)
             return redirect("oauth_login")
 
-        flow = Flow.from_client_secrets_file(
-            GoogleSheetClientManager.client_secret_path(),
-            scopes=OauthConstants.SCOPES,
-            redirect_uri=oauth_redirect_uri_for_request(request),
-            state=oauth_state,
-            code_verifier=oauth_code_verifier,
-            autogenerate_code_verifier=False,
-        )
+        try:
+            flow = Flow.from_client_secrets_file(
+                GoogleSheetClientManager.client_secret_path(),
+                scopes=OauthConstants.SCOPES,
+                redirect_uri=oauth_redirect_uri_for_request(request),
+                state=oauth_state,
+                code_verifier=oauth_code_verifier,
+                autogenerate_code_verifier=False,
+            )
+        except (OSError, ValueError) as error:
+            self.log_action(
+                "oauth-config-load-failed",
+                request,
+                level="error",
+                error=str(error),
+                error_type=type(error).__name__,
+            )
+            _set_oauth_configuration_error(request)
+            return redirect("index")
 
         try:
             flow.fetch_token(authorization_response=request.build_absolute_uri())
