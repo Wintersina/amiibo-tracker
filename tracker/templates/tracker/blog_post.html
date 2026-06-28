@@ -41,7 +41,7 @@
     a { color: inherit; }
 
     .container {
-        max-width: 720px;
+        max-width: 960px;
         margin: 0 auto;
         padding: 2.5rem 1.25rem 4rem;
     }
@@ -82,25 +82,56 @@
     .article-meta .dot { color: rgba(253, 247, 227, 0.3); }
 
     .article-title {
-        font-size: clamp(1.9rem, 4.4vw, 2.2rem);
+        max-width: 820px;
+        font-size: clamp(2rem, 5vw, 3.2rem);
         font-weight: 600;
-        line-height: 1.2;
-        letter-spacing: -0.015em;
+        line-height: 1.08;
+        letter-spacing: 0;
         margin: 0 0 0.85rem;
         color: var(--cream);
     }
     .article-subtitle {
+        max-width: 760px;
         font-size: 1.05rem;
         color: var(--muted);
-        margin: 0 0 2rem;
+        margin: 0 0 1.4rem;
         line-height: 1.55;
+    }
+    .article-author {
+        display: flex;
+        align-items: center;
+        gap: 0.8rem;
+        margin: 1.35rem 0 2rem;
+        color: var(--muted);
+        font-size: 0.9rem;
+    }
+    .author-avatar {
+        width: 42px;
+        height: 42px;
+        border-radius: 999px;
+        display: grid;
+        place-items: center;
+        background: linear-gradient(135deg, rgba(243, 201, 105, 0.28), rgba(15, 118, 110, 0.36));
+        border: 1px solid rgba(243, 201, 105, 0.25);
+        color: var(--cream);
+        font-weight: 700;
+    }
+    .author-line a {
+        color: var(--cream);
+        text-decoration: none;
+        font-weight: 600;
+    }
+    .author-line a:hover { color: var(--saffron); }
+    .checked-line {
+        color: var(--muted);
+        font-size: 0.82rem;
     }
 
     /* ---- Hero image ---- */
     .hero {
         width: 100%;
-        aspect-ratio: 16 / 10;
-        border-radius: 14px;
+        aspect-ratio: 1200 / 630;
+        border-radius: 8px;
         overflow: hidden;
         margin-bottom: 0.6rem;
         background: var(--surface);
@@ -155,6 +186,8 @@
 
     /* ---- Article body ---- */
     .article-body {
+        max-width: 760px;
+        margin: 0 auto;
         font-size: 1.02rem;
         line-height: 1.78;
         color: var(--muted-strong);
@@ -201,6 +234,38 @@
         padding-left: 1.4rem;
     }
     .article-body li { margin-bottom: 0.45rem; }
+
+    .source-panel {
+        max-width: 760px;
+        margin: 2.75rem auto 0;
+        padding-top: 1.4rem;
+        border-top: 1px solid var(--border);
+    }
+    .source-panel h2 {
+        margin: 0 0 0.75rem;
+        font-size: 1rem;
+        color: var(--cream);
+    }
+    .source-list {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        display: grid;
+        gap: 0.75rem;
+    }
+    .source-list a {
+        color: var(--saffron);
+        font-weight: 600;
+        text-decoration: none;
+    }
+    .source-list a:hover { text-decoration: underline; }
+    .source-note {
+        display: block;
+        margin-top: 0.16rem;
+        color: var(--muted);
+        font-size: 0.86rem;
+        line-height: 1.5;
+    }
 
     .article-body figure {
         margin: 2rem 0;
@@ -426,8 +491,9 @@
     @media (max-width: 540px) {
         body { font-size: 16px; }
         .container { padding: 1.75rem 1rem 3rem; }
-        .article-title { font-size: 1.6rem; }
+        .article-title { font-size: 2rem; line-height: 1.12; }
         .article-subtitle { font-size: 0.98rem; }
+        .article-author { align-items: flex-start; }
         .specs-grid { grid-template-columns: 1fr; }
         .verdict { flex-direction: column; align-items: flex-start; }
         .verdict-score { font-size: 2rem; }
@@ -467,7 +533,8 @@
     }
 
     .comments-section {
-        margin-top: 3rem;
+        max-width: 760px;
+        margin: 3rem auto 0;
         padding-top: 2rem;
         border-top: 1px solid rgba(255, 255, 255, 0.08);
     }
@@ -602,6 +669,24 @@
             <p class="article-subtitle">{{ post.subtitle }}</p>
         {% endif %}
 
+        {% if author %}
+        <div class="article-author">
+            <a href="{% url 'author_detail' author.slug %}" class="author-avatar" aria-label="View {{ author.name }} author profile">
+                {{ author.avatar_initials }}
+            </a>
+            <div>
+                <div class="author-line">
+                    By <a href="{% url 'author_detail' author.slug %}" rel="author">{{ author.name }}</a>
+                    <span class="dot">·</span>
+                    <a href="{{ author.x_url }}" rel="me noopener noreferrer" target="_blank">@{{ author.handle }}</a>
+                </div>
+                {% if post.fact_checked %}
+                <div class="checked-line">Fact-checked against listed sources on {{ post.fact_checked|iso_long_date }}</div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
         {% if post.featured_image %}
             <div class="hero">
                 <img src="{% static post.featured_image %}" alt="{{ post.title }}" loading="lazy">
@@ -711,6 +796,20 @@
                 <p class="verdict-text">{{ post.verdict.text }}</p>
             </div>
         </div>
+        {% endif %}
+
+        {% if post.sources %}
+        <section class="source-panel" aria-labelledby="sources-title">
+            <h2 id="sources-title">Sources checked</h2>
+            <ul class="source-list">
+                {% for source in post.sources %}
+                <li>
+                    <a href="{{ source.url }}" target="_blank" rel="noopener noreferrer">{{ source.label }}</a>
+                    {% if source.note %}<span class="source-note">{{ source.note }}</span>{% endif %}
+                </li>
+                {% endfor %}
+            </ul>
+        </section>
         {% endif %}
 
         <section class="comments-section">

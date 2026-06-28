@@ -1665,22 +1665,6 @@
       "type": "Figure"
     },
     {
-      "amiiboSeries": "Pragmata",
-      "character": "Diana",
-      "gameSeries": "Pragmata",
-      "head": "35800000",
-      "image": "https://raw.githubusercontent.com/8bitDream/AmiiboAPI/master/images/icon_35800000-05062102.png",
-      "name": "Diana",
-      "release": {
-        "au": "2026-04-17",
-        "eu": "2026-06-11",
-        "jp": "2026-04-24",
-        "na": "2026-04-17"
-      },
-      "tail": "05062102",
-      "type": "Figure"
-    },
-    {
       "amiiboSeries": "Super Nintendo World",
       "character": "Mario",
       "gameSeries": "Super Mario",

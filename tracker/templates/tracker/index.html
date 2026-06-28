@@ -1,5 +1,6 @@
 {% extends "tracker/base.html" %}
 {% load static %}
+{% load amiibo_filters %}
 
 {% block title %}Welcome to Amiibo Tracker{% endblock %}
 
@@ -172,6 +173,131 @@
         }
     }
 
+    /* Latest Guides Section */
+    .guides-section {
+        max-width: 1200px;
+        margin: 4rem auto;
+        padding: 0 2rem;
+    }
+
+    .guides-header {
+        text-align: center;
+        margin-bottom: 2.5rem;
+    }
+
+    .guides-header h2 {
+        font-size: clamp(1.8rem, 4vw, 2.6rem);
+        color: var(--saffron);
+        margin: 0 0 0.75rem 0;
+    }
+
+    .guides-header p {
+        color: rgba(253, 247, 227, 0.8);
+        font-size: 1.1rem;
+        line-height: 1.6;
+        max-width: 640px;
+        margin: 0 auto;
+    }
+
+    .guides-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .guide-card {
+        display: flex;
+        flex-direction: column;
+        background: rgba(15, 23, 42, 0.72);
+        border: 1px solid rgba(243, 201, 105, 0.3);
+        border-radius: 16px;
+        overflow: hidden;
+        text-decoration: none;
+        color: var(--cream);
+        transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    }
+
+    .guide-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
+        border-color: var(--saffron);
+    }
+
+    .guide-thumb {
+        width: 100%;
+        aspect-ratio: 16 / 9;
+        object-fit: cover;
+        background: rgba(15, 118, 110, 0.15);
+    }
+
+    .guide-body {
+        padding: 1.25rem 1.5rem 1.5rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        flex: 1;
+    }
+
+    .guide-date {
+        font-size: 0.82rem;
+        color: var(--saffron);
+        font-weight: 600;
+    }
+
+    .guide-byline {
+        font-size: 0.78rem;
+        color: rgba(253, 247, 227, 0.6);
+    }
+
+    .guide-byline span {
+        color: var(--cream);
+        font-weight: 600;
+    }
+
+    .guide-title {
+        font-size: 1.15rem;
+        font-weight: 700;
+        margin: 0;
+        line-height: 1.35;
+    }
+
+    .guide-excerpt {
+        font-size: 0.95rem;
+        color: rgba(253, 247, 227, 0.78);
+        line-height: 1.55;
+        margin: 0;
+    }
+
+    .guides-all-link {
+        display: inline-block;
+        margin: 2.5rem auto 0;
+        text-align: center;
+        padding: 0.85rem 2rem;
+        border-radius: 12px;
+        font-weight: 700;
+        text-decoration: none;
+        color: var(--ink);
+        background: linear-gradient(135deg, var(--saffron), #ffd37a);
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .guides-all-wrap {
+        text-align: center;
+    }
+
+    .guides-all-link:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 26px rgba(0, 0, 0, 0.4);
+    }
+
+    @media (max-width: 720px) {
+        .guides-section {
+            margin: 3rem auto;
+            padding: 0 1rem;
+        }
+    }
+
     /* Error Modal Styles */
     .error-modal {
         position: fixed;
@@ -277,6 +403,38 @@
         </div>
     </div>
 </div>
+
+{% if latest_posts %}
+<section class="guides-section" aria-labelledby="guidesHeading">
+    <div class="guides-header">
+        <h2 id="guidesHeading">Amiibo Guides &amp; Collecting Tips</h2>
+        <p>
+            In-depth guides on amiibo compatibility, rarity, spotting fakes, display ideas,
+            and what each figure unlocks across Nintendo games. Written for collectors, by collectors.
+        </p>
+    </div>
+    <div class="guides-grid">
+        {% for post in latest_posts %}
+        <a href="{% url 'blog_post' post.slug %}" class="guide-card" data-track="home-guide-card">
+            {% if post.featured_image %}
+            <img src="{% static post.featured_image %}" alt="{{ post.title }}" class="guide-thumb" loading="lazy">
+                {% endif %}
+                <div class="guide-body">
+                    <span class="guide-date">{{ post.date|iso_long_date }}</span>
+                    {% if post.author_data %}
+                    <span class="guide-byline">By <span>{{ post.author_data.name }}</span></span>
+                    {% endif %}
+                    <h3 class="guide-title">{{ post.title }}</h3>
+                <p class="guide-excerpt">{{ post.excerpt }}</p>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+    <div class="guides-all-wrap">
+        <a href="{% url 'blog_list' %}" class="guides-all-link" data-track="home-all-guides">View all guides →</a>
+    </div>
+</section>
+{% endif %}
 
 <!-- Error Modal -->
 {% if error %}

@@ -18,12 +18,14 @@ from tracker.views import (
     BlogListView,
     BlogPostView,
     AmiibodexView,
+    AmiiboCommentsView,
     AmiiboDetailView,
     RobotsTxtView,
     AdsTxtView,
     NintendoScraperAPIView,
     DailyReportAPIView,
     DailyReportTriggerView,
+    AuthorView,
     PostCommentView,
     DeleteCommentView,
     PostBlogCommentView,
@@ -38,6 +40,7 @@ urlpatterns = [
     path(
         "about/", TemplateView.as_view(template_name="tracker/about.html"), name="about"
     ),
+    path("authors/<slug:slug>/", AuthorView.as_view(), name="author_detail"),
     path("demo/", DemoView.as_view(), name="demo"),
     path("tracker/", AmiiboListView.as_view(), name="amiibo_list"),
     path("toggle/", ToggleCollectedView.as_view(), name="toggle_collected"),
@@ -61,6 +64,11 @@ urlpatterns = [
         "blog/number-released/amiibo/<str:amiibo_id>/",
         AmiiboDetailView.as_view(),
         name="amiibo_detail",
+    ),
+    path(
+        "blog/number-released/amiibo/<str:amiibo_id>/comments/",
+        AmiiboCommentsView.as_view(),
+        name="amiibo_comments",
     ),
     path(
         "blog/number-released/amiibo/<str:amiibo_id>/comment/",

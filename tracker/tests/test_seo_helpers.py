@@ -378,9 +378,9 @@ class TestGenerateOrganizationSchema:
         """Test generating organization schema with defaults."""
         schema = generate_organization_schema()
 
-        assert schema["name"] == "Amiibo Tracker"
-        assert schema["url"] == "https://amiibotracker.app"
-        assert schema["logo"] == "https://amiibotracker.app/static/favicon.ico"
+        assert schema["name"] == "Goozamiibo"
+        assert schema["url"] == "https://goozamiibo.com"
+        assert schema["logo"] == "https://goozamiibo.com/static/images/favicon.png"
 
     def test_custom_organization_schema(self):
         """Test generating organization schema with custom values."""
@@ -402,8 +402,8 @@ class TestGenerateWebsiteSchema:
         """Test generating website schema with defaults."""
         schema = generate_website_schema()
 
-        assert schema["name"] == "Amiibo Tracker"
-        assert schema["url"] == "https://amiibotracker.app"
+        assert schema["name"] == "Goozamiibo"
+        assert schema["url"] == "https://goozamiibo.com"
         assert schema["potentialAction"]["@type"] == "SearchAction"
         assert "urlTemplate" in schema["potentialAction"]["target"]
         assert (

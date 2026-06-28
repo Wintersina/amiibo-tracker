@@ -400,11 +400,33 @@ def test_delete_handles_firestore_error(rf, monkeypatch):
 
 
 # ---------------------------------------------------------------------------
-# AmiiboDetailView — comment loading side
+# AmiiboCommentsView — async comments fragment
+#
+# Comments load via a separate fragment endpoint so the Firestore round-trip
+# never blocks the detail page render. The detail page itself no longer embeds
+# comments; it ships an empty #comments-root container that fetches this view.
 # ---------------------------------------------------------------------------
 
+COMMENTS_PATH = f"{DETAIL_PATH}comments/"
 
-def test_detail_view_passes_comments_to_template(rf, monkeypatch):
+
+def test_detail_view_does_not_block_on_comments(rf, monkeypatch):
+    """The detail page renders without loading comments inline."""
+
+    def boom(*a, **kw):
+        raise AssertionError("detail view must not load comments synchronously")
+
+    monkeypatch.setattr(comments, "list_comments", boom)
+
+    request = rf.get(DETAIL_PATH)
+    request.session = {}
+    response = views.AmiiboDetailView.as_view()(request, amiibo_id=AMIIBO_ID)
+
+    assert response.status_code == 200
+    assert b'id="comments-root"' in response.content
+
+
+def test_comments_fragment_renders_comments(rf, monkeypatch):
     fake_comments = [
         {
             "id": "1",
@@ -418,35 +440,35 @@ def test_detail_view_passes_comments_to_template(rf, monkeypatch):
     ]
     monkeypatch.setattr(comments, "list_comments", lambda *a, **kw: fake_comments)
 
-    request = rf.get(DETAIL_PATH)
+    request = rf.get(COMMENTS_PATH)
     request.session = {}
-    response = views.AmiiboDetailView.as_view()(request, amiibo_id=AMIIBO_ID)
+    response = views.AmiiboCommentsView.as_view()(request, amiibo_id=AMIIBO_ID)
 
     assert response.status_code == 200
     assert b"Luigi" in response.content
     assert b"Cool" in response.content
 
 
-def test_detail_view_renders_banner_from_query_string(rf, monkeypatch):
+def test_comments_fragment_renders_banner_from_query_string(rf, monkeypatch):
     monkeypatch.setattr(comments, "list_comments", lambda *a, **kw: [])
 
-    request = rf.get(DETAIL_PATH + "?comment=rate_limited")
+    request = rf.get(COMMENTS_PATH + "?comment=rate_limited")
     request.session = {}
-    response = views.AmiiboDetailView.as_view()(request, amiibo_id=AMIIBO_ID)
+    response = views.AmiiboCommentsView.as_view()(request, amiibo_id=AMIIBO_ID)
 
     assert response.status_code == 200
     assert b"posting too quickly" in response.content.lower()
 
 
-def test_detail_view_falls_back_to_empty_when_firestore_fails(rf, monkeypatch):
+def test_comments_fragment_falls_back_to_empty_when_firestore_fails(rf, monkeypatch):
     def boom(*a, **kw):
         raise RuntimeError("firestore down")
 
     monkeypatch.setattr(comments, "list_comments", boom)
 
-    request = rf.get(DETAIL_PATH)
+    request = rf.get(COMMENTS_PATH)
     request.session = {}
-    response = views.AmiiboDetailView.as_view()(request, amiibo_id=AMIIBO_ID)
+    response = views.AmiiboCommentsView.as_view()(request, amiibo_id=AMIIBO_ID)
 
     assert response.status_code == 200
     assert b"No comments yet" in response.content

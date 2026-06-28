@@ -173,13 +173,32 @@ class AmiiboRemoteFetchMixin:
 
 
 class AmiiboLocalFetchMixin:
+    # Parsing the ~435 KB database on every request is wasteful when it only
+    # changes when the scraper runs. Cache the parsed list; LocMemCache returns
+    # a deep copy on read, so callers that mutate entries (collected/favorite/
+    # display_release flags) never pollute the shared copy.
+    _LOCAL_AMIIBO_CACHE_KEY = "local_amiibo_db"
+    _LOCAL_AMIIBO_CACHE_TIMEOUT = 3600
+
     def _fetch_local_amiibos(self) -> list[dict]:
+        from django.core.cache import cache
+
+        cached = cache.get(self._LOCAL_AMIIBO_CACHE_KEY)
+        if cached is not None:
+            return cached
+
         database_path = Path(__file__).parent / "data" / "amiibo_database.json"
         try:
             with database_path.open(encoding="utf-8") as database_file:
                 data = json.load(database_file)
                 amiibos = data.get("amiibo", [])
-                return amiibos if isinstance(amiibos, list) else []
+                result = amiibos if isinstance(amiibos, list) else []
+                cache.set(
+                    self._LOCAL_AMIIBO_CACHE_KEY,
+                    result,
+                    self._LOCAL_AMIIBO_CACHE_TIMEOUT,
+                )
+                return result
         except (FileNotFoundError, json.JSONDecodeError) as error:
             if hasattr(self, "log_error"):
                 self.log_error(
