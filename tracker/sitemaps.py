@@ -29,6 +29,19 @@ class StaticViewSitemap(Sitemap):
         return reverse(item)
 
 
+class AuthorSitemap(Sitemap):
+    """Sitemap for public author profiles."""
+
+    priority = 0.7
+    changefreq = "monthly"
+
+    def items(self):
+        return ["sina"]
+
+    def location(self, item):
+        return reverse("author_detail", kwargs={"slug": item})
+
+
 class BlogPostSitemap(Sitemap):
     """Sitemap for blog posts."""
 

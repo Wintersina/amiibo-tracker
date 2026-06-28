@@ -134,6 +134,9 @@ def generate_article_schema(
     url,
     date_published,
     author="Amiibo Tracker",
+    author_url=None,
+    author_same_as=None,
+    author_alternate_name=None,
     publisher="Amiibo Tracker",
     image=None,
 ):
@@ -146,6 +149,9 @@ def generate_article_schema(
         url: Full URL to the article
         date_published: Publication date (string in ISO format or datetime object)
         author: Author name (default: 'Amiibo Tracker')
+        author_url: Canonical author profile URL
+        author_same_as: External author identity URL
+        author_alternate_name: Author handle or pen name
         publisher: Publisher name (default: 'Amiibo Tracker')
         image: URL to article image (optional)
 
@@ -156,19 +162,27 @@ def generate_article_schema(
     if isinstance(date_published, datetime):
         date_published = date_published.isoformat()
 
+    author_schema = {"@type": "Person", "name": author}
+    if author_url:
+        author_schema["url"] = author_url
+    if author_same_as:
+        author_schema["sameAs"] = [author_same_as]
+    if author_alternate_name:
+        author_schema["alternateName"] = author_alternate_name
+
     schema = {
         "headline": title,
         "description": description,
         "url": url,
         "datePublished": date_published,
         "dateModified": date_published,
-        "author": {"@type": "Person", "name": author},
+        "author": author_schema,
         "publisher": {
             "@type": "Organization",
             "name": publisher,
             "logo": {
                 "@type": "ImageObject",
-                "url": "https://amiibotracker.app/static/favicon.ico",
+                "url": "https://goozamiibo.com/static/images/favicon.png",
             },
         },
     }
@@ -255,9 +269,9 @@ def generate_breadcrumb_schema(items):
 
 
 def generate_organization_schema(
-    name="Amiibo Tracker",
-    url="https://amiibotracker.app",
-    logo="https://amiibotracker.app/static/favicon.ico",
+    name="Goozamiibo",
+    url="https://goozamiibo.com",
+    logo="https://goozamiibo.com/static/images/favicon.png",
 ):
     """
     Generate Organization schema (JSON-LD) for the site.
@@ -274,9 +288,9 @@ def generate_organization_schema(
 
 
 def generate_website_schema(
-    name="Amiibo Tracker",
-    url="https://amiibotracker.app",
-    search_url="https://amiibotracker.app/amiibos/?search={search_term_string}",
+    name="Goozamiibo",
+    url="https://goozamiibo.com",
+    search_url="https://goozamiibo.com/amiibodex/?q={search_term_string}",
 ):
     """
     Generate WebSite schema (JSON-LD) with SearchAction.

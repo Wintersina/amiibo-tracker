@@ -25,6 +25,7 @@ from tracker.views import (
     NintendoScraperAPIView,
     DailyReportAPIView,
     DailyReportTriggerView,
+    AuthorView,
     PostCommentView,
     DeleteCommentView,
     PostBlogCommentView,
@@ -39,6 +40,7 @@ urlpatterns = [
     path(
         "about/", TemplateView.as_view(template_name="tracker/about.html"), name="about"
     ),
+    path("authors/<slug:slug>/", AuthorView.as_view(), name="author_detail"),
     path("demo/", DemoView.as_view(), name="demo"),
     path("tracker/", AmiiboListView.as_view(), name="amiibo_list"),
     path("toggle/", ToggleCollectedView.as_view(), name="toggle_collected"),

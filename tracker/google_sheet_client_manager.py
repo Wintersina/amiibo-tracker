@@ -303,7 +303,7 @@ class GoogleSheetClientManager(HelperMixin, LoggingMixin):
         flow = Flow.from_client_secrets_file(
             GoogleSheetClientManager.client_secret_path(),
             scopes=OauthConstants.SCOPES,
-            redirect_uri=OauthConstants.REDIRECT_URI,
+            redirect_uri=OauthConstants.configured_redirect_uri(),
         )
         return flow
 

@@ -244,6 +244,16 @@
         font-weight: 600;
     }
 
+    .guide-byline {
+        font-size: 0.78rem;
+        color: rgba(253, 247, 227, 0.6);
+    }
+
+    .guide-byline span {
+        color: var(--cream);
+        font-weight: 600;
+    }
+
     .guide-title {
         font-size: 1.15rem;
         font-weight: 700;
@@ -408,10 +418,13 @@
         <a href="{% url 'blog_post' post.slug %}" class="guide-card" data-track="home-guide-card">
             {% if post.featured_image %}
             <img src="{% static post.featured_image %}" alt="{{ post.title }}" class="guide-thumb" loading="lazy">
-            {% endif %}
-            <div class="guide-body">
-                <span class="guide-date">{{ post.date|iso_long_date }}</span>
-                <h3 class="guide-title">{{ post.title }}</h3>
+                {% endif %}
+                <div class="guide-body">
+                    <span class="guide-date">{{ post.date|iso_long_date }}</span>
+                    {% if post.author_data %}
+                    <span class="guide-byline">By <span>{{ post.author_data.name }}</span></span>
+                    {% endif %}
+                    <h3 class="guide-title">{{ post.title }}</h3>
                 <p class="guide-excerpt">{{ post.excerpt }}</p>
             </div>
         </a>
