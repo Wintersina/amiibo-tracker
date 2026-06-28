@@ -19,13 +19,35 @@ def test_oauth_redirect_uri_uses_local_request_host(monkeypatch):
 
 
 @override_settings(DEBUG=False)
-def test_oauth_redirect_uri_uses_configured_production_uri(monkeypatch):
+def test_oauth_redirect_uri_uses_configured_non_canonical_production_uri(monkeypatch):
     monkeypatch.setenv("OAUTH_REDIRECT_URI", "https://example.com/oauth2callback/")
+
+    request = RequestFactory().get("/oauth-login/", HTTP_HOST="preview.example.com")
+
+    assert oauth_redirect_uri_for_request(request) == (
+        "https://example.com/oauth2callback/"
+    )
+
+
+@override_settings(DEBUG=False)
+def test_oauth_redirect_uri_for_canonical_site_ignores_stale_local_env(monkeypatch):
+    monkeypatch.setenv("OAUTH_REDIRECT_URI", "http://localhost:8080/oauth2callback/")
 
     request = RequestFactory().get("/oauth-login/", HTTP_HOST="goozamiibo.com")
 
     assert oauth_redirect_uri_for_request(request) == (
-        "https://example.com/oauth2callback/"
+        "https://goozamiibo.com/oauth2callback/"
+    )
+
+
+@override_settings(DEBUG=False)
+def test_oauth_redirect_uri_for_production_falls_back_from_stale_local_env(monkeypatch):
+    monkeypatch.setenv("OAUTH_REDIRECT_URI", "http://localhost:8080/oauth2callback/")
+
+    request = RequestFactory().get("/oauth-login/", HTTP_HOST="service.run.app")
+
+    assert oauth_redirect_uri_for_request(request) == (
+        "https://goozamiibo.com/oauth2callback/"
     )
 
 

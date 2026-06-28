@@ -77,6 +77,7 @@ os.environ.setdefault("OAUTHLIB_RELAX_TOKEN_SCOPE", "1")
 
 UNSUPPORTED_PUBLIC_AMIIBO_SERIES = {"Pragmata"}
 LOCAL_OAUTH_HOSTS = {"localhost", "127.0.0.1", "0.0.0.0", "::1"}
+CANONICAL_OAUTH_HOSTS = {"goozamiibo.com"}
 
 
 def filter_public_amiibos(amiibos):
@@ -649,7 +650,17 @@ def oauth_redirect_uri_for_request(request):
             os.environ.setdefault("OAUTHLIB_INSECURE_TRANSPORT", "1")
         return redirect_uri
 
-    return OauthConstants.configured_redirect_uri()
+    if hostname in CANONICAL_OAUTH_HOSTS:
+        return OauthConstants.DEFAULT_REDIRECT_URI
+
+    configured_redirect_uri = OauthConstants.configured_redirect_uri()
+    configured_hostname = (urlsplit(configured_redirect_uri).hostname or "").lower()
+    if configured_hostname in LOCAL_OAUTH_HOSTS and not getattr(
+        settings, "DEBUG", False
+    ):
+        return OauthConstants.DEFAULT_REDIRECT_URI
+
+    return configured_redirect_uri
 
 
 class OAuthView(View, LoggingMixin):
