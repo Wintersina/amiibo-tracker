@@ -681,7 +681,7 @@
                     <a href="{{ author.x_url }}" rel="me noopener noreferrer" target="_blank">@{{ author.handle }}</a>
                 </div>
                 {% if post.fact_checked %}
-                <div class="checked-line">Fact-checked against listed sources on {{ post.fact_checked|iso_long_date }}</div>
+                <div class="checked-line">Updated with claim-level sources on {{ post.fact_checked|iso_long_date }}</div>
                 {% endif %}
             </div>
         </div>
@@ -800,7 +800,7 @@
 
         {% if post.sources %}
         <section class="source-panel" aria-labelledby="sources-title">
-            <h2 id="sources-title">Sources checked</h2>
+            <h2 id="sources-title">Claim-level sources</h2>
             <ul class="source-list">
                 {% for source in post.sources %}
                 <li>

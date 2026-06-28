@@ -15055,6 +15055,104 @@
       },
       "tail": "04c91e03",
       "type": "Figure"
+    },
+    {
+      "amiiboSeries": "",
+      "character": "Animal Crossing Cards - Promos series",
+      "gameSeries": "",
+      "head": "fff18ae9",
+      "image": "https://amiibo.life/assets/figures/amiibo/animal-crossing-cards-promos/isabelle-character-parfait-88695b0d7d945357073365f35531f04ba1b2f78ad8b909259c7856a8b833193c.png",
+      "name": "Animal Crossing Cards - Promos series",
+      "release": {
+        "jp": "2015-08-01",
+        "na": "2015-11-13",
+        "eu": "2015-11-20",
+        "au": "2015-11-21"
+      },
+      "tail": "ff1df6be",
+      "type": "Card",
+      "is_upcoming": true
+    },
+    {
+      "amiiboSeries": "",
+      "character": "Power Pros series",
+      "gameSeries": "",
+      "head": "ff102b19",
+      "image": "https://amiibo.life/assets/figures/amiibo/power-pros/pawapuro-87b44d2ef4d3ff608950d258f40824c7bb9f07ef4af3cb0d3b8fd6d2fcb9a601.png",
+      "name": "Power Pros series",
+      "release": {
+        "jp": "2019-06-27"
+      },
+      "tail": "ff109939",
+      "type": "Card",
+      "is_upcoming": true
+    },
+    {
+      "amiiboSeries": "",
+      "character": "Yu-Gi-Oh! Rush Duel Saikyo Battle Royale series",
+      "gameSeries": "",
+      "head": "ff5ba7c3",
+      "image": "https://amiibo.life/assets/figures/amiibo/yu-gi-oh-rush-duel-saikyo-battle-royale/yuga-ohdo-423a0fb213cfeb7dc46409be68881d357d70c7e149a12721e6adfea268092c34.png",
+      "name": "Yu-Gi-Oh! Rush Duel Saikyo Battle Royale series",
+      "release": {
+        "jp": "2021-08-12"
+      },
+      "tail": "ff58a1f3",
+      "type": "Card",
+      "is_upcoming": true
+    },
+    {
+      "amiiboSeries": "The Legend of Zelda",
+      "character": "Mineru's Construct",
+      "gameSeries": "The Legend of Zelda",
+      "head": "ff4c781e",
+      "image": "https://amiibo.life/assets/figures/amiibo/the-legend-of-zelda/mineru-s-construct-f9ce4135616bac0b12c76862c9c116ec094a181b0b695cfe9734082e02eb1f5f.png",
+      "name": "Mineru's Construct",
+      "release": {
+        "au": "2026-09-17",
+        "eu": "2026-09-17",
+        "jp": "2026-09-17",
+        "na": "2026-09-17"
+      },
+      "tail": "ffdcc7c1",
+      "type": "Figure",
+      "is_upcoming": true
+    },
+    {
+      "amiiboSeries": "Resident Evil",
+      "character": "Grace Ashcroft",
+      "gameSeries": "Resident Evil",
+      "head": "ff8bc3b1",
+      "image": "https://amiibo.life/assets/figures/amiibo/resident-evil/grace-ashcroft-0c9c3a59c3b6edeedee428b5870459f3a3c9fc2731a77fa102df7380dd167408.png",
+      "name": "Grace Ashcroft",
+      "release": {},
+      "tail": "ff1c002b",
+      "type": "Figure",
+      "is_upcoming": true
+    },
+    {
+      "amiiboSeries": "Resident Evil",
+      "character": "Leon S. Kennedy",
+      "gameSeries": "Resident Evil",
+      "head": "ffa139c8",
+      "image": "https://amiibo.life/assets/figures/amiibo/resident-evil/leon-s-kennedy-a63139a29058f4fba9bf3e813b16bede091e5ca8ab3aba236e8ffeff92c5b0e8.png",
+      "name": "Leon S. Kennedy",
+      "release": {},
+      "tail": "ff163e02",
+      "type": "Figure",
+      "is_upcoming": true
+    },
+    {
+      "amiiboSeries": "Kirby Air Riders",
+      "character": "Chef Kawasaki & Hop Star",
+      "gameSeries": "Kirby Air Riders",
+      "head": "ffb30080",
+      "image": "https://amiibo.life/assets/figures/amiibo/kirby-air-riders/chef-kawasaki-hop-star-89516333feadf413d40c8d0c575e73a78128c9cbce393fa216e101e53342ce56.png",
+      "name": "Chef Kawasaki & Hop Star",
+      "release": {},
+      "tail": "ff5dcc60",
+      "type": "Figure",
+      "is_upcoming": true
     }
   ]
 }
