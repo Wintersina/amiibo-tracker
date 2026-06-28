@@ -41,7 +41,7 @@
     a { color: inherit; text-decoration: none; }
 
     .container {
-        max-width: 720px;
+        max-width: 1140px;
         margin: 0 auto;
         padding: 2.5rem 1.25rem 4rem;
     }
@@ -78,126 +78,72 @@
         color: var(--muted);
     }
 
-    /* ---- Featured post ---- */
-    .featured {
+    /* ---- Post grid ---- */
+    .post-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1.75rem;
+    }
+
+    .post-card {
         display: flex;
-        gap: 1.25rem;
+        flex-direction: column;
         background: var(--surface-strong);
         border: 1px solid var(--border);
-        border-radius: 16px;
-        padding: 1.25rem;
-        margin-bottom: 2.25rem;
-        align-items: center;
-        transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease;
-    }
-    .featured:hover {
-        border-color: rgba(243, 201, 105, 0.38);
-        background: rgba(24, 31, 42, 0.92);
-        transform: translateY(-1px);
-    }
-    .featured-thumb {
-        flex-shrink: 0;
-        width: 120px;
-        height: 120px;
-        border-radius: 12px;
+        border-radius: 18px;
         overflow: hidden;
-        background: rgba(255, 255, 255, 0.04);
-        display: flex;
-        align-items: center;
-        justify-content: center;
+        transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
     }
-    .featured-thumb img {
+    .post-card:hover {
+        transform: translateY(-4px);
+        border-color: rgba(243, 201, 105, 0.42);
+        box-shadow: 0 20px 44px rgba(0, 0, 0, 0.45);
+    }
+
+    .post-card-thumb {
+        width: 100%;
+        aspect-ratio: 1200 / 630;
+        background: rgba(255, 255, 255, 0.04);
+        overflow: hidden;
+    }
+    .post-card-thumb img {
         width: 100%;
         height: 100%;
         object-fit: cover;
+        display: block;
     }
-    .featured-body { min-width: 0; }
-    .featured-meta {
+
+    .post-card-body {
+        padding: 1.1rem 1.35rem 1.4rem;
         display: flex;
-        align-items: center;
-        gap: 10px;
-        margin-bottom: 6px;
+        flex-direction: column;
+        gap: 0.45rem;
+        flex: 1;
     }
-    .badge {
-        font-size: 11px;
-        color: var(--saffron);
-        background: rgba(243, 201, 105, 0.12);
-        border: 1px solid rgba(243, 201, 105, 0.3);
-        padding: 2px 9px;
-        border-radius: 999px;
-        letter-spacing: 0.03em;
-        text-transform: lowercase;
-    }
-    .date {
+    .post-card-date {
         font-size: 12px;
-        color: var(--muted);
+        color: var(--saffron);
+        font-weight: 500;
+        letter-spacing: 0.02em;
     }
-    .featured h2 {
-        font-size: 1.15rem;
+    .post-card-title {
+        font-size: 1.12rem;
         font-weight: 600;
-        margin: 0 0 6px;
+        margin: 0;
         line-height: 1.35;
         color: var(--cream);
         letter-spacing: -0.005em;
     }
-    .featured p {
-        font-size: 0.92rem;
-        color: var(--muted-strong);
-        margin: 0;
-        line-height: 1.55;
-    }
-
-    /* ---- Post list ---- */
-    .post-list { display: flex; flex-direction: column; }
-    .post {
-        display: flex;
-        gap: 16px;
-        align-items: center;
-        padding: 18px 0;
-        border-bottom: 1px solid var(--border);
-        transition: opacity 0.15s ease, transform 0.15s ease;
-    }
-    .post:last-child { border-bottom: none; }
-    .post:hover { opacity: 0.85; transform: translateX(2px); }
-
-    .post-thumb {
-        flex-shrink: 0;
-        width: 72px;
-        height: 72px;
-        border-radius: 10px;
-        overflow: hidden;
-        background: rgba(255, 255, 255, 0.04);
-    }
-    .post-thumb img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-    }
-    .post-body { flex: 1; min-width: 0; }
-    .post-title {
-        font-size: 0.98rem;
-        font-weight: 600;
-        margin: 0 0 4px;
-        line-height: 1.4;
-        color: var(--cream);
-        letter-spacing: -0.005em;
-    }
-    .post-summary {
-        font-size: 0.85rem;
+    .post-card-summary {
+        font-size: 0.9rem;
         color: var(--muted);
         margin: 0;
-        line-height: 1.5;
+        line-height: 1.55;
         overflow: hidden;
         text-overflow: ellipsis;
         display: -webkit-box;
         -webkit-line-clamp: 2;
         -webkit-box-orient: vertical;
-    }
-    .post-date {
-        font-size: 12px;
-        color: var(--muted);
-        margin-left: 8px;
-        flex-shrink: 0;
     }
 
     /* ---- Empty ---- */
@@ -210,11 +156,9 @@
     }
 
     /* ---- Mobile ---- */
-    @media (max-width: 540px) {
+    @media (max-width: 720px) {
         .container { padding: 1.75rem 1rem 3rem; }
-        .featured { flex-direction: column; align-items: flex-start; padding: 1rem; }
-        .featured-thumb { width: 100%; height: 180px; }
-        .post-summary { -webkit-line-clamp: 2; }
+        .post-grid { grid-template-columns: 1fr; gap: 1.25rem; }
     }
 </style>
 {% endblock %}
@@ -229,37 +173,19 @@
     </section>
 
     {% if posts %}
-        {% with featured=posts.0 %}
-        <a href="{% url 'blog_post' featured.slug %}" class="featured" data-track="blog-featured">
-            {% if featured.featured_image %}
-            <div class="featured-thumb">
-                <img src="{% static featured.featured_image %}" alt="{{ featured.title }}" loading="lazy">
-            </div>
-            {% endif %}
-            <div class="featured-body">
-                <div class="featured-meta">
-                    <span class="badge">featured</span>
-                    <span class="date">{{ featured.date|iso_long_date }}</span>
-                </div>
-                <h2>{{ featured.title }}</h2>
-                <p>{{ featured.excerpt }}</p>
-            </div>
-        </a>
-        {% endwith %}
-
-        <section class="post-list">
-            {% for post in posts|slice:"1:" %}
-            <a href="{% url 'blog_post' post.slug %}" class="post" data-track="blog-post-row">
+        <section class="post-grid">
+            {% for post in posts %}
+            <a href="{% url 'blog_post' post.slug %}" class="post-card" data-track="blog-post-card">
                 {% if post.featured_image %}
-                <div class="post-thumb">
+                <div class="post-card-thumb">
                     <img src="{% static post.featured_image %}" alt="{{ post.title }}" loading="lazy">
                 </div>
                 {% endif %}
-                <div class="post-body">
-                    <h3 class="post-title">{{ post.title }}</h3>
-                    <p class="post-summary">{{ post.excerpt }}</p>
+                <div class="post-card-body">
+                    <span class="post-card-date">{{ post.date|iso_long_date }}</span>
+                    <h2 class="post-card-title">{{ post.title }}</h2>
+                    <p class="post-card-summary">{{ post.excerpt }}</p>
                 </div>
-                <span class="post-date">{{ post.date|iso_short_date }}</span>
             </a>
             {% endfor %}
         </section>
