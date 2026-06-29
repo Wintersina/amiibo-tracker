@@ -127,6 +127,8 @@ jobs:
           loki_user = "${{ secrets.LOKI_USER }}"
           loki_api_key_secret = "${{ secrets.LOKI_API_KEY_SECRET }}"
           loki_hash_salt_secret = "${{ secrets.LOKI_HASH_SALT_SECRET }}"
+          ebay_client_id = "${{ secrets.EBAY_CLIENT_ID }}"
+          ebay_client_secret_secret = "${{ secrets.EBAY_CLIENT_SECRET_SECRET }}"
           EOF
 
       - name: Terraform Init

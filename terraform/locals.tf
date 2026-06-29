@@ -62,6 +62,10 @@ locals {
     {
       name  = "DAILY_REPORT_SCHEDULER_SA_EMAIL"
       value = "${var.service_name}-scheduler@${var.project_id}.iam.gserviceaccount.com"
+    },
+    {
+      name  = "EBAY_CLIENT_ID"
+      value = var.ebay_client_id
     }
   ]
 }

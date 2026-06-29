@@ -29,7 +29,7 @@ variable "django_secret_key" {
 variable "allowed_hosts" {
   description = "List of allowed hosts for Django"
   type        = list(string)
-  default     = [
+  default = [
     "goozamiibo.com",
     "www.goozamiibo.com",
     "amiibo-tracker-juiposodeq-ue.a.run.app",
@@ -128,6 +128,24 @@ variable "daily_report_time_zone" {
   description = "IANA timezone the cron schedule is evaluated in"
   type        = string
   default     = "America/New_York"
+}
+
+variable "price_refresh_cron_schedule" {
+  description = "Cron schedule for refreshing AmiiboDex price estimates"
+  type        = string
+  default     = "0 5 1 * *"
+}
+
+variable "ebay_client_id" {
+  description = "eBay Browse API client id. Leave empty to disable API pricing refreshes."
+  type        = string
+  default     = ""
+}
+
+variable "ebay_client_secret_secret" {
+  description = "Secret Manager secret id holding the eBay Browse API client secret"
+  type        = string
+  default     = ""
 }
 
 variable "billing_account_id" {

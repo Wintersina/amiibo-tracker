@@ -28,3 +28,6 @@ terraform/*.tfvars
 
 # Temporary curl files
 cookies.txt
+
+# Local generated pricing cache
+tracker/data/amiibo_price_cache.local.json

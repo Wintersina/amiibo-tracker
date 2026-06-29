@@ -4,7 +4,7 @@
 
 {% block title %}AmiiboDex - Complete Amiibo Database{% endblock %}
 
-{% block meta_description %}Browse the complete catalog of all released Amiibo figures, sorted by newest to oldest. A comprehensive, always up-to-date database of every amiibo ever released.{% endblock %}
+{% block meta_description %}Browse the complete AmiiboDex catalog with release dates, series details, favorites, eBay listing links, and optional loose/NIB price estimates.{% endblock %}
 
 {% block head_extra %}
 <style>
@@ -98,6 +98,17 @@
         .amiibo-list-intro p {
             margin: 0;
             color: rgba(253, 247, 227, 0.95);
+        }
+
+        .pricing-note {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(243, 201, 105, 0.22);
+            border-radius: 12px;
+            padding: 0.95rem 1rem;
+            margin: 1rem 0 1.25rem;
+            color: rgba(253, 247, 227, 0.78);
+            font-size: 0.9rem;
+            line-height: 1.55;
         }
 
         .search-form {
@@ -319,6 +330,81 @@
         .amiibo-table td.name-col {
             font-weight: 600;
             color: var(--cream);
+        }
+
+        .price-col {
+            min-width: 140px;
+        }
+
+        .price-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .price-main {
+            color: var(--cream);
+            font-weight: 700;
+            font-size: 0.9rem;
+            line-height: 1.35;
+        }
+
+        .price-empty {
+            color: rgba(253, 247, 227, 0.62);
+            font-size: 0.86rem;
+        }
+
+        .price-meta {
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+            flex-wrap: wrap;
+            color: rgba(253, 247, 227, 0.66);
+            font-size: 0.75rem;
+        }
+
+        .estimate-badge {
+            display: inline-flex;
+            align-items: center;
+            width: fit-content;
+            padding: 0.12rem 0.42rem;
+            border: 1px solid rgba(243, 201, 105, 0.35);
+            border-radius: 999px;
+            color: var(--saffron);
+            background: rgba(243, 201, 105, 0.1);
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+            text-transform: uppercase;
+        }
+
+        .price-link {
+            color: var(--saffron);
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 0.78rem;
+        }
+
+        .price-link:hover {
+            text-decoration: underline;
+            text-underline-offset: 3px;
+        }
+
+        .price-details {
+            margin-top: 0.15rem;
+            color: rgba(253, 247, 227, 0.72);
+            font-size: 0.76rem;
+        }
+
+        .price-details summary {
+            cursor: pointer;
+            color: rgba(253, 247, 227, 0.78);
+            font-weight: 600;
+        }
+
+        .price-details p {
+            margin: 0.35rem 0 0;
+            line-height: 1.45;
         }
 
         .upcoming-badge {
@@ -618,7 +704,7 @@
     <div class="content">
         <a href="{% url 'index' %}" class="back-link" data-track="amiibodex-back">← back to home</a>
         <h1>AmiiboDex</h1>
-        <p class="page-subtitle">AmiiboDex scrapes the web daily to find new amiibos to share here!</p>
+        <p class="page-subtitle">AmiiboDex tracks released figures, favorites, release dates, eBay listings, and optional loose/NIB price estimates.</p>
 
         {% if error %}
             <div class="error-message">
@@ -627,12 +713,13 @@
         {% else %}
             <form class="search-form" onsubmit="return false;">
                 <div class="search-fields">
-                    <input type="text" id="search-input" placeholder="Search by name, type, series, or date..." class="search-input" autofocus>
+                    <input type="text" id="search-input" placeholder="Search by name, type, series, date, or price..." class="search-input" autofocus>
                 </div>
                 <label class="fav-filter" id="fav-filter" hidden>
                     <input type="checkbox" id="fav-only"> ♥ Favorites only
                 </label>
             </form>
+            <p class="pricing-note">Prices are estimates from marketplace snapshots when available. Always inspect linked eBay listings for condition, region, shipping, and seller details before buying.</p>
 
             <p class="total-count" id="total-count">Showing {{ total_count }} of {{ total_count }} amiibos</p>
 
@@ -645,6 +732,7 @@
                         <th>Game Series</th>
                         <th>Amiibo Series</th>
                         <th>Type</th>
+                        <th>Price</th>
                         <th>Release Date</th>
                     </tr>
                 </thead>
@@ -672,6 +760,30 @@
                         <td class="game-series" data-label="Game Series:">{{ amiibo.gameSeries|default:"N/A" }}</td>
                         <td class="amiibo-series" data-label="Amiibo Series:">{{ amiibo.amiiboSeries|default:"N/A" }}</td>
                         <td class="amiibo-type" data-label="Type:">{{ amiibo.type|default:"N/A" }}</td>
+                        <td class="price-col" data-label="Price:" onclick="event.stopPropagation()">
+                            <div class="price-stack">
+                                {% if amiibo.pricing.has_estimate %}
+                                    <span class="price-main">{{ amiibo.pricing.display }}</span>
+                                    <span class="price-meta">
+                                        <span class="estimate-badge">Estimate</span>
+                                        {% if amiibo.pricing.confidence != "unavailable" %}
+                                            {{ amiibo.pricing.confidence }} confidence
+                                        {% endif %}
+                                    </span>
+                                    <details class="price-details">
+                                        <summary>Details</summary>
+                                        <p>
+                                            Based on {{ amiibo.pricing.sample_count }} {{ amiibo.pricing.source_label|default:"eBay listing" }} match{{ amiibo.pricing.sample_count|pluralize }}.
+                                            {% if amiibo.pricing.snapshot_date %}Updated {{ amiibo.pricing.snapshot_date }}.{% endif %}
+                                            Six-month trends will appear after snapshots accumulate.
+                                        </p>
+                                    </details>
+                                {% else %}
+                                    <span class="price-empty">Estimate pending</span>
+                                {% endif %}
+                                <a href="{{ amiibo.pricing.source_url }}" target="_blank" rel="nofollow noopener noreferrer" class="price-link">View eBay listings</a>
+                            </div>
+                        </td>
                         <td class="release-date" data-label="Release Date:">{{ amiibo.display_release|default:"TBA" }}</td>
                     </tr>
                     {% endfor %}
@@ -713,12 +825,14 @@
             const gameSeries = row.querySelector('.game-series')?.textContent.toLowerCase() || '';
             const amiiboSeries = row.querySelector('.amiibo-series')?.textContent.toLowerCase() || '';
             const releaseDate = row.querySelector('.release-date')?.textContent.toLowerCase() || '';
+            const price = row.querySelector('.price-col')?.textContent.toLowerCase() || '';
 
             const matchesSearch = name.includes(searchTerm) ||
                                 type.includes(searchTerm) ||
                                 gameSeries.includes(searchTerm) ||
                                 amiiboSeries.includes(searchTerm) ||
-                                releaseDate.includes(searchTerm);
+                                releaseDate.includes(searchTerm) ||
+                                price.includes(searchTerm);
 
             const isFav = row.querySelector('.dex-fav-btn')?.classList.contains('favorited');
             const matches = matchesSearch && (!favOnly || isFav);

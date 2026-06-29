@@ -1,4 +1,4 @@
-.PHONY: help test test-watch test-coverage lint format clean build run stop logs shell scrape scrape-remote deploy report-daily report-daily-dry report-daily-remote install-certs update-amiibo-db update-amiibo-db-dry
+.PHONY: help test test-watch test-coverage lint format clean build run stop logs shell scrape scrape-remote deploy report-daily report-daily-dry report-daily-remote install-certs update-amiibo-db update-amiibo-db-dry seed-prices seed-prices-dry seed-prices-local seed-prices-remote
 
 # Default target - show help
 help:
@@ -22,6 +22,16 @@ help:
 	@echo "                               (writes only when content changes)"
 	@echo "  make update-amiibo-db-dry  - Show the diff without writing"
 	@echo "  (override endpoint with API_URL=https://...; e.g. for staging)"
+	@echo ""
+	@echo "Pricing:"
+	@echo "  make seed-prices           - Refresh AmiiboDex price estimates from eBay"
+	@echo "                               (auto-loads .env; optional LIMIT=25)"
+	@echo "  make seed-prices-dry       - Test eBay pricing without Firestore writes"
+	@echo "                               (useful for sandbox creds; optional LIMIT=1)"
+	@echo "  make seed-prices-local     - Write prices to gitignored local JSON cache"
+	@echo "                               (visible in local AmiiboDex; optional LIMIT=25)"
+	@echo "  make seed-prices-remote    - Hit the public endpoint and refresh prices"
+	@echo "                               (override SITE_URL=https://staging.example.com)"
 	@echo ""
 	@echo "Code Quality:"
 	@echo "  make lint              - Run linting checks (black check)"
@@ -187,6 +197,24 @@ update-amiibo-db-dry:
 	@$(ENSURE_VENV) \
 	$(PYTHON) manage.py update_amiibo_db --dry-run $(if $(API_URL),--api-url $(API_URL),)
 
+seed-prices:
+	@echo "💸 Refreshing AmiiboDex price estimates$(if $(LIMIT), for $(LIMIT) amiibos,)..."
+	@$(ENSURE_VENV) \
+	$(ENV_LOAD) \
+	$(PYTHON) manage.py refresh_amiibo_prices $(if $(LIMIT),--limit $(LIMIT),)
+
+seed-prices-dry:
+	@echo "💸 Dry-running AmiiboDex price estimates$(if $(LIMIT), for $(LIMIT) amiibos,)..."
+	@$(ENSURE_VENV) \
+	$(ENV_LOAD) \
+	$(PYTHON) manage.py refresh_amiibo_prices --dry-run $(if $(LIMIT),--limit $(LIMIT),)
+
+seed-prices-local:
+	@echo "💸 Writing AmiiboDex price estimates to local cache$(if $(LIMIT), for $(LIMIT) amiibos,)..."
+	@$(ENSURE_VENV) \
+	$(ENV_LOAD) \
+	$(PYTHON) manage.py refresh_amiibo_prices --local-cache $(if $(LIMIT),--limit $(LIMIT),)
+
 # Daily DAU report
 #
 # Auto-loads .env so LOKI_QUERY_*, EMAIL_*, GCS_REPORTS_BUCKET, etc. are
@@ -219,6 +247,10 @@ scrape-remote:
 report-daily-remote:
 	@echo "📨 Triggering remote daily report at $(SITE_URL)/api/run-daily-report/"
 	@curl -sS -X POST -w "\nHTTP %{http_code}\n" $(SITE_URL)/api/run-daily-report/
+
+seed-prices-remote:
+	@echo "💸 Triggering remote price refresh at $(SITE_URL)/api/refresh-prices/"
+	@curl -sS -X POST -w "\nHTTP %{http_code}\n" $(SITE_URL)/api/refresh-prices/
 
 # macOS Python TLS fix
 #

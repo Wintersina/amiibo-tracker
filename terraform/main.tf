@@ -51,6 +51,7 @@ resource "google_cloud_run_service" "amiibo_tracker" {
     google_secret_manager_secret_iam_member.loki_api_key_accessor,
     google_secret_manager_secret_iam_member.loki_hash_salt_accessor,
     google_secret_manager_secret_iam_member.gmail_smtp_password_accessor,
+    google_secret_manager_secret_iam_member.ebay_client_secret_accessor,
     google_firestore_database.default,
     google_project_iam_member.firestore_user_app_sa,
   ]
@@ -129,6 +130,21 @@ resource "google_cloud_run_service" "amiibo_tracker" {
           }
         }
 
+        dynamic "env" {
+          for_each = var.ebay_client_secret_secret != "" ? [1] : []
+
+          content {
+            name = "EBAY_CLIENT_SECRET"
+
+            value_from {
+              secret_key_ref {
+                name = var.ebay_client_secret_secret
+                key  = "latest"
+              }
+            }
+          }
+        }
+
       }
 
       service_account_name = google_service_account.app_sa.email
@@ -199,6 +215,15 @@ resource "google_secret_manager_secret_iam_member" "gmail_smtp_password_accessor
 
   project   = var.project_id
   secret_id = var.gmail_smtp_password_secret
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${google_service_account.app_sa.email}"
+}
+
+resource "google_secret_manager_secret_iam_member" "ebay_client_secret_accessor" {
+  count = var.ebay_client_secret_secret != "" ? 1 : 0
+
+  project   = var.project_id
+  secret_id = var.ebay_client_secret_secret
   role      = "roles/secretmanager.secretAccessor"
   member    = "serviceAccount:${google_service_account.app_sa.email}"
 }
@@ -372,3 +397,37 @@ resource "google_cloud_scheduler_job" "daily_report" {
   ]
 }
 
+resource "google_cloud_scheduler_job" "price_refresh" {
+  name        = "${var.service_name}-price-refresh"
+  description = "Refreshes AmiiboDex eBay price estimates and six-month snapshots"
+  schedule    = var.price_refresh_cron_schedule
+  time_zone   = var.daily_report_time_zone
+  region      = var.region
+
+  retry_config {
+    retry_count          = 3
+    min_backoff_duration = "60s"
+    max_backoff_duration = "600s"
+  }
+
+  http_target {
+    http_method = "POST"
+    uri         = "${google_cloud_run_service.amiibo_tracker.status[0].url}/internal/refresh-prices"
+
+    headers = {
+      "Content-Type" = "application/json"
+    }
+
+    body = base64encode("{}")
+
+    oidc_token {
+      service_account_email = google_service_account.scheduler_sa.email
+      audience              = google_cloud_run_service.amiibo_tracker.status[0].url
+    }
+  }
+
+  depends_on = [
+    google_project_service.enabled,
+    google_cloud_run_service_iam_member.scheduler_invoker,
+  ]
+}

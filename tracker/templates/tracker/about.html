@@ -3,7 +3,7 @@
 
 {% block title %}About Amiibo Tracker{% endblock %}
 
-{% block meta_description %}Learn about Amiibo Tracker's features, Google Sheets integration, privacy practices, and how Goozamiibo helps collectors manage their Amiibo collections.{% endblock %}
+{% block meta_description %}Learn about Goozamiibo features, Google Sheets collection tracking, AmiiboDex price estimates, privacy practices, and collector guides.{% endblock %}
 
 {% block head_extra %}
 <style>
@@ -227,7 +227,7 @@
     <ul class="feature-list">
         <li><strong>Collection Tracking</strong> — Maintain a complete Amiibo inventory in your own Google Sheet. Mark what you own, filter by series and type, and keep everything organized.</li>
         <li><strong>Favorites</strong> — Heart the figures you love most from your collection or the AmiiboDex, then filter to show only your favorites. Favorites are saved right alongside your collection in your Google Sheet.</li>
-        <li><strong>AmiiboDex Catalog</strong> — Browse an always-updated database of every released Amiibo figure, with high-quality images, release dates, and series information. The catalog scrapes the web daily to add newly announced figures.</li>
+        <li><strong>AmiiboDex Catalog</strong> — Browse an always-updated database of every released Amiibo figure, with high-quality images, release dates, series information, eBay listing links, and optional loose/NIB price estimates. The catalog scrapes the web daily to add newly announced figures.</li>
         <li><strong>Educational Blog</strong> — Reviews, hunts, and guides covering NFC technology, Amiibo history, rarity tiers, condition grading, game compatibility, spotting fakes, and collecting tips.</li>
         <li><strong>Comments</strong> — Share your thoughts on individual figures and blog posts, reply to other collectors, and join the conversation.</li>
         <li><strong>Privacy-First Design</strong> — Your collection data stays in your own Google Drive. No shared databases, no tracking beyond basic analytics.</li>
@@ -243,6 +243,13 @@
         <li><strong>Stay organized.</strong> Search and filter by series, type, collected status, or favorites, and watch your progress with real-time collection counts.</li>
     </ol>
     <p>Prefer to look before signing in? The <a href="{% url 'demo' %}" class="inline">interactive demo</a> lets you try collecting and favoriting with sample data — nothing is saved.</p>
+
+    <h2>AmiiboDex Pricing</h2>
+    <p>
+        AmiiboDex can show marketplace price estimates for loose and new-in-box figures when pricing snapshots are available.
+        Prices are estimates based on active marketplace data, not appraisals or guaranteed sale values. Each row also links
+        to current eBay listings so you can inspect condition, region, shipping, and seller details yourself.
+    </p>
 
     <h2>Why Google Sheets?</h2>
     <p>Goozamiibo uses Google Sheets because it gives you complete control over your data. You can:</p>
@@ -274,12 +281,12 @@
     <h2>Editorial Notes</h2>
     <p>
         Goozamiibo guides are written and maintained by
-        <a href="{% url 'author_detail' 'sina' %}" class="inline" rel="author">Sina</a>
-        under the tag name gooznamak. Source-checked articles include links to official Nintendo pages
+        <a href="{% url 'author_detail' site_author.slug %}" class="inline" rel="author">{{ site_author.name }}</a>
+        under the tag name {{ site_author.handle }}. Source-checked articles include links to official Nintendo pages
         and reputable secondary references where they are useful.
     </p>
     <p>
-        Follow Sina on <a href="https://x.com/codingsina" class="inline" target="_blank" rel="me noopener noreferrer">X</a>
+        Follow {{ site_author.name }} on <a href="{{ site_author.x_url }}" class="inline" target="_blank" rel="me noopener noreferrer">X</a>
         for project updates and collecting notes.
     </p>
 

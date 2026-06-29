@@ -202,7 +202,7 @@
             <p>Source-checked notes on amiibo compatibility, collecting, display, rarity, and rumors.</p>
         </div>
         <div class="intro-author">
-            Written by <a href="{% url 'author_detail' 'sina' %}">Sina</a> · <a href="https://x.com/codingsina" target="_blank" rel="me noopener noreferrer">@gooznamak</a>
+            Written by <a href="{% url 'author_detail' site_author.slug %}">{{ site_author.name }}</a> · <a href="{{ site_author.x_url }}" target="_blank" rel="me noopener noreferrer">@{{ site_author.handle }}</a>
         </div>
     </section>
 

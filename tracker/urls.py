@@ -25,6 +25,8 @@ from tracker.views import (
     NintendoScraperAPIView,
     DailyReportAPIView,
     DailyReportTriggerView,
+    PriceRefreshAPIView,
+    PriceRefreshTriggerView,
     AuthorView,
     PostCommentView,
     DeleteCommentView,
@@ -100,8 +102,18 @@ urlpatterns = [
         name="run_daily_report_api",
     ),
     path(
+        "api/refresh-prices/",
+        PriceRefreshAPIView.as_view(),
+        name="refresh_prices_api",
+    ),
+    path(
         "internal/run-daily-report",
         DailyReportTriggerView.as_view(),
         name="run_daily_report",
+    ),
+    path(
+        "internal/refresh-prices",
+        PriceRefreshTriggerView.as_view(),
+        name="refresh_prices",
     ),
 ]

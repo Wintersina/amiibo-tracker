@@ -346,7 +346,7 @@
                     <a href="{% url 'amiibodex' %}" class="nav-link" data-track="nav-amiibodex">AmiiboDex</a>
                     <a href="{% url 'about' %}" class="nav-link" data-track="nav-about">About</a>
                     <a href="{% url 'blog_list' %}" class="nav-link" data-track="nav-blog">Blog</a>
-                    <a href="{% url 'author_detail' 'sina' %}" class="nav-link" data-track="nav-author">Author</a>
+                    <a href="{% url 'author_detail' site_author.slug %}" class="nav-link" data-track="nav-author">Author</a>
                     <a href="{% url 'privacy' %}" class="nav-link" data-track="nav-privacy">Privacy</a>
                 </div>
             </div>
@@ -376,7 +376,7 @@
             <a href="{% url 'amiibodex' %}" class="mobile-nav-link" data-track="mobile-nav-amiibodex">AmiiboDex</a>
             <a href="{% url 'about' %}" class="mobile-nav-link" data-track="mobile-nav-about">About</a>
             <a href="{% url 'blog_list' %}" class="mobile-nav-link" data-track="mobile-nav-blog">Blog</a>
-            <a href="{% url 'author_detail' 'sina' %}" class="mobile-nav-link" data-track="mobile-nav-author">Author</a>
+            <a href="{% url 'author_detail' site_author.slug %}" class="mobile-nav-link" data-track="mobile-nav-author">Author</a>
             <a href="{% url 'privacy' %}" class="mobile-nav-link" data-track="mobile-nav-privacy">Privacy</a>
             {% if request.session.user_email %}
             <a href="{% url 'logout' %}" class="mobile-nav-link login" data-track="mobile-logout-start">

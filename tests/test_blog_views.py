@@ -5,7 +5,7 @@ from django.test import RequestFactory
 from django.http import Http404
 from unittest.mock import Mock, patch, mock_open
 
-from tracker import views
+from tracker import pricing, views
 from tracker.views import BLOG_POSTS
 
 
@@ -276,6 +276,77 @@ class TestAmiiboDetailView:
         content = response.content.decode("utf-8")
         assert "North America" in content
         assert "November" in content or "2014" in content
+
+    def test_amiibo_detail_renders_price_chart(self, monkeypatch, rf):
+        """Test that amiibo detail pages render current prices and chart data."""
+        mock_amiibos = [
+            {
+                "name": "Mario",
+                "head": "00000000",
+                "tail": "00000002",
+                "character": "Mario",
+                "gameSeries": "Super Mario",
+                "amiiboSeries": "Super Smash Bros.",
+                "type": "Figure",
+                "image": "http://example.com/mario.png",
+                "release": {"na": "2014-11-21"},
+            }
+        ]
+        display = pricing.normalize_pricing_for_display(
+            mock_amiibos[0],
+            {
+                "currency": "USD",
+                "loose_estimate_cents": 1800,
+                "new_estimate_cents": 5000,
+                "sample_count": 6,
+                "confidence": "medium",
+                "source_url": "https://www.ebay.com/sch/i.html?_nkw=Mario+amiibo",
+                "snapshot_date": "2026-06-28",
+            },
+        )
+        chart = pricing.build_price_chart_data(
+            display,
+            [
+                {
+                    "snapshot_date": "2026-06-27",
+                    "currency": "USD",
+                    "loose_estimate_cents": 1600,
+                    "new_estimate_cents": 4600,
+                },
+                {
+                    "snapshot_date": "2026-06-28",
+                    "currency": "USD",
+                    "loose_estimate_cents": 1800,
+                    "new_estimate_cents": 5000,
+                },
+            ],
+        )
+
+        monkeypatch.setattr(
+            views.AmiiboDetailView,
+            "_fetch_local_amiibos",
+            lambda self: mock_amiibos,
+        )
+        monkeypatch.setattr(
+            views,
+            "get_amiibo_pricing_context",
+            lambda amiibo: {"pricing": display, "price_chart": chart},
+        )
+
+        request = add_session_to_request(
+            rf.get("/blog/number-released/amiibo/00000000-00000002/")
+        )
+        response = views.AmiiboDetailView.as_view()(
+            request, amiibo_id="00000000-00000002"
+        )
+        content = response.content.decode("utf-8")
+
+        assert response.status_code == 200
+        assert "Price Chart" in content
+        assert "$18" in content
+        assert "$50" in content
+        assert "Marketplace Snapshot Trend" in content
+        assert "View eBay listings" in content
 
 
 class TestCharacterDescriptions:

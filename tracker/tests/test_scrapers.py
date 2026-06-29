@@ -683,6 +683,154 @@ class TestAmiiboLifeScraper:
         assert scraper.clean_series("Zelda Series") == "Zelda"
         assert scraper.clean_series("No suffix here") == "No suffix here"
 
+    def test_normalize_name_companion_in_parens(self):
+        """A "(& Companion)" tag is identity, not a variant, and must converge
+        with the bare "& Companion" form used on series pages."""
+        scraper = AmiiboLifeScraper()
+
+        assert (
+            scraper.normalize_name("Kirby (& Warp Star)")
+            == scraper.normalize_name("Kirby & Warp Star")
+            == "kirby warp star"
+        )
+        assert (
+            scraper.normalize_name("Meta Knight (& Shadow Star)")
+            == "meta knight shadow star"
+        )
+        # Regular variant parentheses are still stripped entirely.
+        assert scraper.normalize_name("Octoling (Side Order)") == "octoling"
+
+    def test_series_compatible(self):
+        """Series compatibility ignores filler words but not meaningful ones."""
+        scraper = AmiiboLifeScraper()
+
+        assert scraper.series_compatible("The Legend of Zelda", "Legend Of Zelda")
+        assert scraper.series_compatible("", "Kirby Air Riders")
+        assert not scraper.series_compatible("Kirby", "Kirby Air Riders")
+        assert not scraper.series_compatible("Super Smash Bros.", "Kirby Air Riders")
+
+    def test_dedupe_scraped_prefers_dated_entry(self):
+        """The same figure from two sources collapses to one, keeping dates."""
+        scraper = AmiiboLifeScraper()
+
+        scraped = [
+            {"name": "Noir Dedede & Hydra", "release_dates": {}},
+            {"name": "Noir Dedede & Hydra", "release_dates": {"jp": "2026-01-01"}},
+            {"name": "Kirby & Warp Star", "release_dates": {}},
+        ]
+        result = scraper.dedupe_scraped(scraped)
+
+        assert len(result) == 2
+        noir = next(a for a in result if "Noir" in a["name"])
+        assert noir["release_dates"] == {"jp": "2026-01-01"}
+
+    @patch("tracker.scrapers.requests.get")
+    def test_discover_series_excludes_card_series(self, mock_get):
+        """Series are discovered from the releases nav, with card/set series
+        (tagged "amiibo cards" on any of their links) dropped."""
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.content = b"""
+        <html>
+            <a href="/amiibo/kirby-air-riders">Kirby Air Riders series</a>
+            <a href="/amiibo/super-mario">Super Mario series</a>
+            <a href="/amiibo/mario-sports-superstars">Mario Sports Superstars series</a>
+            <a href="/amiibo/mario-sports-superstars">Mario Sports Superstars series amiibo cards</a>
+            <a href="/amiibo/super-smash-bros/mario">Mario figure link, not a series</a>
+        </html>
+        """
+        mock_response.raise_for_status = Mock()
+        mock_get.return_value = mock_response
+
+        series = AmiiboLifeScraper().discover_series()
+
+        assert series == {
+            "kirby-air-riders": "Kirby Air Riders",
+            "super-mario": "Super Mario",
+        }
+
+    @patch("tracker.scrapers.requests.get")
+    def test_scrape_series_pages_skips_already_dated_figures(self, mock_get):
+        """Figures already seen on the releases timeline are skipped; only the
+        undated (TBA) ones are returned."""
+        releases_nav = (
+            b'<html><a href="/amiibo/kirby-air-riders">Kirby Air Riders series</a>'
+            b"</html>"
+        )
+        series_page = b"""
+        <html>
+            <a href="/amiibo/kirby-air-riders/kirby-warp-star">
+                <div class="figure-sized-block">
+                    <img class="lazy" data-src="/assets/a.png" />
+                    <div class="name">Kirby &amp; Warp Star</div>
+                </div>
+            </a>
+            <a href="/amiibo/kirby-air-riders/noir-dedede-hydra">
+                <div class="figure-sized-block">
+                    <img class="lazy" data-src="/assets/b.png" />
+                    <div class="name">Noir Dedede &amp; Hydra</div>
+                </div>
+            </a>
+        </html>
+        """
+
+        def side_effect(url, *args, **kwargs):
+            resp = Mock()
+            resp.status_code = 200
+            resp.raise_for_status = Mock()
+            resp.content = releases_nav if url.endswith("/releases") else series_page
+            return resp
+
+        mock_get.side_effect = side_effect
+
+        scraper = AmiiboLifeScraper()
+        # Pretend the dated Kirby figure was already captured by the timeline.
+        scraper.seen_release_hrefs = {"/amiibo/kirby-air-riders/kirby-warp-star"}
+
+        figures = scraper.scrape_series_pages()
+
+        assert [f["name"] for f in figures] == ["Noir Dedede & Hydra"]
+        assert figures[0]["series"] == "Kirby Air Riders"
+        assert figures[0]["release_dates"] == {}
+        assert figures[0]["image"] == "https://amiibo.life/assets/b.png"
+
+    def test_find_best_match_blocks_cross_series(self):
+        """A new figure named after an existing character in a different series
+        must not match (and corrupt) that character."""
+        scraper = AmiiboLifeScraper()
+        existing = [
+            {"name": "King Dedede", "amiiboSeries": "Super Smash Bros.", "release": {}},
+            {"name": "King Dedede", "amiiboSeries": "Kirby", "release": {}},
+        ]
+        scraped = {
+            "name": "King Dedede & Tank Star",
+            "series": "Kirby Air Riders",
+            "release_dates": {},
+        }
+        assert scraper.find_best_match(scraped, existing) is None
+
+    def test_find_best_match_companion_paren_same_series(self):
+        """The series-page "& Companion" form matches the canonical
+        "(& Companion)" entry rather than the bare character."""
+        scraper = AmiiboLifeScraper()
+        existing = [
+            {"name": "Kirby", "amiiboSeries": "Kirby", "release": {}},
+            {
+                "name": "Kirby (& Warp Star)",
+                "amiiboSeries": "Kirby Air Riders",
+                "release": {},
+            },
+        ]
+        scraped = {
+            "name": "Kirby & Warp Star",
+            "series": "Kirby Air Riders",
+            "release_dates": {},
+        }
+        match = scraper.find_best_match(scraped, existing)
+        assert match is not None
+        assert match["name"] == "Kirby (& Warp Star)"
+
+
     def test_is_set_or_bundle(self):
         """Test detection of sets, bundles, and grouped items."""
         scraper = AmiiboLifeScraper()
@@ -1030,6 +1178,7 @@ class TestAmiiboLifeScraper:
         assert result[0]["type"] == "Card"
         assert result[0]["series"] == "Animal Crossing"
 
+    @patch.object(AmiiboLifeScraper, "scrape_series_pages", return_value=[])
     @patch.object(AmiiboLifeScraper, "scrape_amiibo_life")
     @patch.object(AmiiboLifeScraper, "load_existing_amiibos")
     @patch.object(AmiiboLifeScraper, "save_amiibos")
@@ -1040,6 +1189,7 @@ class TestAmiiboLifeScraper:
         mock_save,
         mock_load,
         mock_scrape,
+        mock_scrape_series,
         sample_amiibos,
     ):
         """Test full scraper workflow."""
@@ -1086,7 +1236,10 @@ class TestAmiiboLifeScraper:
 
     @patch.object(AmiiboLifeScraper, "should_run")
     @patch.object(AmiiboLifeScraper, "scrape_amiibo_life")
-    def test_run_force_bypasses_cache(self, mock_scrape, mock_should_run):
+    @patch.object(AmiiboLifeScraper, "scrape_series_pages", return_value=[])
+    def test_run_force_bypasses_cache(
+        self, mock_scrape_series, mock_scrape, mock_should_run
+    ):
         """Test that force=True bypasses cache check."""
         mock_should_run.return_value = False
         mock_scrape.return_value = []

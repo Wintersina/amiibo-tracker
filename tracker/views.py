@@ -60,6 +60,7 @@ from tracker.seo_helpers import (
     generate_organization_schema,
     generate_website_schema,
 )
+from tracker.pricing import enrich_amiibos_with_pricing, get_amiibo_pricing_context
 from tracker.exceptions import (
     GoogleSheetsError,
     SpreadsheetNotFoundError,
@@ -1911,6 +1912,8 @@ class AmiibodexView(View, LoggingMixin, AmiiboLocalFetchMixin):
                 reverse=True,  # Newest first
             )
 
+            enrich_amiibos_with_pricing(sorted_amiibos)
+
             context["amiibos"] = sorted_amiibos
             context["total_count"] = len(sorted_amiibos)
 
@@ -1975,6 +1978,8 @@ class AmiiboDetailView(View, LoggingMixin, AmiiboLocalFetchMixin):
             amiibo["display_release"] = AmiiboService._format_release_date(
                 amiibo.get("release")
             )
+            pricing_context = get_amiibo_pricing_context(amiibo)
+            amiibo["pricing"] = pricing_context["pricing"]
 
             # Format regional release dates
             release_dates = amiibo.get("release", {})
@@ -2145,6 +2150,7 @@ class AmiiboDetailView(View, LoggingMixin, AmiiboLocalFetchMixin):
                 "description": description,
                 "related_amiibo": related_amiibo,
                 "faqs": faqs,
+                "price_chart": pricing_context["price_chart"],
             }
             context.update(seo.build())
 
@@ -2380,6 +2386,41 @@ class DailyReportAPIView(View, LoggingMixin):
         )
 
 
+def _verify_scheduler_request(request, expected_email, expected_audience):
+    from google.auth.transport import requests as ga_requests
+    from google.oauth2 import id_token
+
+    if not expected_email:
+        return JsonResponse({"error": "scheduler-sa-email-not-configured"}, status=503)
+
+    auth_header = request.META.get("HTTP_AUTHORIZATION", "")
+    if not auth_header.startswith("Bearer "):
+        return JsonResponse({"error": "missing-bearer-token"}, status=401)
+    token = auth_header[len("Bearer ") :].strip()
+
+    try:
+        claims = id_token.verify_oauth2_token(
+            token,
+            ga_requests.Request(),
+            audience=expected_audience or None,
+        )
+    except ValueError as exc:
+        logger.warning("scheduler-oidc-verify-failed: %s", exc)
+        return JsonResponse({"error": "invalid-token"}, status=401)
+
+    if claims.get("iss") not in (
+        "https://accounts.google.com",
+        "accounts.google.com",
+    ):
+        return JsonResponse({"error": "unexpected-issuer"}, status=401)
+    if claims.get("email") != expected_email:
+        return JsonResponse({"error": "unexpected-sa"}, status=403)
+    if not claims.get("email_verified"):
+        return JsonResponse({"error": "email-not-verified"}, status=403)
+
+    return None
+
+
 @method_decorator(csrf_exempt, name="dispatch")
 class DailyReportTriggerView(View):
     """Cloud Scheduler -> this endpoint -> the report_daily_users command.
@@ -2394,47 +2435,94 @@ class DailyReportTriggerView(View):
     def post(self, request):
         from django.conf import settings as dj_settings
         from django.core.management import call_command
-        from google.auth.transport import requests as ga_requests
-        from google.oauth2 import id_token
 
         expected_email = dj_settings.DAILY_REPORT_SCHEDULER_SA_EMAIL
-        if not expected_email:
-            return JsonResponse(
-                {"error": "scheduler-sa-email-not-configured"}, status=503
-            )
-
-        auth_header = request.META.get("HTTP_AUTHORIZATION", "")
-        if not auth_header.startswith("Bearer "):
-            return JsonResponse({"error": "missing-bearer-token"}, status=401)
-        token = auth_header[len("Bearer ") :].strip()
-
         expected_audience = getattr(
             dj_settings, "DAILY_REPORT_EXPECTED_AUDIENCE", ""
         ) or os.environ.get("DAILY_REPORT_EXPECTED_AUDIENCE", "")
-        try:
-            claims = id_token.verify_oauth2_token(
-                token,
-                ga_requests.Request(),
-                audience=expected_audience or None,
-            )
-        except ValueError as exc:
-            logger.warning("daily-report-oidc-verify-failed: %s", exc)
-            return JsonResponse({"error": "invalid-token"}, status=401)
-
-        if claims.get("iss") not in (
-            "https://accounts.google.com",
-            "accounts.google.com",
-        ):
-            return JsonResponse({"error": "unexpected-issuer"}, status=401)
-        if claims.get("email") != expected_email:
-            return JsonResponse({"error": "unexpected-sa"}, status=403)
-        if not claims.get("email_verified"):
-            return JsonResponse({"error": "email-not-verified"}, status=403)
+        denial = _verify_scheduler_request(request, expected_email, expected_audience)
+        if denial:
+            return denial
 
         try:
             call_command("report_daily_users")
         except Exception as exc:
             logger.exception("daily-report-command-failed")
+            return JsonResponse({"error": str(exc)}, status=500)
+
+        return HttpResponse(status=204)
+
+
+@method_decorator(csrf_exempt, name="dispatch")
+class PriceRefreshAPIView(View, LoggingMixin, AmiiboLocalFetchMixin):
+    """Public on-demand trigger for refreshing AmiiboDex price estimates."""
+
+    def post(self, request):
+        from tracker.pricing import AmiiboPriceRefreshService
+
+        denial = check_rate_limit(
+            request,
+            bucket="price-refresh",
+            per_ip_max=3,
+            per_ip_window=600,
+            global_max=20,
+            global_window=3600,
+        )
+        if denial:
+            self.log_action(
+                "price-refresh-api-rate-limited",
+                request,
+                level="warning",
+                reason=denial,
+            )
+            return JsonResponse({"status": "error", "message": denial}, status=429)
+
+        try:
+            amiibos = filter_public_amiibos(self._fetch_local_amiibos())
+            result = AmiiboPriceRefreshService().refresh(amiibos)
+            self.log_action(
+                "price-refresh-api-triggered",
+                request,
+                level="info",
+                result=result,
+            )
+            return JsonResponse(result, status=200)
+        except Exception as exc:
+            self.log_action(
+                "price-refresh-api-error", request, level="error", error=str(exc)
+            )
+            return JsonResponse({"status": "error", "message": str(exc)}, status=500)
+
+    def get(self, request):
+        return JsonResponse(
+            {
+                "status": "ready",
+                "endpoint": "POST to this URL to refresh AmiiboDex price estimates",
+            }
+        )
+
+
+@method_decorator(csrf_exempt, name="dispatch")
+class PriceRefreshTriggerView(View, AmiiboLocalFetchMixin):
+    """Cloud Scheduler -> this endpoint -> refresh_amiibo_prices."""
+
+    def post(self, request):
+        from django.conf import settings as dj_settings
+        from tracker.pricing import AmiiboPriceRefreshService
+
+        expected_email = dj_settings.DAILY_REPORT_SCHEDULER_SA_EMAIL
+        expected_audience = getattr(
+            dj_settings, "DAILY_REPORT_EXPECTED_AUDIENCE", ""
+        ) or os.environ.get("DAILY_REPORT_EXPECTED_AUDIENCE", "")
+        denial = _verify_scheduler_request(request, expected_email, expected_audience)
+        if denial:
+            return denial
+
+        try:
+            amiibos = filter_public_amiibos(self._fetch_local_amiibos())
+            AmiiboPriceRefreshService().refresh(amiibos)
+        except Exception as exc:
+            logger.exception("price-refresh-command-failed")
             return JsonResponse({"error": str(exc)}, status=500)
 
         return HttpResponse(status=204)

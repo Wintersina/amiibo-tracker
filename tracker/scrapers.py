@@ -44,11 +44,17 @@ class AmiiboLifeScraper(LoggingMixin):
     Cloud Run compatible - uses file timestamp for cache checking.
     """
 
+    RELEASES_URL = "https://amiibo.life/releases"
+
     def __init__(self, min_similarity=0.6, cache_hours=6):
         self.min_similarity = min_similarity
         self.cache_hours = cache_hours
         self.database_path = Path(__file__).parent / "data" / "amiibo_database.json"
         self.current_year = datetime.now().year
+        # Hrefs of dated figures seen on the releases timeline, populated by
+        # scrape_amiibo_life(). Lets scrape_series_pages() skip figures already
+        # captured there and only add announced-but-undated (TBA) ones.
+        self.seen_release_hrefs = set()
 
     def should_run(self):
         """
@@ -76,11 +82,22 @@ class AmiiboLifeScraper(LoggingMixin):
         try:
             self.log_info("Starting amiibo.life scraper")
 
-            # Scrape amiibo.life website
+            # Scrape amiibo.life website (date-organized releases timeline)
             scraped_amiibos = self.scrape_amiibo_life()
+
+            # Also scan series pages (discovered dynamically) for announced-but-
+            # undated (TBA) figures that never appear on the releases timeline.
+            # Runs after scrape_amiibo_life() so seen_release_hrefs is populated.
+            scraped_amiibos += self.scrape_series_pages()
+
             if not scraped_amiibos:
                 self.log_warning("No amiibos scraped")
                 return {"status": "error", "message": "No amiibos scraped"}
+
+            # Collapse duplicates within this run (e.g. a figure that appears on
+            # both the releases timeline and its series page) before matching, so
+            # we never process the same amiibo twice.
+            scraped_amiibos = self.dedupe_scraped(scraped_amiibos)
 
             # Load existing amiibos
             existing_amiibos = self.load_existing_amiibos()
@@ -134,11 +151,11 @@ class AmiiboLifeScraper(LoggingMixin):
     def scrape_amiibo_life(self):
         """Scrape amiibos from amiibo.life releases page"""
         # Construct URL with current year
-        url = f"https://amiibo.life/releases#release-year-{self.current_year}"
+        url = f"{self.RELEASES_URL}#release-year-{self.current_year}"
         self.log_info(f"Scraping from: {url}")
 
         try:
-            response = requests.get("https://amiibo.life/releases", timeout=30)
+            response = requests.get(self.RELEASES_URL, timeout=30)
             response.raise_for_status()
             soup = BeautifulSoup(response.content, "html.parser")
 
@@ -153,6 +170,12 @@ class AmiiboLifeScraper(LoggingMixin):
                     parent_link = card.find_parent("a")
                     if not parent_link:
                         continue
+
+                    # Remember this figure's detail href so the series-page
+                    # pass can skip figures already captured here.
+                    href = parent_link.get("href", "").rstrip("/")
+                    if href:
+                        self.seen_release_hrefs.add(href)
 
                     # Extract image URL from data-src attribute
                     image_url = card.get("data-src", "")
@@ -249,6 +272,156 @@ class AmiiboLifeScraper(LoggingMixin):
             self.log_error("Request to amiibo.life failed", error=str(e))
             return []
 
+    def discover_series(self):
+        """
+        Discover figure series and their pages from the releases page nav.
+
+        The releases nav links to every series (``/amiibo/<slug>``). We read
+        that list dynamically instead of hard-coding it, and drop card/set
+        series (tagged "amiibo cards" or matching is_set_or_bundle) since those
+        are released as dated sets and never carry standalone TBA figures.
+
+        Returns a dict mapping each figure series slug to its display name.
+        """
+        try:
+            response = requests.get(self.RELEASES_URL, timeout=30)
+            response.raise_for_status()
+            soup = BeautifulSoup(response.content, "html.parser")
+        except requests.RequestException as e:
+            self.log_warning("Could not discover series list", error=str(e))
+            return {}
+
+        # A series is linked more than once in the nav; card series carry an
+        # "amiibo cards" label on at least one of those links. Collect every
+        # label per slug before deciding, so the unlabeled link can't mask it.
+        labels_by_slug = {}
+        for link in soup.select('a[href^="/amiibo/"]'):
+            href = link.get("href", "").rstrip("/")
+            parts = href.split("/")
+            # Series links are /amiibo/<slug>; figure links have an extra part.
+            if len(parts) != 3 or parts[1] != "amiibo":
+                continue
+            labels_by_slug.setdefault(parts[2], []).append(
+                link.get_text(" ", strip=True)
+            )
+
+        series = {}
+        for slug, texts in labels_by_slug.items():
+            # Drop card/set series: cards are released as dated sets and never
+            # carry standalone TBA figures.
+            if any("amiibo cards" in t.lower() for t in texts):
+                continue
+
+            # Strip the type label and " series" suffix to get a clean name.
+            text = max(texts, key=len)
+            name = re.sub(
+                r"\s*amiibo (figures?|cards?)\s*$", "", text, flags=re.IGNORECASE
+            )
+            name = self.clean_series(name)
+            if not name or self.is_set_or_bundle(name):
+                continue
+
+            series[slug] = name
+
+        return series
+
+    def scrape_series_pages(self):
+        """
+        Scrape series detail pages for announced-but-undated (TBA) figures.
+
+        The /releases page is a date-organized timeline, so figures with no
+        release date yet (all regions "To Be Announced") never appear there.
+        Their series page does list them, so we scan every figure series
+        discovered via discover_series() and keep only figures not already seen
+        on the releases timeline. Returned figures have empty release_dates;
+        any remaining duplicates against the timeline or the existing database
+        are resolved by dedupe_scraped() and find_best_match() respectively.
+        """
+        amiibos = []
+
+        for slug, series_name in self.discover_series().items():
+            url = f"https://amiibo.life/amiibo/{slug}"
+            try:
+                response = requests.get(url, timeout=30)
+                response.raise_for_status()
+                soup = BeautifulSoup(response.content, "html.parser")
+            except requests.RequestException as e:
+                self.log_warning(
+                    "Request to series page failed", url=url, error=str(e)
+                )
+                continue
+
+            seen_hrefs = set()
+            count = 0
+
+            for card in soup.select(f'a[href^="/amiibo/{slug}/"]'):
+                href = card.get("href", "").rstrip("/")
+                if not href or href in seen_hrefs:
+                    continue
+                seen_hrefs.add(href)
+
+                # Already captured (with its date) from the releases timeline.
+                if href in self.seen_release_hrefs:
+                    continue
+
+                name_tag = card.find("div", class_="name")
+                if not name_tag:
+                    continue
+                name = name_tag.get_text(strip=True)
+                if not name:
+                    continue
+
+                # Skip sets and bundles, same as the releases timeline
+                if self.is_set_or_bundle(name):
+                    self.log_info(f"Skipping set/bundle: {name}")
+                    continue
+
+                img_tag = card.find("img")
+                image_url = img_tag.get("data-src", "") if img_tag else ""
+                if image_url and not image_url.startswith("http"):
+                    image_url = f"https://amiibo.life{image_url}"
+
+                amiibos.append(
+                    {
+                        "name": name,
+                        "series": series_name,
+                        "release_dates": {},
+                        "image": image_url,
+                        "type": "Figure",
+                    }
+                )
+                count += 1
+
+            if count:
+                self.log_info(
+                    f"Found {count} new TBA figure(s) on series page: {slug}"
+                )
+
+        return amiibos
+
+    def dedupe_scraped(self, scraped_amiibos):
+        """
+        Collapse duplicate entries within a single scrape run, keyed by
+        normalized name. When the same figure appears more than once (e.g. on
+        both the releases timeline and its series page), prefer the entry that
+        carries release dates over a date-less (TBA) one.
+        """
+        by_name = {}
+
+        for amiibo in scraped_amiibos:
+            key = self.normalize_name(amiibo.get("name", ""))
+            if not key:
+                continue
+
+            existing = by_name.get(key)
+            if existing is None:
+                by_name[key] = amiibo
+            elif amiibo.get("release_dates") and not existing.get("release_dates"):
+                # Prefer the dated entry over the TBA one
+                by_name[key] = amiibo
+
+        return list(by_name.values())
+
     def clean_series(self, series_text):
         """Clean series name by removing ' series' suffix"""
         return re.sub(r"\s+series$", "", series_text, flags=re.IGNORECASE)
@@ -321,6 +494,7 @@ class AmiiboLifeScraper(LoggingMixin):
         """
         scraped_name = scraped_amiibo.get("name", "")
         scraped_dates = scraped_amiibo.get("release_dates", {})
+        scraped_series = scraped_amiibo.get("series", "")
 
         scraped_clean = self.normalize_name(scraped_name)
         best_match = None
@@ -331,6 +505,16 @@ class AmiiboLifeScraper(LoggingMixin):
 
             # Calculate name similarity
             name_score = self.calculate_similarity(scraped_clean, existing_clean)
+
+            # Penalize matches across clearly different series. Without this, a
+            # new figure named after an existing character (e.g. "King Dedede &
+            # Tank Star" in Kirby Air Riders) fuzzy-matches the bare "King
+            # Dedede" from another series and silently corrupts it. The penalty
+            # is small enough that a genuine same-figure match (name ~1.0)
+            # survives even when series strings differ in wording.
+            series_penalty = 0
+            if not self.series_compatible(scraped_series, amiibo.get("amiiboSeries")):
+                series_penalty = 0.25
 
             # Boost score if release dates match
             date_boost = 0
@@ -351,7 +535,7 @@ class AmiiboLifeScraper(LoggingMixin):
                             date_boost = max(date_boost, 0.15)
 
             # Combined score
-            final_score = min(1.0, name_score + date_boost)
+            final_score = min(1.0, name_score + date_boost - series_penalty)
 
             if final_score > best_score and final_score >= self.min_similarity:
                 best_score = final_score
@@ -365,6 +549,33 @@ class AmiiboLifeScraper(LoggingMixin):
 
         return best_match
 
+    # Filler words ignored when comparing series names, so "The Legend of
+    # Zelda" (amiibo.life) and "Legend Of Zelda" (database) are seen as equal.
+    SERIES_STOPWORDS = {"the", "of", "and", "a", "an"}
+
+    def series_compatible(self, series_a, series_b):
+        """
+        Decide whether two series names could refer to the same lineup.
+
+        Used only to penalize cross-series false matches, so it errs toward
+        permissive: blank series never block a match, and wording differences in
+        filler words are ignored. Series are compatible only when their
+        significant words match exactly, so a sub-lineup that adds meaningful
+        words (e.g. "Kirby" vs "Kirby Air Riders") is treated as different.
+        """
+
+        def significant_words(series):
+            words = self.normalize_name(self.clean_series(series or "")).split()
+            return {w for w in words if w not in self.SERIES_STOPWORDS}
+
+        a = significant_words(series_a)
+        b = significant_words(series_b)
+
+        if not a or not b:
+            return True
+
+        return a == b
+
     def normalize_name(self, name):
         """
         Normalize name for comparison.
@@ -372,6 +583,12 @@ class AmiiboLifeScraper(LoggingMixin):
         Handles variants, parentheses, dashes, and special characters.
         """
         name = name.lower()
+
+        # A companion/vehicle in parentheses is part of the figure's identity,
+        # not a variant tag: "Kirby (& Warp Star)" must converge with the series
+        # page form "Kirby & Warp Star". Unwrap "(& Companion)" before the
+        # generic variant strip below so both forms normalize identically.
+        name = re.sub(r"\s*\(\s*&\s*(.*?)\)", r" \1", name)
 
         # Remove common variant indicators in parentheses
         name = re.sub(
@@ -969,6 +1186,12 @@ class NintendoDotComScraper(LoggingMixin):
         Handles variants, parentheses, dashes, and special characters.
         """
         name = name.lower()
+
+        # A companion/vehicle in parentheses is part of the figure's identity,
+        # not a variant tag: "Kirby (& Warp Star)" must converge with the series
+        # page form "Kirby & Warp Star". Unwrap "(& Companion)" before the
+        # generic variant strip below so both forms normalize identically.
+        name = re.sub(r"\s*\(\s*&\s*(.*?)\)", r" \1", name)
 
         # Remove common variant indicators in parentheses
         name = re.sub(
