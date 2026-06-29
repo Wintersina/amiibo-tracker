@@ -82,6 +82,7 @@ class Command(BaseCommand):
                     f"updated={result['updated']} "
                     f"priced={result.get('priced', 0)} "
                     f"unavailable={result.get('unavailable', 0)} "
+                    f"already_current={result.get('already_current', 0)} "
                     f"failed={result['failed']}"
                 )
             )
@@ -94,6 +95,7 @@ class Command(BaseCommand):
                 f"processed={result['processed']} updated={result['updated']} "
                 f"priced={result.get('priced', 0)} "
                 f"unavailable={result.get('unavailable', 0)}"
+                f" already_current={result.get('already_current', 0)}"
                 f"{' local_cache=tracker/data/amiibo_price_cache.local.json' if options['local_cache'] else ''}"
             )
         )

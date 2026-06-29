@@ -173,6 +173,175 @@
         }
     }
 
+    /* Highest Prices Section */
+    .prices-section {
+        max-width: 1200px;
+        margin: 4rem auto;
+        padding: 0 2rem;
+    }
+
+    .prices-header {
+        margin-bottom: 1.5rem;
+    }
+
+    .prices-header h2 {
+        font-size: clamp(1.8rem, 4vw, 2.6rem);
+        color: var(--saffron);
+        margin: 0 0 0.4rem 0;
+    }
+
+    .prices-header p {
+        color: rgba(253, 247, 227, 0.78);
+        font-size: 1.02rem;
+        line-height: 1.55;
+        margin: 0;
+        max-width: 620px;
+    }
+
+    .prices-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 0.85rem;
+    }
+
+    .price-card {
+        background: rgba(15, 23, 42, 0.72);
+        border: 1px solid rgba(243, 201, 105, 0.28);
+        border-radius: 8px;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        min-height: 100%;
+        transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    }
+
+    .price-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 16px 34px rgba(0, 0, 0, 0.42);
+        border-color: rgba(102, 217, 232, 0.7);
+    }
+
+    .price-image-link {
+        position: relative;
+        display: grid;
+        place-items: center;
+        aspect-ratio: 4 / 3;
+        padding: 0.8rem;
+        background:
+            linear-gradient(135deg, rgba(102, 217, 232, 0.14), rgba(243, 201, 105, 0.12)),
+            rgba(255, 255, 255, 0.04);
+        text-decoration: none;
+    }
+
+    .price-image {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        filter: drop-shadow(0 12px 18px rgba(0, 0, 0, 0.35));
+    }
+
+    .price-image-fallback {
+        width: 4.25rem;
+        height: 4.25rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        background: rgba(15, 23, 42, 0.72);
+        border: 1px solid rgba(243, 201, 105, 0.42);
+        color: var(--saffron);
+        font-size: 1.7rem;
+        font-weight: 800;
+        line-height: 1;
+    }
+
+    .price-rank {
+        position: absolute;
+        z-index: 2;
+        top: 0.75rem;
+        left: 0.75rem;
+        min-width: 1.75rem;
+        height: 1.75rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 999px;
+        background: rgba(15, 23, 42, 0.86);
+        border: 1px solid rgba(243, 201, 105, 0.46);
+        color: var(--saffron);
+        font-size: 0.76rem;
+        font-weight: 800;
+    }
+
+    .price-body {
+        padding: 0.85rem 0.85rem 0.95rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.7rem;
+        flex: 1;
+    }
+
+    .price-kicker {
+        color: #66d9e8;
+        font-size: 0.7rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+
+    .price-title {
+        margin: 0.25rem 0 0.25rem;
+        font-size: 0.98rem;
+        line-height: 1.28;
+    }
+
+    .price-title a {
+        color: var(--cream);
+        text-decoration: none;
+    }
+
+    .price-title a:hover {
+        color: var(--saffron);
+    }
+
+    .price-series {
+        margin: 0;
+        color: rgba(253, 247, 227, 0.68);
+        font-size: 0.82rem;
+        line-height: 1.35;
+    }
+
+    .price-card-footer {
+        margin-top: auto;
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 0.75rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
+        padding-top: 0.7rem;
+    }
+
+    .price-value {
+        color: var(--saffron);
+        font-size: 1.25rem;
+        font-weight: 800;
+        line-height: 1;
+    }
+
+    .price-split {
+        color: rgba(253, 247, 227, 0.64);
+        font-size: 0.72rem;
+        line-height: 1.35;
+        text-align: right;
+    }
+
+    @media (max-width: 720px) {
+        .prices-section {
+            margin: 3rem auto;
+            padding: 0 1rem;
+        }
+    }
+
     /* Latest Guides Section */
     .guides-section {
         max-width: 1200px;
@@ -404,10 +573,50 @@
     </div>
 </div>
 
+{% if top_priced_amiibos %}
+<section class="prices-section" aria-labelledby="pricesHeading">
+    <div class="prices-header">
+        <div>
+            <h2 id="pricesHeading">Highest AmiiboDex Prices</h2>
+            <p>Top five current loose and NIB marketplace estimates from AmiiboDex price snapshots.</p>
+        </div>
+    </div>
+    <div class="prices-grid">
+        {% for amiibo in top_priced_amiibos %}
+        <article class="price-card">
+            <a href="{% url 'amiibo_detail' amiibo.amiibo_id %}" class="price-image-link" data-track="home-price-card">
+                <span class="price-rank">#{{ forloop.counter }}</span>
+                {% with image_url=amiibo|amiibo_image %}
+                {% if image_url %}
+                <img src="{{ image_url }}" alt="{{ amiibo.name }}" class="price-image" loading="lazy">
+                {% else %}
+                <span class="price-image-fallback" aria-hidden="true">{{ amiibo.name|slice:":1" }}</span>
+                {% endif %}
+                {% endwith %}
+            </a>
+            <div class="price-body">
+                <div>
+                    <span class="price-kicker">{{ amiibo.top_price_label }} estimate</span>
+                    <h3 class="price-title">
+                        <a href="{% url 'amiibo_detail' amiibo.amiibo_id %}" data-track="home-price-title">{{ amiibo.name }}</a>
+                    </h3>
+                    <p class="price-series">{{ amiibo.gameSeries|default:"Unknown series" }}</p>
+                </div>
+                <div class="price-card-footer">
+                    <span class="price-value">{{ amiibo.top_price_display }}</span>
+                    <span class="price-split">{{ amiibo.pricing.display }}</span>
+                </div>
+            </div>
+        </article>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
 {% if latest_posts %}
 <section class="guides-section" aria-labelledby="guidesHeading">
     <div class="guides-header">
-        <h2 id="guidesHeading">Amiibo Guides &amp; Collecting Tips</h2>
+        <h2 id="guidesHeading">Latest Amiibo Guides</h2>
         <p>
             In-depth guides on amiibo compatibility, rarity, spotting fakes, display ideas,
             and what each figure unlocks across Nintendo games. Written for collectors, by collectors.

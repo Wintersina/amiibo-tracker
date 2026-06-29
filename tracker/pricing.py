@@ -363,6 +363,12 @@ def _parse_snapshot_date(value) -> date | None:
         return None
 
 
+def pricing_snapshot_is_current(pricing: dict | None, snapshot_date: date) -> bool:
+    if not pricing:
+        return False
+    return _parse_snapshot_date(pricing.get("snapshot_date")) == snapshot_date
+
+
 def _format_chart_date(value) -> str:
     parsed = _parse_snapshot_date(value)
     if not parsed:
@@ -905,6 +911,7 @@ class AmiiboPriceRefreshService:
             "updated": result.get("updated", 0),
             "priced": result.get("priced", 0),
             "unavailable": result.get("unavailable", 0),
+            "already_current": result.get("already_current", 0),
             "failed": result.get("failed", 0),
             "index_failed": result.get("index_failed", 0),
             "elapsed_ms": round((monotonic() - started_at) * 1000),
@@ -955,40 +962,7 @@ class AmiiboPriceRefreshService:
                 "updated": 0,
                 "priced": 0,
                 "unavailable": 0,
-                "failed": 0,
-                "index_failed": 0,
-            }
-            self._log_result(result, started_at, runtime_config)
-            return result
-
-        try:
-            if hasattr(self.ebay_client, "ensure_authenticated"):
-                self.ebay_client.ensure_authenticated()
-        except EbayAuthenticationError as exc:
-            result = {
-                "status": "skipped",
-                "reason": "ebay_auth_failed",
-                "message": str(exc),
-                "environment": environment,
-                "processed": 0,
-                "updated": 0,
-                "priced": 0,
-                "unavailable": 0,
-                "failed": 0,
-                "index_failed": 0,
-            }
-            self._log_result(result, started_at, runtime_config)
-            return result
-        except requests.RequestException as exc:
-            result = {
-                "status": "skipped",
-                "reason": "ebay_token_request_failed",
-                "message": str(exc),
-                "environment": environment,
-                "processed": 0,
-                "updated": 0,
-                "priced": 0,
-                "unavailable": 0,
+                "already_current": 0,
                 "failed": 0,
                 "index_failed": 0,
             }
@@ -1008,15 +982,80 @@ class AmiiboPriceRefreshService:
                 "updated": 0,
                 "priced": 0,
                 "unavailable": 0,
+                "already_current": 0,
                 "failed": 0,
                 "index_failed": 0,
             }
             self._log_result(result, started_at, runtime_config)
             return result
 
+        current_price_map = {}
+        current_check_ids = []
+        can_check_current_prices = (
+            save and repository and hasattr(repository, "get_latest_map")
+        )
+        if can_check_current_prices:
+            for amiibo in amiibos:
+                if limit is not None and len(current_check_ids) >= limit:
+                    break
+                price_id = amiibo_price_id(amiibo)
+                if price_id:
+                    current_check_ids.append(price_id)
+            try:
+                current_price_map = repository.get_latest_map(current_check_ids)
+            except Exception as exc:
+                logger.warning("amiibo-price-current-read-failed: %s", exc)
+
+        needs_ebay_auth = not save
+        if save:
+            needs_ebay_auth = not can_check_current_prices or any(
+                not pricing_snapshot_is_current(
+                    current_price_map.get(price_id), self.today
+                )
+                for price_id in current_check_ids
+            )
+
+        if needs_ebay_auth:
+            try:
+                if hasattr(self.ebay_client, "ensure_authenticated"):
+                    self.ebay_client.ensure_authenticated()
+            except EbayAuthenticationError as exc:
+                result = {
+                    "status": "skipped",
+                    "reason": "ebay_auth_failed",
+                    "message": str(exc),
+                    "environment": environment,
+                    "processed": 0,
+                    "updated": 0,
+                    "priced": 0,
+                    "unavailable": 0,
+                    "already_current": 0,
+                    "failed": 0,
+                    "index_failed": 0,
+                }
+                self._log_result(result, started_at, runtime_config)
+                return result
+            except requests.RequestException as exc:
+                result = {
+                    "status": "skipped",
+                    "reason": "ebay_token_request_failed",
+                    "message": str(exc),
+                    "environment": environment,
+                    "processed": 0,
+                    "updated": 0,
+                    "priced": 0,
+                    "unavailable": 0,
+                    "already_current": 0,
+                    "failed": 0,
+                    "index_failed": 0,
+                }
+                self._log_result(result, started_at, runtime_config)
+                return result
+
         updated = 0
         priced = 0
         unavailable = 0
+        already_current = 0
         failed = 0
         index_failed = 0
         processed = 0
@@ -1052,6 +1091,12 @@ class AmiiboPriceRefreshService:
                 continue
 
             processed += 1
+            if save and pricing_snapshot_is_current(
+                current_price_map.get(price_id), self.today
+            ):
+                already_current += 1
+                continue
+
             try:
                 items = self.ebay_client.search_amiibo(amiibo)
                 pricing = estimate_prices_from_ebay_items(amiibo, items)
@@ -1095,6 +1140,7 @@ class AmiiboPriceRefreshService:
             "updated": updated,
             "priced": priced,
             "unavailable": unavailable,
+            "already_current": already_current,
             "failed": failed,
             "index_failed": index_failed,
             "errors": errors[:10],

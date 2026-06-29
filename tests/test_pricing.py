@@ -191,6 +191,113 @@ def test_price_refresh_dry_run_does_not_require_repository():
     assert result["updated"] == 1
 
 
+def test_price_refresh_skips_amiibo_already_current_for_today():
+    class ConfiguredEbayClient:
+        configured = True
+
+        def __init__(self):
+            self.auth_calls = 0
+            self.search_calls = 0
+
+        def ensure_authenticated(self):
+            self.auth_calls += 1
+
+        def search_amiibo(self, amiibo):
+            self.search_calls += 1
+            raise AssertionError("current amiibo should not be searched")
+
+    class FakeRepository:
+        def get_latest_map(self, amiibo_ids):
+            assert amiibo_ids == ["00000000-00000001"]
+            return {
+                "00000000-00000001": {
+                    "snapshot_date": "2026-06-28",
+                    "loose_estimate_cents": 1800,
+                }
+            }
+
+        def save_snapshot(self, amiibo_id, item_pricing, snapshot_date):
+            raise AssertionError("current amiibo should not be saved")
+
+        def save_latest_index(self, pricing_by_id, snapshot_date):
+            raise AssertionError("current amiibo should not update index")
+
+    ebay_client = ConfiguredEbayClient()
+    result = pricing.AmiiboPriceRefreshService(
+        ebay_client=ebay_client,
+        repository=FakeRepository(),
+        today=date(2026, 6, 28),
+    ).refresh([mario_amiibo()])
+
+    assert result["status"] == "ok"
+    assert result["processed"] == 1
+    assert result["updated"] == 0
+    assert result["already_current"] == 1
+    assert ebay_client.auth_calls == 0
+    assert ebay_client.search_calls == 0
+
+
+def test_price_refresh_skips_current_and_updates_stale_amiibo():
+    luigi = {
+        **mario_amiibo(),
+        "name": "Luigi",
+        "head": "00000001",
+        "tail": "00000002",
+    }
+
+    class ConfiguredEbayClient:
+        configured = True
+
+        def __init__(self):
+            self.search_names = []
+
+        def search_amiibo(self, amiibo):
+            self.search_names.append(amiibo["name"])
+            return [ebay_item(f"{amiibo['name']} amiibo loose", "15.00", "Used")]
+
+    class FakeRepository:
+        def __init__(self):
+            self.saved = []
+            self.index = None
+
+        def get_latest_map(self, amiibo_ids):
+            return {
+                "00000000-00000001": {
+                    "snapshot_date": "2026-06-28",
+                    "loose_estimate_cents": 1800,
+                },
+                "00000001-00000002": {
+                    "snapshot_date": "2026-06-27",
+                    "loose_estimate_cents": 1700,
+                },
+            }
+
+        def save_snapshot(self, amiibo_id, item_pricing, snapshot_date):
+            self.saved.append((amiibo_id, item_pricing, snapshot_date))
+
+        def prune_old_snapshots(self, amiibo_id, before_date):
+            return 0
+
+        def save_latest_index(self, pricing_by_id, snapshot_date):
+            self.index = pricing_by_id
+
+    ebay_client = ConfiguredEbayClient()
+    repository = FakeRepository()
+    result = pricing.AmiiboPriceRefreshService(
+        ebay_client=ebay_client,
+        repository=repository,
+        today=date(2026, 6, 28),
+    ).refresh([mario_amiibo(), luigi])
+
+    assert result["status"] == "ok"
+    assert result["processed"] == 2
+    assert result["updated"] == 1
+    assert result["already_current"] == 1
+    assert ebay_client.search_names == ["Luigi"]
+    assert repository.saved[0][0] == "00000001-00000002"
+    assert repository.index["00000001-00000002"]["loose_estimate_cents"] == 1500
+
+
 def test_price_refresh_skips_when_firestore_credentials_missing(monkeypatch):
     class Config:
         environment = "production"

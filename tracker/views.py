@@ -91,6 +91,50 @@ def filter_public_amiibos(amiibos):
     ]
 
 
+def strongest_pricing_estimate(pricing: dict | None) -> dict | None:
+    """Return the highest available loose/NIB estimate for ranking."""
+    if not pricing or not pricing.get("has_estimate"):
+        return None
+
+    candidates = [
+        ("NIB", pricing.get("new_estimate_cents"), pricing.get("new_display")),
+        ("Loose", pricing.get("loose_estimate_cents"), pricing.get("loose_display")),
+    ]
+    valid_candidates = [
+        {"label": label, "cents": cents, "display": display}
+        for label, cents, display in candidates
+        if isinstance(cents, int) and cents > 0 and display
+    ]
+    if not valid_candidates:
+        return None
+
+    return max(valid_candidates, key=lambda candidate: candidate["cents"])
+
+
+def build_top_priced_amiibos(amiibos: list[dict], limit: int = 5) -> list[dict]:
+    """Rank amiibo by the current latest pricing estimates used by AmiiboDex."""
+    for amiibo in amiibos:
+        amiibo["amiibo_id"] = f"{amiibo.get('head', '')}-{amiibo.get('tail', '')}"
+
+    enrich_amiibos_with_pricing(amiibos)
+
+    priced_amiibos = []
+    for amiibo in amiibos:
+        strongest_estimate = strongest_pricing_estimate(amiibo.get("pricing"))
+        if not strongest_estimate:
+            continue
+
+        amiibo["top_price_label"] = strongest_estimate["label"]
+        amiibo["top_price_cents"] = strongest_estimate["cents"]
+        amiibo["top_price_display"] = strongest_estimate["display"]
+        priced_amiibos.append(amiibo)
+
+    return sorted(
+        priced_amiibos,
+        key=lambda amiibo: (-amiibo["top_price_cents"], amiibo.get("name") or ""),
+    )[:limit]
+
+
 def load_blog_posts():
     """Load blog posts from JSON file."""
     blog_posts_path = Path(__file__).parent / "data" / "blog_posts.json"
@@ -1374,7 +1418,7 @@ class ToggleTypeFilterView(View, LoggingMixin):
         return JsonResponse({"status": "invalid method"}, status=400)
 
 
-class IndexView(View):
+class IndexView(View, AmiiboLocalFetchMixin):
     def get(self, request):
         if request.user.is_authenticated:
             return redirect("amiibo_list")
@@ -1398,14 +1442,23 @@ class IndexView(View):
         # only the collection tool.
         latest_posts = sorted(
             load_blog_posts(), key=lambda p: p.get("date", ""), reverse=True
-        )[:6]
+        )[:3]
         authors = load_authors()
         for post in latest_posts:
             post["author_data"] = authors.get(post.get("author", DEFAULT_AUTHOR_SLUG))
 
+        top_priced_amiibos = []
+        try:
+            top_priced_amiibos = build_top_priced_amiibos(
+                filter_public_amiibos(self._fetch_local_amiibos())
+            )
+        except Exception as exc:
+            logger.warning("homepage-top-priced-amiibos-failed: %s", exc)
+
         # Check for OAuth error from session
         context = seo.build()
         context["latest_posts"] = latest_posts
+        context["top_priced_amiibos"] = top_priced_amiibos
         oauth_error = request.session.pop("oauth_error", None)
         if oauth_error:
             context["error"] = oauth_error

@@ -84,6 +84,8 @@ make seed-prices LIMIT=25
 
 If eBay credentials are missing, the command exits cleanly with `Skipped: ebay_credentials_missing`; the site still shows eBay listing links. If Firestore credentials are missing while saving, use `make seed-prices-dry` for an eBay-only test or configure Google ADC before saving.
 
+Saved refreshes are idempotent per day: if an amiibo already has a price snapshot for the current refresh date, the command skips that amiibo instead of calling eBay or rewriting the same snapshot.
+
 ## Deployment
 For production, the repository includes Terraform and GitHub Actions templates that deploy the app to Google Cloud Run. Provide your own Google Cloud project, OAuth client, and allowed hostnames (including custom domains like `goozamiibo.com`) when running the workflow or Terraform modules.
 
