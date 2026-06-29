@@ -74,7 +74,7 @@ jobs:
             --region "$REGION" \
             --project "$PROJECT_ID" \
             --memory 512Mi \
-            --timeout 300 \
+            --timeout 1800 \
             --min-instances 0 \
             --max-instances 10 \
             --quiet

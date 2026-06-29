@@ -148,6 +148,7 @@ resource "google_cloud_run_service" "amiibo_tracker" {
       }
 
       service_account_name = google_service_account.app_sa.email
+      timeout_seconds      = 1800
     }
   }
 
@@ -402,7 +403,8 @@ resource "google_cloud_scheduler_job" "price_refresh" {
   description = "Refreshes AmiiboDex eBay price estimates and six-month snapshots"
   schedule    = var.price_refresh_cron_schedule
   time_zone   = var.daily_report_time_zone
-  region      = var.region
+  region           = var.region
+  attempt_deadline = "1800s"
 
   retry_config {
     retry_count          = 3

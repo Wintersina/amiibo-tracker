@@ -321,6 +321,75 @@ def test_repository_skips_large_latest_doc_fallback(monkeypatch):
     assert result == {}
 
 
+def test_repository_prunes_old_snapshots_with_document_id_filter():
+    class FakeDoc:
+        def __init__(self, doc_id):
+            self.id = doc_id
+            self.reference = f"ref-{doc_id}"
+
+    class FakeDailyCollection:
+        def __init__(self):
+            self.filter = None
+
+        def where(self, filter):
+            self.filter = filter
+            return self
+
+        def stream(self):
+            return [FakeDoc("2025-01-01")]
+
+    class FakeSnapshotDocument:
+        def __init__(self, daily):
+            self.daily = daily
+
+        def collection(self, name):
+            assert name == "daily"
+            return self.daily
+
+    class FakeSnapshotCollection:
+        def __init__(self, daily):
+            self.daily = daily
+
+        def document(self, doc_id):
+            assert doc_id == "00000000-00000001"
+            return FakeSnapshotDocument(self.daily)
+
+    class FakeBatch:
+        def __init__(self):
+            self.deleted = []
+            self.commits = 0
+
+        def delete(self, reference):
+            self.deleted.append(reference)
+
+        def commit(self):
+            self.commits += 1
+
+    class FakeClient:
+        def __init__(self):
+            self.daily = FakeDailyCollection()
+            self.batch_instance = FakeBatch()
+
+        def collection(self, name):
+            assert name == pricing.AMIIBO_PRICE_SNAPSHOTS_COLLECTION
+            return FakeSnapshotCollection(self.daily)
+
+        def batch(self):
+            return self.batch_instance
+
+    client = FakeClient()
+    deleted = pricing.AmiiboPricingRepository(client).prune_old_snapshots(
+        "00000000-00000001", date(2026, 1, 1)
+    )
+
+    assert deleted == 1
+    assert client.daily.filter.field_path == "__name__"
+    assert client.daily.filter.op_string == "<"
+    assert client.daily.filter.value == "2026-01-01"
+    assert client.batch_instance.deleted == ["ref-2025-01-01"]
+    assert client.batch_instance.commits == 1
+
+
 def test_local_pricing_repository_persists_latest_and_history(tmp_path):
     cache_path = tmp_path / "price-cache.local.json"
     repository = pricing.LocalAmiiboPricingRepository(cache_path)
@@ -436,6 +505,84 @@ def test_price_refresh_writes_latest_index_after_updates():
 
     assert result["status"] == "ok"
     assert repository.index["00000000-00000001"]["loose_estimate_cents"] == 1500
+
+
+def test_price_refresh_does_not_fail_saved_snapshot_when_prune_fails():
+    class ConfiguredEbayClient:
+        configured = True
+
+        def search_amiibo(self, amiibo):
+            return [ebay_item("Mario amiibo loose", "15.00", "Used")]
+
+    class FakeRepository:
+        def __init__(self):
+            self.saved = []
+            self.index = None
+
+        def save_snapshot(self, amiibo_id, item_pricing, snapshot_date):
+            self.saved.append((amiibo_id, item_pricing, snapshot_date))
+
+        def prune_old_snapshots(self, amiibo_id, before_date):
+            raise RuntimeError("prune failed")
+
+        def save_latest_index(self, pricing_by_id, snapshot_date):
+            self.index = pricing_by_id
+
+    repository = FakeRepository()
+    result = pricing.AmiiboPriceRefreshService(
+        ebay_client=ConfiguredEbayClient(),
+        repository=repository,
+        today=date(2026, 6, 28),
+    ).refresh([mario_amiibo()])
+
+    assert result["status"] == "ok"
+    assert result["updated"] == 1
+    assert result["failed"] == 0
+    assert repository.saved[0][0] == "00000000-00000001"
+    assert repository.index["00000000-00000001"]["loose_estimate_cents"] == 1500
+
+
+def test_price_refresh_flushes_latest_index_incrementally(monkeypatch):
+    luigi = {
+        **mario_amiibo(),
+        "name": "Luigi",
+        "head": "00000001",
+        "tail": "00000002",
+    }
+
+    class ConfiguredEbayClient:
+        configured = True
+
+        def search_amiibo(self, amiibo):
+            return [ebay_item(f"{amiibo['name']} amiibo loose", "15.00", "Used")]
+
+    class FakeRepository:
+        def __init__(self):
+            self.index_batches = []
+
+        def save_snapshot(self, amiibo_id, item_pricing, snapshot_date):
+            pass
+
+        def prune_old_snapshots(self, amiibo_id, before_date):
+            return 0
+
+        def save_latest_index(self, pricing_by_id, snapshot_date):
+            self.index_batches.append(dict(pricing_by_id))
+
+    monkeypatch.setenv("AMIIBO_PRICE_INDEX_FLUSH_INTERVAL", "1")
+    repository = FakeRepository()
+    result = pricing.AmiiboPriceRefreshService(
+        ebay_client=ConfiguredEbayClient(),
+        repository=repository,
+        today=date(2026, 6, 28),
+    ).refresh([mario_amiibo(), luigi])
+
+    assert result["status"] == "ok"
+    assert result["updated"] == 2
+    assert [list(batch.keys()) for batch in repository.index_batches] == [
+        ["00000000-00000001"],
+        ["00000001-00000002"],
+    ]
 
 
 def test_refresh_command_skips_without_ebay_credentials(monkeypatch, capsys):

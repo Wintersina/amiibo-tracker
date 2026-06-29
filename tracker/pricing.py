@@ -14,6 +14,7 @@ from urllib.parse import urlencode
 import requests
 from google.auth.exceptions import DefaultCredentialsError
 from google.cloud import firestore
+from google.cloud.firestore_v1.field_path import FieldPath
 
 from tracker.firestore_client import get_client
 
@@ -676,11 +677,11 @@ class AmiiboPricingRepository:
         latest_ref = self.client.collection(AMIIBO_PRICE_LATEST_COLLECTION).document(
             amiibo_id
         )
-        snapshots_ref = (
-            self.client.collection(AMIIBO_PRICE_SNAPSHOTS_COLLECTION)
-            .document(amiibo_id)
-            .collection("daily")
-            .document(snapshot_date.isoformat())
+        snapshots_parent_ref = self.client.collection(
+            AMIIBO_PRICE_SNAPSHOTS_COLLECTION
+        ).document(amiibo_id)
+        snapshots_ref = snapshots_parent_ref.collection("daily").document(
+            snapshot_date.isoformat()
         )
 
         payload = {
@@ -692,6 +693,15 @@ class AmiiboPricingRepository:
 
         batch = self.client.batch()
         batch.set(latest_ref, payload)
+        batch.set(
+            snapshots_parent_ref,
+            {
+                "amiibo_id": amiibo_id,
+                "latest_snapshot_date": snapshot_date.isoformat(),
+                "updated_at": firestore.SERVER_TIMESTAMP,
+            },
+            merge=True,
+        )
         batch.set(snapshots_ref, payload)
         batch.commit()
 
@@ -726,7 +736,7 @@ class AmiiboPricingRepository:
         )
         old_docs = daily.where(
             filter=firestore.FieldFilter(
-                firestore.FieldPath.document_id(), "<", before_date.isoformat()
+                FieldPath.document_id(), "<", before_date.isoformat()
             )
         ).stream()
 
@@ -896,11 +906,16 @@ class AmiiboPriceRefreshService:
             "priced": result.get("priced", 0),
             "unavailable": result.get("unavailable", 0),
             "failed": result.get("failed", 0),
+            "index_failed": result.get("index_failed", 0),
             "elapsed_ms": round((monotonic() - started_at) * 1000),
             "runtime_config": runtime_config,
         }
         log_method = logger.info
-        if result.get("status") in {"partial", "skipped"} or result.get("failed"):
+        if (
+            result.get("status") in {"partial", "skipped"}
+            or result.get("failed")
+            or result.get("index_failed")
+        ):
             log_method = logger.warning
         log_method("amiibo-price-refresh-finished | context=%s", json.dumps(payload))
 
@@ -941,6 +956,7 @@ class AmiiboPriceRefreshService:
                 "priced": 0,
                 "unavailable": 0,
                 "failed": 0,
+                "index_failed": 0,
             }
             self._log_result(result, started_at, runtime_config)
             return result
@@ -959,6 +975,7 @@ class AmiiboPriceRefreshService:
                 "priced": 0,
                 "unavailable": 0,
                 "failed": 0,
+                "index_failed": 0,
             }
             self._log_result(result, started_at, runtime_config)
             return result
@@ -973,6 +990,7 @@ class AmiiboPriceRefreshService:
                 "priced": 0,
                 "unavailable": 0,
                 "failed": 0,
+                "index_failed": 0,
             }
             self._log_result(result, started_at, runtime_config)
             return result
@@ -991,6 +1009,7 @@ class AmiiboPriceRefreshService:
                 "priced": 0,
                 "unavailable": 0,
                 "failed": 0,
+                "index_failed": 0,
             }
             self._log_result(result, started_at, runtime_config)
             return result
@@ -999,9 +1018,30 @@ class AmiiboPriceRefreshService:
         priced = 0
         unavailable = 0
         failed = 0
+        index_failed = 0
         processed = 0
         errors = []
         updated_prices = {}
+        pending_index_prices = {}
+        index_flush_interval = max(
+            int(os.environ.get("AMIIBO_PRICE_INDEX_FLUSH_INTERVAL", "50")), 1
+        )
+
+        def flush_latest_index():
+            nonlocal index_failed, pending_index_prices
+            if not save or not pending_index_prices:
+                return
+            try:
+                repository.save_latest_index(pending_index_prices, self.today)
+            except Exception as exc:
+                index_failed += 1
+                logger.warning(
+                    "amiibo-price-index-save-failed | count=%s error=%s",
+                    len(pending_index_prices),
+                    exc,
+                )
+            finally:
+                pending_index_prices = {}
 
         for amiibo in amiibos:
             if limit is not None and processed >= limit:
@@ -1018,8 +1058,16 @@ class AmiiboPriceRefreshService:
                 pricing["source_url"] = build_ebay_search_url(amiibo)
                 if save:
                     repository.save_snapshot(price_id, pricing, self.today)
-                    repository.prune_old_snapshots(price_id, cutoff_date)
+                    try:
+                        repository.prune_old_snapshots(price_id, cutoff_date)
+                    except Exception as exc:
+                        logger.warning(
+                            "amiibo-price-prune-failed | id=%s error=%s",
+                            price_id,
+                            exc,
+                        )
                 updated_prices[price_id] = pricing
+                pending_index_prices[price_id] = pricing
                 updated += 1
                 if pricing.get("sample_count", 0) > 0 or any(
                     pricing.get(field) is not None
@@ -1028,6 +1076,8 @@ class AmiiboPriceRefreshService:
                     priced += 1
                 else:
                     unavailable += 1
+                if len(pending_index_prices) >= index_flush_interval:
+                    flush_latest_index()
             except Exception as exc:
                 failed += 1
                 errors.append({"amiibo_id": price_id, "error": str(exc)[:200]})
@@ -1035,11 +1085,10 @@ class AmiiboPriceRefreshService:
                     "amiibo-price-refresh-failed | id=%s error=%s", price_id, exc
                 )
 
-        if save:
-            repository.save_latest_index(updated_prices, self.today)
+        flush_latest_index()
 
         result = {
-            "status": "ok" if failed == 0 else "partial",
+            "status": "ok" if failed == 0 and index_failed == 0 else "partial",
             "dry_run": not save,
             "environment": environment,
             "processed": processed,
@@ -1047,6 +1096,7 @@ class AmiiboPriceRefreshService:
             "priced": priced,
             "unavailable": unavailable,
             "failed": failed,
+            "index_failed": index_failed,
             "errors": errors[:10],
         }
         self._log_result(result, started_at, runtime_config)
