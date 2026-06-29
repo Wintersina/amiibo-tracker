@@ -2,6 +2,7 @@ import json
 from datetime import date
 
 import pytest
+from django.core.cache import cache
 from django.core.management import call_command
 from django.test import Client, override_settings
 
@@ -445,6 +446,37 @@ def test_refresh_command_skips_without_ebay_credentials(monkeypatch, capsys):
 
     captured = capsys.readouterr()
     assert "Skipped: ebay_credentials_missing" in captured.out
+
+
+@override_settings(ALLOWED_HOSTS=["testserver", "goozamiibo.com"])
+def test_price_refresh_api_returns_unhealthy_status_when_skipped(monkeypatch):
+    class SkippedRefreshService:
+        def refresh(self, amiibos):
+            return {
+                "status": "skipped",
+                "reason": "ebay_credentials_missing",
+                "environment": "production",
+                "processed": 0,
+                "updated": 0,
+                "priced": 0,
+                "unavailable": 0,
+                "failed": 0,
+            }
+
+    cache.clear()
+    monkeypatch.setattr(
+        views.PriceRefreshAPIView,
+        "_fetch_local_amiibos",
+        lambda self: [mario_amiibo()],
+    )
+    monkeypatch.setattr(pricing, "AmiiboPriceRefreshService", SkippedRefreshService)
+
+    response = Client().post("/api/refresh-prices/")
+    payload = response.json()
+
+    assert response.status_code == 503
+    assert payload["status"] == "skipped"
+    assert payload["reason"] == "ebay_credentials_missing"
 
 
 @override_settings(ALLOWED_HOSTS=["testserver", "goozamiibo.com"])

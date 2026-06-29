@@ -79,7 +79,10 @@ class Command(BaseCommand):
                 self.style.WARNING(
                     "Partial refresh: "
                     f"processed={result['processed']} "
-                    f"updated={result['updated']} failed={result['failed']}"
+                    f"updated={result['updated']} "
+                    f"priced={result.get('priced', 0)} "
+                    f"unavailable={result.get('unavailable', 0)} "
+                    f"failed={result['failed']}"
                 )
             )
             return
@@ -88,7 +91,9 @@ class Command(BaseCommand):
             self.style.SUCCESS(
                 f"{'Dry run complete' if result.get('dry_run') else 'Price refresh complete'}: "
                 f"environment={result.get('environment', 'unknown')} "
-                f"processed={result['processed']} updated={result['updated']}"
+                f"processed={result['processed']} updated={result['updated']} "
+                f"priced={result.get('priced', 0)} "
+                f"unavailable={result.get('unavailable', 0)}"
                 f"{' local_cache=tracker/data/amiibo_price_cache.local.json' if options['local_cache'] else ''}"
             )
         )

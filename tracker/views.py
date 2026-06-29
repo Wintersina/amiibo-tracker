@@ -2421,6 +2421,14 @@ def _verify_scheduler_request(request, expected_email, expected_audience):
     return None
 
 
+def _price_refresh_response_status(result):
+    if result.get("status") == "skipped":
+        return 503
+    if result.get("status") == "partial":
+        return 207
+    return 200
+
+
 @method_decorator(csrf_exempt, name="dispatch")
 class DailyReportTriggerView(View):
     """Cloud Scheduler -> this endpoint -> the report_daily_users command.
@@ -2479,14 +2487,20 @@ class PriceRefreshAPIView(View, LoggingMixin, AmiiboLocalFetchMixin):
 
         try:
             amiibos = filter_public_amiibos(self._fetch_local_amiibos())
-            result = AmiiboPriceRefreshService().refresh(amiibos)
             self.log_action(
-                "price-refresh-api-triggered",
+                "price-refresh-api-started",
                 request,
                 level="info",
+                amiibo_count=len(amiibos),
+            )
+            result = AmiiboPriceRefreshService().refresh(amiibos)
+            self.log_action(
+                "price-refresh-api-finished",
+                request,
+                level="warning" if result.get("status") != "ok" else "info",
                 result=result,
             )
-            return JsonResponse(result, status=200)
+            return JsonResponse(result, status=_price_refresh_response_status(result))
         except Exception as exc:
             self.log_action(
                 "price-refresh-api-error", request, level="error", error=str(exc)
@@ -2520,12 +2534,21 @@ class PriceRefreshTriggerView(View, AmiiboLocalFetchMixin):
 
         try:
             amiibos = filter_public_amiibos(self._fetch_local_amiibos())
-            AmiiboPriceRefreshService().refresh(amiibos)
+            logger.info(
+                "price-refresh-scheduler-started | context=%s",
+                json.dumps({"amiibo_count": len(amiibos)}),
+            )
+            result = AmiiboPriceRefreshService().refresh(amiibos)
+            log_method = logger.info if result.get("status") == "ok" else logger.warning
+            log_method(
+                "price-refresh-scheduler-finished | context=%s",
+                json.dumps({"result": result}),
+            )
         except Exception as exc:
             logger.exception("price-refresh-command-failed")
             return JsonResponse({"error": str(exc)}, status=500)
 
-        return HttpResponse(status=204)
+        return JsonResponse(result, status=_price_refresh_response_status(result))
 
 
 class AmiiboCommentMixin:

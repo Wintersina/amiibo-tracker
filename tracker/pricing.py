@@ -8,6 +8,7 @@ from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from statistics import median
+from time import monotonic
 from urllib.parse import urlencode
 
 import requests
@@ -93,16 +94,7 @@ class EbayConfig:
         client_id = os.environ.get("EBAY_CLIENT_ID", "").strip()
         client_secret = os.environ.get("EBAY_CLIENT_SECRET", "").strip()
         marketplace_id = os.environ.get("EBAY_MARKETPLACE_ID", "EBAY_US").strip()
-        environment = (
-            os.environ.get("EBAY_ENV")
-            or os.environ.get("EBAY_ENVIRONMENT")
-            or "production"
-        ).strip()
-        if os.environ.get("EBAY_SANDBOX") == "1":
-            environment = "sandbox"
-        environment = environment.lower()
-        if environment not in {"production", "sandbox"}:
-            environment = "production"
+        environment = configured_ebay_environment()
         if not client_id or not client_secret:
             return None
         return cls(
@@ -125,6 +117,32 @@ class EbayConfig:
     @property
     def browse_search_url(self) -> str:
         return f"{self.api_base_url}/buy/browse/v1/item_summary/search"
+
+
+def configured_ebay_environment() -> str:
+    environment = (
+        os.environ.get("EBAY_ENV") or os.environ.get("EBAY_ENVIRONMENT") or "production"
+    ).strip()
+    if os.environ.get("EBAY_SANDBOX") == "1":
+        environment = "sandbox"
+    environment = environment.lower()
+    if environment not in {"production", "sandbox"}:
+        return "production"
+    return environment
+
+
+def price_refresh_runtime_config() -> dict:
+    return {
+        "ebay_client_id_configured": bool(os.environ.get("EBAY_CLIENT_ID", "").strip()),
+        "ebay_client_secret_configured": bool(
+            os.environ.get("EBAY_CLIENT_SECRET", "").strip()
+        ),
+        "ebay_environment": configured_ebay_environment(),
+        "ebay_marketplace_id": os.environ.get("EBAY_MARKETPLACE_ID", "EBAY_US")
+        or "EBAY_US",
+        "env_name": os.environ.get("ENV_NAME", ""),
+        "local_cache_enabled": local_price_cache_enabled(),
+    }
 
 
 def amiibo_price_id(amiibo: dict) -> str:
@@ -867,62 +885,119 @@ class AmiiboPriceRefreshService:
         self.repository = repository
         self.today = today or datetime.now(timezone.utc).date()
 
+    def _log_result(self, result: dict, started_at: float, runtime_config: dict):
+        payload = {
+            "status": result.get("status"),
+            "reason": result.get("reason"),
+            "environment": result.get("environment"),
+            "dry_run": result.get("dry_run"),
+            "processed": result.get("processed", 0),
+            "updated": result.get("updated", 0),
+            "priced": result.get("priced", 0),
+            "unavailable": result.get("unavailable", 0),
+            "failed": result.get("failed", 0),
+            "elapsed_ms": round((monotonic() - started_at) * 1000),
+            "runtime_config": runtime_config,
+        }
+        log_method = logger.info
+        if result.get("status") in {"partial", "skipped"} or result.get("failed"):
+            log_method = logger.warning
+        log_method("amiibo-price-refresh-finished | context=%s", json.dumps(payload))
+
     def refresh(
         self,
         amiibos: list[dict],
         limit: int | None = None,
         save: bool = True,
     ) -> dict:
+        started_at = monotonic()
+        environment = getattr(
+            getattr(self.ebay_client, "config", None),
+            "environment",
+            configured_ebay_environment(),
+        )
+        runtime_config = price_refresh_runtime_config()
+        runtime_config["ebay_environment"] = environment
+        logger.info(
+            "amiibo-price-refresh-started | context=%s",
+            json.dumps(
+                {
+                    "amiibo_count": len(amiibos),
+                    "limit": limit,
+                    "save": save,
+                    "environment": environment,
+                    "runtime_config": runtime_config,
+                }
+            ),
+        )
+
         if not self.ebay_client.configured:
-            return {
+            result = {
                 "status": "skipped",
                 "reason": "ebay_credentials_missing",
+                "environment": environment,
                 "processed": 0,
                 "updated": 0,
+                "priced": 0,
+                "unavailable": 0,
                 "failed": 0,
             }
+            self._log_result(result, started_at, runtime_config)
+            return result
 
-        environment = getattr(
-            getattr(self.ebay_client, "config", None), "environment", "unknown"
-        )
         try:
             if hasattr(self.ebay_client, "ensure_authenticated"):
                 self.ebay_client.ensure_authenticated()
         except EbayAuthenticationError as exc:
-            return {
+            result = {
                 "status": "skipped",
                 "reason": "ebay_auth_failed",
                 "message": str(exc),
                 "environment": environment,
                 "processed": 0,
                 "updated": 0,
+                "priced": 0,
+                "unavailable": 0,
                 "failed": 0,
             }
+            self._log_result(result, started_at, runtime_config)
+            return result
         except requests.RequestException as exc:
-            return {
+            result = {
                 "status": "skipped",
                 "reason": "ebay_token_request_failed",
                 "message": str(exc),
                 "environment": environment,
                 "processed": 0,
                 "updated": 0,
+                "priced": 0,
+                "unavailable": 0,
                 "failed": 0,
             }
+            self._log_result(result, started_at, runtime_config)
+            return result
 
         retention_days = int(os.environ.get("AMIIBO_PRICE_RETENTION_DAYS", "183"))
         cutoff_date = self.today - timedelta(days=retention_days)
         try:
             repository = self.repository or (get_pricing_repository() if save else None)
         except DefaultCredentialsError:
-            return {
+            result = {
                 "status": "skipped",
                 "reason": "firestore_credentials_missing",
+                "environment": environment,
                 "processed": 0,
                 "updated": 0,
+                "priced": 0,
+                "unavailable": 0,
                 "failed": 0,
             }
+            self._log_result(result, started_at, runtime_config)
+            return result
 
         updated = 0
+        priced = 0
+        unavailable = 0
         failed = 0
         processed = 0
         errors = []
@@ -946,6 +1021,13 @@ class AmiiboPriceRefreshService:
                     repository.prune_old_snapshots(price_id, cutoff_date)
                 updated_prices[price_id] = pricing
                 updated += 1
+                if pricing.get("sample_count", 0) > 0 or any(
+                    pricing.get(field) is not None
+                    for field in ("loose_estimate_cents", "new_estimate_cents")
+                ):
+                    priced += 1
+                else:
+                    unavailable += 1
             except Exception as exc:
                 failed += 1
                 errors.append({"amiibo_id": price_id, "error": str(exc)[:200]})
@@ -956,12 +1038,16 @@ class AmiiboPriceRefreshService:
         if save:
             repository.save_latest_index(updated_prices, self.today)
 
-        return {
+        result = {
             "status": "ok" if failed == 0 else "partial",
             "dry_run": not save,
             "environment": environment,
             "processed": processed,
             "updated": updated,
+            "priced": priced,
+            "unavailable": unavailable,
             "failed": failed,
             "errors": errors[:10],
         }
+        self._log_result(result, started_at, runtime_config)
+        return result
