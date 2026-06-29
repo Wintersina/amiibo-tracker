@@ -29,7 +29,7 @@ variable "django_secret_key" {
 variable "allowed_hosts" {
   description = "List of allowed hosts for Django"
   type        = list(string)
-  default     = [
+  default = [
     "goozamiibo.com",
     "www.goozamiibo.com",
     "amiibo-tracker-juiposodeq-ue.a.run.app",
