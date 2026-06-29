@@ -130,6 +130,24 @@ variable "daily_report_time_zone" {
   default     = "America/New_York"
 }
 
+variable "price_refresh_cron_schedule" {
+  description = "Cron schedule for refreshing AmiiboDex price estimates"
+  type        = string
+  default     = "0 5 1 * *"
+}
+
+variable "ebay_client_id" {
+  description = "eBay Browse API client id. Leave empty to disable API pricing refreshes."
+  type        = string
+  default     = ""
+}
+
+variable "ebay_client_secret_secret" {
+  description = "Secret Manager secret id holding the eBay Browse API client secret"
+  type        = string
+  default     = ""
+}
+
 variable "billing_account_id" {
   description = "Billing account ID that owns this project (e.g. 01ABCD-234567-89EFGH). Leave empty to skip creating the budget. Find via: gcloud beta billing projects describe <project> --format='value(billingAccountName)'"
   type        = string

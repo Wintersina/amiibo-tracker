@@ -202,6 +202,201 @@
             font-size: 0.9rem;
         }
 
+        .price-panel {
+            background: rgba(15, 23, 42, 0.55);
+            border: 1px solid rgba(243, 201, 105, 0.25);
+            border-radius: 14px;
+            padding: 1.25rem;
+        }
+
+        .price-summary-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 0.85rem;
+            margin-bottom: 1rem;
+        }
+
+        .price-stat {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            padding: 0.9rem;
+        }
+
+        .price-stat-label {
+            display: block;
+            color: rgba(253, 247, 227, 0.66);
+            font-size: 0.78rem;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            margin-bottom: 0.25rem;
+        }
+
+        .price-stat-value {
+            display: block;
+            color: var(--cream);
+            font-size: 1.25rem;
+            font-weight: 700;
+            line-height: 1.25;
+        }
+
+        .price-stat-note {
+            display: block;
+            color: rgba(253, 247, 227, 0.62);
+            font-size: 0.78rem;
+            margin-top: 0.25rem;
+        }
+
+        .price-chart-card {
+            background: rgba(6, 10, 14, 0.35);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 1rem;
+        }
+
+        .price-chart-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-bottom: 0.75rem;
+        }
+
+        .price-chart-title {
+            margin: 0;
+            color: var(--cream);
+            font-size: 1rem;
+            font-weight: 700;
+        }
+
+        .price-legend {
+            display: flex;
+            align-items: center;
+            gap: 0.85rem;
+            flex-wrap: wrap;
+            color: rgba(253, 247, 227, 0.72);
+            font-size: 0.82rem;
+        }
+
+        .legend-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+
+        .legend-dot {
+            width: 0.65rem;
+            height: 0.65rem;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .legend-loose {
+            background: #60a5fa;
+        }
+
+        .legend-new {
+            background: var(--saffron);
+        }
+
+        .price-chart-svg {
+            display: block;
+            width: 100%;
+            height: 250px;
+            overflow: visible;
+        }
+
+        .price-grid-line {
+            stroke: rgba(253, 247, 227, 0.12);
+            stroke-width: 0.5;
+        }
+
+        .price-line {
+            fill: none;
+            stroke-width: 2.5;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .price-line-loose {
+            stroke: #60a5fa;
+        }
+
+        .price-line-new {
+            stroke: var(--saffron);
+        }
+
+        .price-point {
+            stroke: rgba(6, 10, 14, 0.92);
+            stroke-width: 1.5;
+        }
+
+        .price-point-loose {
+            fill: #60a5fa;
+        }
+
+        .price-point-new {
+            fill: var(--saffron);
+        }
+
+        .price-axis {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            color: rgba(253, 247, 227, 0.58);
+            font-size: 0.78rem;
+            margin-top: 0.35rem;
+        }
+
+        .price-history-list {
+            display: grid;
+            gap: 0.45rem;
+            margin-top: 1rem;
+        }
+
+        .price-history-row {
+            display: grid;
+            grid-template-columns: 90px 1fr 1fr;
+            gap: 0.75rem;
+            color: rgba(253, 247, 227, 0.78);
+            font-size: 0.84rem;
+            padding: 0.45rem 0;
+            border-top: 1px solid rgba(253, 247, 227, 0.08);
+        }
+
+        .price-history-date {
+            color: rgba(253, 247, 227, 0.58);
+            font-weight: 700;
+        }
+
+        .price-empty-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px dashed rgba(243, 201, 105, 0.28);
+            border-radius: 12px;
+            padding: 1rem;
+            color: rgba(253, 247, 227, 0.74);
+            line-height: 1.55;
+        }
+
+        .price-actions {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            margin-top: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .price-disclaimer {
+            color: rgba(253, 247, 227, 0.62);
+            font-size: 0.82rem;
+            line-height: 1.5;
+            margin: 0;
+            max-width: 560px;
+        }
+
         .action-btn {
             text-decoration: none;
             border: none;
@@ -278,6 +473,19 @@
 
             .regional-releases {
                 grid-template-columns: 1fr;
+            }
+
+            .price-summary-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .price-chart-svg {
+                height: 210px;
+            }
+
+            .price-history-row {
+                grid-template-columns: 1fr;
+                gap: 0.2rem;
             }
 
             .action-btn {
@@ -576,6 +784,101 @@
             </div>
         </div>
         {% endif %}
+
+        <div class="section">
+            <h2 class="section-title">Price Chart</h2>
+            <div class="price-panel">
+                <div class="price-summary-grid">
+                    <div class="price-stat">
+                        <span class="price-stat-label">Loose</span>
+                        <span class="price-stat-value">{{ amiibo.pricing.loose_display|default:"Pending" }}</span>
+                        {% if price_chart.loose_change %}
+                            <span class="price-stat-note">{{ price_chart.loose_change }} over chart range</span>
+                        {% else %}
+                            <span class="price-stat-note">Opened or out of box</span>
+                        {% endif %}
+                    </div>
+                    <div class="price-stat">
+                        <span class="price-stat-label">NIB</span>
+                        <span class="price-stat-value">{{ amiibo.pricing.new_display|default:"Pending" }}</span>
+                        {% if price_chart.new_change %}
+                            <span class="price-stat-note">{{ price_chart.new_change }} over chart range</span>
+                        {% else %}
+                            <span class="price-stat-note">Sealed or new in box</span>
+                        {% endif %}
+                    </div>
+                    <div class="price-stat">
+                        <span class="price-stat-label">Confidence</span>
+                        <span class="price-stat-value">{{ amiibo.pricing.confidence|capfirst }}</span>
+                        <span class="price-stat-note">
+                            {% if amiibo.pricing.sample_count %}
+                                {{ amiibo.pricing.sample_count }} listing match{{ amiibo.pricing.sample_count|pluralize }}
+                            {% else %}
+                                Waiting for a clean sample
+                            {% endif %}
+                        </span>
+                    </div>
+                </div>
+
+                {% if price_chart.has_chart %}
+                    <div class="price-chart-card" aria-label="{{ amiibo.name }} price trend chart">
+                        <div class="price-chart-head">
+                            <h3 class="price-chart-title">Marketplace Snapshot Trend</h3>
+                            <div class="price-legend">
+                                <span class="legend-item"><span class="legend-dot legend-loose"></span>Loose</span>
+                                <span class="legend-item"><span class="legend-dot legend-new"></span>NIB</span>
+                            </div>
+                        </div>
+                        <svg class="price-chart-svg" viewBox="0 0 100 60" preserveAspectRatio="none" role="img" aria-label="Loose and new-in-box price estimates over time">
+                            <line class="price-grid-line" x1="0" y1="6" x2="100" y2="6"></line>
+                            <line class="price-grid-line" x1="0" y1="30" x2="100" y2="30"></line>
+                            <line class="price-grid-line" x1="0" y1="54" x2="100" y2="54"></line>
+                            {% if price_chart.has_loose_line %}
+                                <polyline class="price-line price-line-loose" points="{{ price_chart.loose_polyline }}"></polyline>
+                            {% endif %}
+                            {% if price_chart.has_new_line %}
+                                <polyline class="price-line price-line-new" points="{{ price_chart.new_polyline }}"></polyline>
+                            {% endif %}
+                            {% for point in price_chart.points %}
+                                {% if point.has_loose %}
+                                    <circle class="price-point price-point-loose" cx="{{ point.x }}" cy="{{ point.loose_y }}" r="1.7">
+                                        <title>{{ point.label }} loose {{ point.loose_display }}</title>
+                                    </circle>
+                                {% endif %}
+                                {% if point.has_new %}
+                                    <circle class="price-point price-point-new" cx="{{ point.x }}" cy="{{ point.new_y }}" r="1.7">
+                                        <title>{{ point.label }} NIB {{ point.new_display }}</title>
+                                    </circle>
+                                {% endif %}
+                            {% endfor %}
+                        </svg>
+                        <div class="price-axis">
+                            <span>{{ price_chart.min_display }}</span>
+                            <span>{{ price_chart.max_display }}</span>
+                        </div>
+                        <div class="price-history-list" aria-label="Recent price snapshots">
+                            {% for point in price_chart.recent_points %}
+                                <div class="price-history-row">
+                                    <span class="price-history-date">{{ point.label }}</span>
+                                    <span>Loose {{ point.loose_display|default:"pending" }}</span>
+                                    <span>NIB {{ point.new_display|default:"pending" }}</span>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="price-empty-card">
+                        <strong>Estimate pending.</strong>
+                        This amiibo does not have enough saved pricing snapshots yet. The chart will populate after the pricing seed job stores clean eBay marketplace matches.
+                    </div>
+                {% endif %}
+
+                <div class="price-actions">
+                    <p class="price-disclaimer">Prices are estimates from marketplace snapshots, not appraisals or guaranteed sale values. Check listing condition, shipping, region, and seller details before buying.</p>
+                    <a href="{{ amiibo.pricing.source_url }}" target="_blank" rel="nofollow noopener noreferrer" class="action-btn primary" data-track="detail-ebay-listings">View eBay listings</a>
+                </div>
+            </div>
+        </div>
 
         {% if faqs %}
         <div class="section">

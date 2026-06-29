@@ -15153,6 +15153,62 @@
       "tail": "ff5dcc60",
       "type": "Figure",
       "is_upcoming": true
+    },
+    {
+      "amiiboSeries": "Super Smash Bros.",
+      "character": "King Dedede",
+      "gameSeries": "Kirby",
+      "head": "1f020000",
+      "image": "https://amiibo.life/assets/figures/amiibo-sized/kirby-air-riders/king-dedede-tank-star-84e2641137a6a97d60d4f46433576f25a81f23e2a9d09f91b08f0f61ca42faac.png",
+      "name": "King Dedede & Tank Star",
+      "release": {
+        "jp": "2015-01-22",
+        "eu": "2015-02-20",
+        "au": "2015-01-29",
+        "na": "2015-02-01"
+      },
+      "tail": "00280002",
+      "type": "Figure",
+      "is_upcoming": true,
+      "imgwebp": "https://raw.githubusercontent.com/8bitDream/AmiiboAPI/master/webp/icon_1f020000-00280002.webp"
+    },
+    {
+      "amiiboSeries": "Kirby Air Riders",
+      "character": "Sword Kirby & Dragoon",
+      "gameSeries": "Kirby Air Riders",
+      "head": "ffeea35c",
+      "image": "https://amiibo.life/assets/figures/amiibo-sized/kirby-air-riders/sword-kirby-dragoon-8f6ae5886c1e924151ce80313a889d6401d0e96887e81a4e7ce01ac3ea7f7228.png",
+      "name": "Sword Kirby & Dragoon",
+      "release": {},
+      "tail": "ff636de1",
+      "type": "Figure",
+      "is_upcoming": true
+    },
+    {
+      "amiiboSeries": "Kirby Air Riders",
+      "character": "Noir Dedede & Hydra",
+      "gameSeries": "Kirby Air Riders",
+      "head": "ffe9c279",
+      "image": "https://amiibo.life/assets/figures/amiibo-sized/kirby-air-riders/noir-dedede-hydra-84b56237337301c3508738cbda064a41e49419db4565abe84fda6c8262053b37.png",
+      "name": "Noir Dedede & Hydra",
+      "release": {},
+      "tail": "ff78fcbb",
+      "type": "Figure",
+      "is_upcoming": true
+    },
+    {
+      "amiiboSeries": "Monster Hunter Stories",
+      "character": "Navirou",
+      "gameSeries": "Monster Hunter Stories",
+      "head": "ff935316",
+      "image": "https://amiibo.life/assets/figures/amiibo/monster-hunter-stories/navirou-57cfac5e060bad6d98d709368c37f118bf93007abf2b55c898e7016c99a10fab.png",
+      "name": "Navirou",
+      "release": {
+        "jp": "2016-10-08"
+      },
+      "tail": "ffbdff55",
+      "type": "Figure",
+      "is_upcoming": true
     }
   ]
 }
