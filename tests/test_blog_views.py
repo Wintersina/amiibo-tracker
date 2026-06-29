@@ -346,6 +346,8 @@ class TestAmiiboDetailView:
         assert "$18" in content
         assert "$50" in content
         assert "Marketplace Snapshot Trend" in content
+        assert "price-hit-point" in content
+        assert "loosePriceArea" in content
         assert "View eBay listings" in content
 
 

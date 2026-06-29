@@ -197,6 +197,14 @@ def ensure_spreadsheet_session(request, manager: GoogleSheetClientManager):
     return spreadsheet
 
 
+def initialize_tracking_sheet_for_login(request, manager: GoogleSheetClientManager):
+    service = AmiiboService(google_sheet_client_manager=manager)
+    amiibos = filter_public_amiibos(service.fetch_amiibos())
+    service.seed_new_amiibos(amiibos)
+    request.session["tracking_sheet_ready"] = True
+    return {"seeded_amiibo_count": len(amiibos)}
+
+
 def credentials_to_dict(creds: Credentials):
     return {
         "token": creds.token,
@@ -882,9 +890,14 @@ class OAuthCallbackView(View, LoggingMixin):
         request.session["user_name"] = user_info.get("name")
         request.session["user_email"] = user_info.get("email")
 
+        tracking_sheet_summary = {}
+
         try:
             manager = build_sheet_client_manager(request)
             ensure_spreadsheet_session(request, manager)
+            tracking_sheet_summary = initialize_tracking_sheet_for_login(
+                request, manager
+            )
         except GoogleSheetsError as error:
             # Handle Google Sheets errors gracefully with user-friendly messages
             self.log_action(
@@ -939,7 +952,7 @@ class OAuthCallbackView(View, LoggingMixin):
         # New-vs-returning users are derived from user_hash in Grafana LogQL
         # (e.g. `count by (user_hash)` windowed over 24h vs 30d). No DB lookup
         # happens here — the app has no persistent user store.
-        self.log_action("login-success", request)
+        self.log_action("login-success", request, **tracking_sheet_summary)
 
         return redirect(oauth_next or "amiibo_list")
 

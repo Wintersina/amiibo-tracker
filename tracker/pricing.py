@@ -386,6 +386,61 @@ def _format_change_percent(first_cents: int | None, last_cents: int | None) -> s
     return f"{sign}{change:.0f}%"
 
 
+def _chart_coord(value: float) -> str:
+    return f"{value:.2f}".rstrip("0").rstrip(".")
+
+
+def _chart_line_path(coords: list[tuple[float, float]]) -> str:
+    if not coords:
+        return ""
+
+    start_x, start_y = coords[0]
+    if len(coords) == 1:
+        return f"M {_chart_coord(start_x)},{_chart_coord(start_y)}"
+
+    if len(coords) == 2:
+        end_x, end_y = coords[1]
+        return (
+            f"M {_chart_coord(start_x)},{_chart_coord(start_y)} "
+            f"L {_chart_coord(end_x)},{_chart_coord(end_y)}"
+        )
+
+    parts = [f"M {_chart_coord(start_x)},{_chart_coord(start_y)}"]
+    for index in range(len(coords) - 1):
+        p0 = coords[index - 1] if index > 0 else coords[index]
+        p1 = coords[index]
+        p2 = coords[index + 1]
+        p3 = coords[index + 2] if index + 2 < len(coords) else p2
+
+        c1_x = p1[0] + (p2[0] - p0[0]) / 6
+        c1_y = p1[1] + (p2[1] - p0[1]) / 6
+        c2_x = p2[0] - (p3[0] - p1[0]) / 6
+        c2_y = p2[1] - (p3[1] - p1[1]) / 6
+        parts.append(
+            "C "
+            f"{_chart_coord(c1_x)},{_chart_coord(c1_y)} "
+            f"{_chart_coord(c2_x)},{_chart_coord(c2_y)} "
+            f"{_chart_coord(p2[0])},{_chart_coord(p2[1])}"
+        )
+
+    return " ".join(parts)
+
+
+def _chart_area_path(
+    coords: list[tuple[float, float]], baseline_y: float = 54
+) -> str:
+    if len(coords) < 2:
+        return ""
+
+    start_x, _ = coords[0]
+    end_x, _ = coords[-1]
+    return (
+        f"M {_chart_coord(start_x)},{_chart_coord(baseline_y)} "
+        f"L {_chart_line_path(coords)[2:]} "
+        f"L {_chart_coord(end_x)},{_chart_coord(baseline_y)} Z"
+    )
+
+
 def build_price_chart_data(pricing: dict, history: list[dict] | None = None) -> dict:
     points = []
     seen_dates = set()
@@ -445,10 +500,16 @@ def build_price_chart_data(pricing: dict, history: list[dict] | None = None) -> 
             "max_display": "",
             "loose_polyline": "",
             "new_polyline": "",
+            "loose_path": "",
+            "new_path": "",
+            "loose_area_path": "",
+            "new_area_path": "",
             "has_loose_line": False,
             "has_new_line": False,
             "loose_change": "",
             "new_change": "",
+            "y_ticks": [],
+            "x_ticks": [],
         }
 
     min_value = min(values)
@@ -484,18 +545,55 @@ def build_price_chart_data(pricing: dict, history: list[dict] | None = None) -> 
         if point["has_new"]:
             point["new_point"] = f"{point['x']},{point['new_y']}"
             new_polyline.append(point["new_point"])
+        visible_y_values = [
+            value
+            for value in (point["loose_y"], point["new_y"])
+            if value is not None
+        ]
+        point["tooltip_y"] = (
+            round(sum(visible_y_values) / len(visible_y_values), 2)
+            if visible_y_values
+            else 54
+        )
 
     loose_values = [point.get("loose_cents") for point in points if point["has_loose"]]
     new_values = [point.get("new_cents") for point in points if point["has_new"]]
+    loose_coords = [
+        (point["x"], point["loose_y"]) for point in points if point["has_loose"]
+    ]
+    new_coords = [(point["x"], point["new_y"]) for point in points if point["has_new"]]
+    currency = pricing.get("currency") or "USD"
+
+    tick_values = [max_value, int((max_value + min_value) / 2), min_value]
+    y_ticks = [
+        {
+            "y": y_for(value),
+            "y_percent": round((y_for(value) / 60) * 100, 2),
+            "label": format_price(value, currency),
+        }
+        for value in tick_values
+    ]
+    x_tick_indexes = sorted({0, len(points) // 2, len(points) - 1})
+    x_ticks = [
+        {
+            "x": points[index]["x"],
+            "label": points[index]["label"],
+        }
+        for index in x_tick_indexes
+    ]
 
     return {
         "has_chart": True,
         "points": points,
         "recent_points": list(reversed(points[-5:])),
-        "min_display": format_price(min_value, pricing.get("currency") or "USD"),
-        "max_display": format_price(max_value, pricing.get("currency") or "USD"),
+        "min_display": format_price(min_value, currency),
+        "max_display": format_price(max_value, currency),
         "loose_polyline": " ".join(loose_polyline),
         "new_polyline": " ".join(new_polyline),
+        "loose_path": _chart_line_path(loose_coords),
+        "new_path": _chart_line_path(new_coords),
+        "loose_area_path": _chart_area_path(loose_coords),
+        "new_area_path": _chart_area_path(new_coords),
         "has_loose_line": len(loose_polyline) > 1,
         "has_new_line": len(new_polyline) > 1,
         "loose_change": _format_change_percent(
@@ -506,6 +604,8 @@ def build_price_chart_data(pricing: dict, history: list[dict] | None = None) -> 
             new_values[0] if new_values else None,
             new_values[-1] if new_values else None,
         ),
+        "y_ticks": y_ticks,
+        "x_ticks": x_ticks,
     }
 
 

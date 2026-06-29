@@ -120,6 +120,10 @@ def test_build_price_chart_data_creates_svg_points_and_recent_rows():
     assert chart["has_loose_line"] is True
     assert chart["has_new_line"] is True
     assert len(chart["loose_polyline"].split()) == 3
+    assert chart["loose_path"].startswith("M ")
+    assert chart["loose_area_path"].endswith(" Z")
+    assert len(chart["y_ticks"]) == 3
+    assert chart["x_ticks"][0]["label"] == "Jun 1"
     assert chart["loose_change"] == "+22%"
     assert chart["new_change"] == "+12%"
     assert chart["recent_points"][0]["label"] == "Jun 3"

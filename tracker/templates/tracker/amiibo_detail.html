@@ -249,6 +249,7 @@
         }
 
         .price-chart-card {
+            position: relative;
             background: rgba(6, 10, 14, 0.35);
             border: 1px solid rgba(255, 255, 255, 0.08);
             border-radius: 12px;
@@ -308,9 +309,44 @@
             overflow: visible;
         }
 
+        .price-chart-frame {
+            display: grid;
+            grid-template-columns: 3.75rem minmax(0, 1fr);
+            gap: 0.7rem;
+            align-items: start;
+        }
+
+        .price-y-axis {
+            position: relative;
+            height: 250px;
+            color: rgba(253, 247, 227, 0.58);
+            font-size: 0.72rem;
+            font-weight: 700;
+        }
+
+        .price-y-tick {
+            position: absolute;
+            right: 0;
+            transform: translateY(-50%);
+            white-space: nowrap;
+        }
+
+        .price-plot {
+            position: relative;
+            min-width: 0;
+        }
+
         .price-grid-line {
             stroke: rgba(253, 247, 227, 0.12);
             stroke-width: 0.5;
+        }
+
+        .price-grid-line.vertical {
+            stroke: rgba(253, 247, 227, 0.08);
+        }
+
+        .price-area {
+            opacity: 0.8;
         }
 
         .price-line {
@@ -318,6 +354,7 @@
             stroke-width: 2.5;
             stroke-linecap: round;
             stroke-linejoin: round;
+            vector-effect: non-scaling-stroke;
         }
 
         .price-line-loose {
@@ -331,6 +368,7 @@
         .price-point {
             stroke: rgba(6, 10, 14, 0.92);
             stroke-width: 1.5;
+            vector-effect: non-scaling-stroke;
         }
 
         .price-point-loose {
@@ -348,6 +386,83 @@
             color: rgba(253, 247, 227, 0.58);
             font-size: 0.78rem;
             margin-top: 0.35rem;
+        }
+
+        .price-x-axis {
+            position: relative;
+            height: 1.15rem;
+            margin-top: 0.45rem;
+            color: rgba(253, 247, 227, 0.58);
+            font-size: 0.74rem;
+            font-weight: 700;
+        }
+
+        .price-x-axis span {
+            position: absolute;
+            top: 0;
+            transform: translateX(-50%);
+            white-space: nowrap;
+        }
+
+        .price-x-axis span.is-start {
+            transform: translateX(0);
+        }
+
+        .price-x-axis span.is-end {
+            transform: translateX(-100%);
+        }
+
+        .price-hit-point {
+            fill: transparent;
+            stroke: transparent;
+            cursor: crosshair;
+            pointer-events: all;
+        }
+
+        .price-hit-point:focus {
+            outline: none;
+            stroke: rgba(253, 247, 227, 0.45);
+            stroke-width: 1.2;
+            vector-effect: non-scaling-stroke;
+        }
+
+        .price-tooltip {
+            position: absolute;
+            z-index: 3;
+            min-width: 140px;
+            padding: 0.55rem 0.65rem;
+            border-radius: 8px;
+            background: rgba(6, 10, 14, 0.94);
+            border: 1px solid rgba(243, 201, 105, 0.3);
+            box-shadow: 0 14px 32px rgba(0, 0, 0, 0.42);
+            color: var(--cream);
+            font-size: 0.78rem;
+            line-height: 1.35;
+            pointer-events: none;
+            opacity: 0;
+            transform: translate(-50%, calc(-100% - 10px));
+            transition: opacity 0.12s ease;
+        }
+
+        .price-tooltip.visible {
+            opacity: 1;
+        }
+
+        .price-tooltip-date {
+            display: block;
+            color: var(--saffron);
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+
+        .price-tooltip-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 0.85rem;
+        }
+
+        .price-tooltip-label {
+            color: rgba(253, 247, 227, 0.68);
         }
 
         .price-history-list {
@@ -481,6 +596,20 @@
 
             .price-chart-svg {
                 height: 210px;
+            }
+
+            .price-chart-frame {
+                grid-template-columns: 3.25rem minmax(0, 1fr);
+                gap: 0.55rem;
+            }
+
+            .price-y-axis {
+                height: 210px;
+                font-size: 0.68rem;
+            }
+
+            .price-x-axis {
+                font-size: 0.68rem;
             }
 
             .price-history-row {
@@ -829,32 +958,71 @@
                                 <span class="legend-item"><span class="legend-dot legend-new"></span>NIB</span>
                             </div>
                         </div>
-                        <svg class="price-chart-svg" viewBox="0 0 100 60" preserveAspectRatio="none" role="img" aria-label="Loose and new-in-box price estimates over time">
-                            <line class="price-grid-line" x1="0" y1="6" x2="100" y2="6"></line>
-                            <line class="price-grid-line" x1="0" y1="30" x2="100" y2="30"></line>
-                            <line class="price-grid-line" x1="0" y1="54" x2="100" y2="54"></line>
-                            {% if price_chart.has_loose_line %}
-                                <polyline class="price-line price-line-loose" points="{{ price_chart.loose_polyline }}"></polyline>
-                            {% endif %}
-                            {% if price_chart.has_new_line %}
-                                <polyline class="price-line price-line-new" points="{{ price_chart.new_polyline }}"></polyline>
-                            {% endif %}
-                            {% for point in price_chart.points %}
-                                {% if point.has_loose %}
-                                    <circle class="price-point price-point-loose" cx="{{ point.x }}" cy="{{ point.loose_y }}" r="1.7">
-                                        <title>{{ point.label }} loose {{ point.loose_display }}</title>
-                                    </circle>
-                                {% endif %}
-                                {% if point.has_new %}
-                                    <circle class="price-point price-point-new" cx="{{ point.x }}" cy="{{ point.new_y }}" r="1.7">
-                                        <title>{{ point.label }} NIB {{ point.new_display }}</title>
-                                    </circle>
-                                {% endif %}
-                            {% endfor %}
-                        </svg>
-                        <div class="price-axis">
-                            <span>{{ price_chart.min_display }}</span>
-                            <span>{{ price_chart.max_display }}</span>
+                        <div class="price-chart-frame">
+                            <div class="price-y-axis" aria-hidden="true">
+                                {% for tick in price_chart.y_ticks %}
+                                    <span class="price-y-tick" style="top: {{ tick.y_percent }}%;">{{ tick.label }}</span>
+                                {% endfor %}
+                            </div>
+                            <div class="price-plot">
+                                <svg class="price-chart-svg" viewBox="0 0 100 60" preserveAspectRatio="none" role="img" aria-label="Loose and new-in-box price estimates over time">
+                                    <defs>
+                                        <linearGradient id="loosePriceArea" x1="0" x2="0" y1="0" y2="1">
+                                            <stop offset="0%" stop-color="#60a5fa" stop-opacity="0.34"></stop>
+                                            <stop offset="100%" stop-color="#60a5fa" stop-opacity="0"></stop>
+                                        </linearGradient>
+                                        <linearGradient id="newPriceArea" x1="0" x2="0" y1="0" y2="1">
+                                            <stop offset="0%" stop-color="#f3c969" stop-opacity="0.32"></stop>
+                                            <stop offset="100%" stop-color="#f3c969" stop-opacity="0"></stop>
+                                        </linearGradient>
+                                    </defs>
+                                    {% for tick in price_chart.y_ticks %}
+                                        <line class="price-grid-line" x1="0" y1="{{ tick.y }}" x2="100" y2="{{ tick.y }}"></line>
+                                    {% endfor %}
+                                    {% for tick in price_chart.x_ticks %}
+                                        <line class="price-grid-line vertical" x1="{{ tick.x }}" y1="6" x2="{{ tick.x }}" y2="54"></line>
+                                    {% endfor %}
+                                    {% if price_chart.has_loose_line %}
+                                        <path class="price-area" d="{{ price_chart.loose_area_path }}" fill="url(#loosePriceArea)"></path>
+                                    {% endif %}
+                                    {% if price_chart.has_new_line %}
+                                        <path class="price-area" d="{{ price_chart.new_area_path }}" fill="url(#newPriceArea)"></path>
+                                    {% endif %}
+                                    {% if price_chart.has_loose_line %}
+                                        <path class="price-line price-line-loose" d="{{ price_chart.loose_path }}"></path>
+                                    {% endif %}
+                                    {% if price_chart.has_new_line %}
+                                        <path class="price-line price-line-new" d="{{ price_chart.new_path }}"></path>
+                                    {% endif %}
+                                    {% for point in price_chart.points %}
+                                        {% if point.has_loose %}
+                                            <circle class="price-point price-point-loose" cx="{{ point.x }}" cy="{{ point.loose_y }}" r="1.7">
+                                                <title>{{ point.label }} loose {{ point.loose_display }}</title>
+                                            </circle>
+                                        {% endif %}
+                                        {% if point.has_new %}
+                                            <circle class="price-point price-point-new" cx="{{ point.x }}" cy="{{ point.new_y }}" r="1.7">
+                                                <title>{{ point.label }} NIB {{ point.new_display }}</title>
+                                            </circle>
+                                        {% endif %}
+                                        <circle class="price-hit-point"
+                                                cx="{{ point.x }}"
+                                                cy="{{ point.tooltip_y }}"
+                                                r="4.8"
+                                                tabindex="0"
+                                                focusable="true"
+                                                data-date="{{ point.label }}"
+                                                data-loose="{{ point.loose_display|default:"Pending" }}"
+                                                data-new="{{ point.new_display|default:"Pending" }}"></circle>
+                                    {% endfor %}
+                                </svg>
+                                <div class="price-x-axis" aria-hidden="true">
+                                    {% for tick in price_chart.x_ticks %}
+                                        <span class="{% if forloop.first and not forloop.last %}is-start{% elif forloop.last and not forloop.first %}is-end{% else %}is-mid{% endif %}" style="left: {{ tick.x }}%;">{{ tick.label }}</span>
+                                    {% endfor %}
+                                </div>
+                                <div class="price-tooltip" id="priceTooltip" role="status" aria-live="polite"></div>
+                            </div>
                         </div>
                         <div class="price-history-list" aria-label="Recent price snapshots">
                             {% for point in price_chart.recent_points %}
@@ -930,6 +1098,64 @@
             'page_location': window.location.href
         });
     }
+
+    (function () {
+        const chart = document.querySelector('.price-chart-card');
+        const tooltip = document.getElementById('priceTooltip');
+        if (!chart || !tooltip) return;
+
+        const plot = chart.querySelector('.price-plot');
+        const points = chart.querySelectorAll('.price-hit-point');
+
+        function addTooltipRow(fragment, label, value) {
+            const row = document.createElement('span');
+            row.className = 'price-tooltip-row';
+
+            const labelEl = document.createElement('span');
+            labelEl.className = 'price-tooltip-label';
+            labelEl.textContent = label;
+
+            const valueEl = document.createElement('span');
+            valueEl.textContent = value;
+
+            row.append(labelEl, valueEl);
+            fragment.append(row);
+        }
+
+        function positionTooltip(point) {
+            const pointRect = point.getBoundingClientRect();
+            const plotRect = plot.getBoundingClientRect();
+            const rawLeft = pointRect.left + (pointRect.width / 2) - plotRect.left;
+            const left = Math.min(Math.max(rawLeft, 70), Math.max(70, plotRect.width - 70));
+            const top = Math.max(pointRect.top - plotRect.top, 8);
+            tooltip.style.left = `${left}px`;
+            tooltip.style.top = `${top}px`;
+        }
+
+        function showTooltip(point) {
+            const fragment = document.createDocumentFragment();
+            const date = document.createElement('span');
+            date.className = 'price-tooltip-date';
+            date.textContent = point.dataset.date || 'Latest';
+            fragment.append(date);
+            addTooltipRow(fragment, 'Loose', point.dataset.loose || 'Pending');
+            addTooltipRow(fragment, 'NIB', point.dataset.new || 'Pending');
+            tooltip.replaceChildren(fragment);
+            positionTooltip(point);
+            tooltip.classList.add('visible');
+        }
+
+        function hideTooltip() {
+            tooltip.classList.remove('visible');
+        }
+
+        points.forEach((point) => {
+            point.addEventListener('mouseenter', () => showTooltip(point));
+            point.addEventListener('focus', () => showTooltip(point));
+            point.addEventListener('mouseleave', hideTooltip);
+            point.addEventListener('blur', hideTooltip);
+        });
+    })();
 
     // Lazy-load the comments block so the Firestore fetch never blocks the
     // main page render. Scripts inside injected HTML don't run automatically,
