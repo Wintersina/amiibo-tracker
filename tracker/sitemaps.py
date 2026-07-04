@@ -140,17 +140,38 @@ class AmiiboSitemap(Sitemap):
         amiibo_id = f"{head}-{tail}"
         return reverse("amiibo_detail", kwargs={"amiibo_id": amiibo_id})
 
+    def _data_mtime(self):
+        """
+        Timestamp of the last catalog rebuild.
+
+        Detail pages render pricing, related-amiibo, and FAQ content derived
+        from this dataset, so its mtime is an honest proxy for when the page
+        content last materially changed — unlike the amiibo's original
+        release date, which is often years old and gives Google no reason to
+        recrawl and re-evaluate pages whose content we've since enriched.
+        """
+        database_path = Path(__file__).parent / "data" / "amiibo_database.json"
+        try:
+            return datetime.fromtimestamp(database_path.stat().st_mtime)
+        except OSError:
+            return None
+
     def lastmod(self, item):
         """
-        Return last modification date.
-        Use earliest release date as lastmod.
+        Return last modification date as the most recent of the earliest
+        release date and the last catalog rebuild, so lastmod reflects
+        content freshness rather than the figure's original release.
         """
+        release_mod = None
         release_dates = item.get("release", {})
         for region in ["na", "jp", "eu", "au"]:
             date_str = release_dates.get(region)
             if date_str:
                 try:
-                    return datetime.strptime(date_str, "%Y-%m-%d")
+                    release_mod = datetime.strptime(date_str, "%Y-%m-%d")
+                    break
                 except (ValueError, TypeError):
                     pass
-        return None
+
+        candidates = [d for d in (release_mod, self._data_mtime()) if d]
+        return max(candidates) if candidates else None

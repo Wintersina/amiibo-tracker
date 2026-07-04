@@ -332,6 +332,18 @@
             color: var(--cream);
         }
 
+        /* Real crawlable link to each detail page; inherits cell styling so
+           the visual design is unchanged while giving Googlebot a followable
+           internal link with keyword-rich anchor text. */
+        .amiibo-name-link {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        .amiibo-name-link:hover {
+            text-decoration: underline;
+        }
+
         .price-col {
             min-width: 140px;
         }
@@ -752,7 +764,7 @@
                             <div class="img-fallback">?</div>
                         </td>
                         <td class="name-col amiibo-name" data-label="Name:">
-                            {{ amiibo.name }}
+                            <a href="{% url 'amiibo_detail' amiibo.amiibo_id %}" class="amiibo-name-link" data-track="amiibodex-amiibo">{{ amiibo.name }}</a>
                             {% if amiibo.is_upcoming %}
                                 <span class="upcoming-badge">Upcoming</span>
                             {% endif %}
