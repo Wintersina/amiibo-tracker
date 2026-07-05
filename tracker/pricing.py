@@ -321,6 +321,7 @@ def normalize_pricing_for_display(amiibo: dict, pricing: dict | None) -> dict:
         "new_display": "",
         "sample_count": 0,
         "snapshot_date": "",
+        "sort_cents": "",
     }
 
     if not pricing:
@@ -347,6 +348,11 @@ def normalize_pricing_for_display(amiibo: dict, pricing: dict | None) -> dict:
         "new_display": new_display,
         "sample_count": pricing.get("sample_count") or 0,
         "snapshot_date": pricing.get("snapshot_date") or "",
+        # Numeric key for table sorting (loose preferred, then NIB); "" sinks
+        # pending/unpriced rows to the bottom regardless of direction.
+        "sort_cents": pricing.get("loose_estimate_cents")
+        or pricing.get("new_estimate_cents")
+        or "",
     }
 
 

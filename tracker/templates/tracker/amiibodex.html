@@ -145,6 +145,29 @@
             background: rgba(255, 255, 255, 0.08);
         }
 
+        .search-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            align-items: center;
+            margin-top: 0.75rem;
+        }
+
+        .search-help {
+            margin: 0.85rem 0 1.25rem;
+            font-size: 0.85rem;
+            line-height: 1.5;
+            color: rgba(253, 247, 227, 0.7);
+        }
+
+        .search-help code {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 4px;
+            padding: 0.05rem 0.35rem;
+            font-size: 0.85em;
+            color: var(--saffron);
+        }
+
         .search-actions {
             display: flex;
             gap: 0.75rem;
@@ -227,6 +250,37 @@
         .amiibo-table th.fav-col {
             color: var(--saffron);
             font-size: 1.05rem;
+        }
+
+        .amiibo-table th.sortable {
+            cursor: pointer;
+            user-select: none;
+            white-space: nowrap;
+        }
+
+        .amiibo-table th.sortable:hover {
+            color: var(--saffron);
+        }
+
+        .amiibo-table th.sortable:focus-visible {
+            outline: 2px solid var(--saffron);
+            outline-offset: 2px;
+        }
+
+        .sort-arrow {
+            font-size: 0.7em;
+            opacity: 0.35;
+            margin-left: 0.3rem;
+        }
+
+        .amiibo-table th.sort-asc .sort-arrow::after {
+            content: "▲";
+            opacity: 1;
+        }
+
+        .amiibo-table th.sort-desc .sort-arrow::after {
+            content: "▼";
+            opacity: 1;
         }
 
         .dex-fav-btn {
@@ -727,11 +781,17 @@
                 <div class="search-fields">
                     <input type="text" id="search-input" placeholder="Search by name, type, series, date, or price..." class="search-input" autofocus>
                 </div>
-                <label class="fav-filter" id="fav-filter" hidden>
-                    <input type="checkbox" id="fav-only"> ♥ Favorites only
-                </label>
+                <div class="search-options">
+                    <label class="fav-filter" id="fav-filter" hidden>
+                        <input type="checkbox" id="fav-only"> ♥ Favorites only
+                    </label>
+                </div>
             </form>
-            <p class="pricing-note">Prices are estimates from marketplace snapshots when available. Always inspect linked eBay listings for condition, region, shipping, and seller details before buying.</p>
+            <p class="search-help">
+                Type to filter; click any column header to sort. Regex works too —
+                try <code>loose \$[1-9]\d\d</code> (loose $100+) or <code>zelda|mario</code>.
+                Prices are eBay estimates — <a href="{% url 'blog_post' slug='amiibodex-pricing-estimates' %}" data-track="amiibodex-pricing-help">how pricing works</a>.
+            </p>
 
             <p class="total-count" id="total-count">Showing {{ total_count }} of {{ total_count }} amiibos</p>
 
@@ -740,12 +800,12 @@
                     <tr>
                         <th class="fav-col" aria-label="Favorite">♥</th>
                         <th class="img-col">Image</th>
-                        <th>Name</th>
-                        <th>Game Series</th>
-                        <th>Amiibo Series</th>
-                        <th>Type</th>
-                        <th>Price</th>
-                        <th>Release Date</th>
+                        <th class="sortable" data-col="2" data-sort-type="text" role="button" tabindex="0" onclick="sortTable(this)">Name <span class="sort-arrow" aria-hidden="true"></span></th>
+                        <th class="sortable" data-col="3" data-sort-type="text" role="button" tabindex="0" onclick="sortTable(this)">Game Series <span class="sort-arrow" aria-hidden="true"></span></th>
+                        <th class="sortable" data-col="4" data-sort-type="text" role="button" tabindex="0" onclick="sortTable(this)">Amiibo Series <span class="sort-arrow" aria-hidden="true"></span></th>
+                        <th class="sortable" data-col="5" data-sort-type="text" role="button" tabindex="0" onclick="sortTable(this)">Type <span class="sort-arrow" aria-hidden="true"></span></th>
+                        <th class="sortable" data-col="6" data-sort-type="num" role="button" tabindex="0" onclick="sortTable(this)">Price <span class="sort-arrow" aria-hidden="true"></span></th>
+                        <th class="sortable" data-col="7" data-sort-type="date" role="button" tabindex="0" onclick="sortTable(this)">Release Date <span class="sort-arrow" aria-hidden="true"></span></th>
                     </tr>
                 </thead>
                 <tbody id="amiibo-tbody">
@@ -763,16 +823,16 @@
                                  onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
                             <div class="img-fallback">?</div>
                         </td>
-                        <td class="name-col amiibo-name" data-label="Name:">
+                        <td class="name-col amiibo-name" data-label="Name:" data-sort="{{ amiibo.name|lower }}">
                             <a href="{% url 'amiibo_detail' amiibo.amiibo_id %}" class="amiibo-name-link" data-track="amiibodex-amiibo">{{ amiibo.name }}</a>
                             {% if amiibo.is_upcoming %}
                                 <span class="upcoming-badge">Upcoming</span>
                             {% endif %}
                         </td>
-                        <td class="game-series" data-label="Game Series:">{{ amiibo.gameSeries|default:"N/A" }}</td>
-                        <td class="amiibo-series" data-label="Amiibo Series:">{{ amiibo.amiiboSeries|default:"N/A" }}</td>
-                        <td class="amiibo-type" data-label="Type:">{{ amiibo.type|default:"N/A" }}</td>
-                        <td class="price-col" data-label="Price:" onclick="event.stopPropagation()">
+                        <td class="game-series" data-label="Game Series:" data-sort="{{ amiibo.gameSeries|default:''|lower }}">{{ amiibo.gameSeries|default:"N/A" }}</td>
+                        <td class="amiibo-series" data-label="Amiibo Series:" data-sort="{{ amiibo.amiiboSeries|default:''|lower }}">{{ amiibo.amiiboSeries|default:"N/A" }}</td>
+                        <td class="amiibo-type" data-label="Type:" data-sort="{{ amiibo.type|default:''|lower }}">{{ amiibo.type|default:"N/A" }}</td>
+                        <td class="price-col" data-label="Price:" data-sort="{{ amiibo.pricing.sort_cents }}" onclick="event.stopPropagation()">
                             <div class="price-stack">
                                 {% if amiibo.pricing.has_estimate %}
                                     <span class="price-main">{{ amiibo.pricing.display }}</span>
@@ -796,7 +856,7 @@
                                 <a href="{{ amiibo.pricing.source_url }}" target="_blank" rel="nofollow noopener noreferrer" class="price-link">View eBay listings</a>
                             </div>
                         </td>
-                        <td class="release-date" data-label="Release Date:">{{ amiibo.display_release|default:"TBA" }}</td>
+                        <td class="release-date" data-label="Release Date:" data-sort="{{ amiibo.earliest_release|date:'Y-m-d' }}">{{ amiibo.display_release|default:"TBA" }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -823,28 +883,37 @@
         window.location.href = `/blog/number-released/amiibo/${amiiboId}/`;
     }
 
-    // Real-time search functionality
+    // Real-time search. Regex is additive and needs no toggle: every term is
+    // matched literally (substring) and, when it compiles as a valid regex,
+    // matched as a pattern too — a row shows if either hits. So "$50" works as
+    // plain text while `zelda|mario` or `loose \$[1-9]\d\d` work as patterns,
+    // and an incomplete pattern simply falls back to the literal match.
     function filterTable() {
-        const searchTerm = document.getElementById('search-input').value.toLowerCase();
+        const raw = document.getElementById('search-input').value.trim();
         const favOnly = document.getElementById('fav-only')?.checked;
         const rows = document.querySelectorAll('#amiibo-tbody tr');
         let visibleCount = 0;
 
-        rows.forEach(row => {
-            // Search across: name, type, gameSeries, amiiboSeries, release date
-            const name = row.querySelector('.amiibo-name')?.textContent.toLowerCase() || '';
-            const type = row.querySelector('.amiibo-type')?.textContent.toLowerCase() || '';
-            const gameSeries = row.querySelector('.game-series')?.textContent.toLowerCase() || '';
-            const amiiboSeries = row.querySelector('.amiibo-series')?.textContent.toLowerCase() || '';
-            const releaseDate = row.querySelector('.release-date')?.textContent.toLowerCase() || '';
-            const price = row.querySelector('.price-col')?.textContent.toLowerCase() || '';
+        const term = raw.toLowerCase();
+        let regex = null;
+        if (raw) {
+            try { regex = new RegExp(raw, 'i'); } catch (e) { regex = null; }
+        }
 
-            const matchesSearch = name.includes(searchTerm) ||
-                                type.includes(searchTerm) ||
-                                gameSeries.includes(searchTerm) ||
-                                amiiboSeries.includes(searchTerm) ||
-                                releaseDate.includes(searchTerm) ||
-                                price.includes(searchTerm);
+        rows.forEach(row => {
+            // Combined searchable text: name, type, series, release date, price.
+            const haystack = [
+                row.querySelector('.amiibo-name')?.textContent,
+                row.querySelector('.amiibo-type')?.textContent,
+                row.querySelector('.game-series')?.textContent,
+                row.querySelector('.amiibo-series')?.textContent,
+                row.querySelector('.release-date')?.textContent,
+                row.querySelector('.price-col')?.textContent,
+            ].join(' ').toLowerCase();
+
+            const matchesSearch = !term
+                || haystack.includes(term)
+                || (regex && regex.test(haystack));
 
             const isFav = row.querySelector('.dex-fav-btn')?.classList.contains('favorited');
             const matches = matchesSearch && (!favOnly || isFav);
@@ -854,6 +923,55 @@
         });
 
         updateCount(visibleCount, rows.length);
+    }
+
+    // ---- Column sorting -------------------------------------------------
+    // Click a header to sort the table by that column; click again to flip
+    // direction. Row elements are re-appended (not recreated), so favorite
+    // state, listeners, and the current filter all persist.
+    let currentSort = { col: null, dir: 1 };
+
+    function sortTable(th) {
+        const col = parseInt(th.dataset.col, 10);
+        const type = th.dataset.sortType || 'text';
+        const dir = (currentSort.col === col) ? -currentSort.dir : 1;
+        currentSort = { col, dir };
+
+        const tbody = document.getElementById('amiibo-tbody');
+        const rows = Array.from(tbody.querySelectorAll('tr'));
+
+        const keyOf = (row) => {
+            const cell = row.children[col];
+            const raw = cell?.dataset.sort ?? cell?.textContent.trim() ?? '';
+            if (type === 'num') {
+                const n = parseFloat(raw);
+                return Number.isNaN(n) ? null : n;
+            }
+            return raw; // text + ISO dates both sort correctly as strings
+        };
+
+        rows.sort((a, b) => {
+            const ka = keyOf(a), kb = keyOf(b);
+            // Empty/missing values (pending price, TBA date) always sink to the bottom.
+            const aEmpty = ka === null || ka === '';
+            const bEmpty = kb === null || kb === '';
+            if (aEmpty && bEmpty) return 0;
+            if (aEmpty) return 1;
+            if (bEmpty) return -1;
+            if (ka < kb) return -1 * dir;
+            if (ka > kb) return 1 * dir;
+            return 0;
+        });
+
+        rows.forEach(row => tbody.appendChild(row));
+
+        // Update header indicators.
+        document.querySelectorAll('.amiibo-table th.sortable').forEach(header => {
+            header.classList.remove('sort-asc', 'sort-desc');
+            header.setAttribute('aria-sort', 'none');
+        });
+        th.classList.add(dir === 1 ? 'sort-asc' : 'sort-desc');
+        th.setAttribute('aria-sort', dir === 1 ? 'ascending' : 'descending');
     }
 
     // ---- Favorites (lazy-hydrated; stored per-user in Google Sheets) ----
@@ -957,6 +1075,16 @@
 
         const favOnly = document.getElementById('fav-only');
         if (favOnly) favOnly.addEventListener('change', filterTable);
+
+        // Keyboard access for sortable headers (Enter / Space).
+        document.querySelectorAll('.amiibo-table th.sortable').forEach(th => {
+            th.addEventListener('keydown', event => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    sortTable(th);
+                }
+            });
+        });
 
         // Fill in hearts for the signed-in user without blocking the catalog.
         hydrateFavorites();
