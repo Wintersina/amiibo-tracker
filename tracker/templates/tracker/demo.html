@@ -56,16 +56,35 @@
             padding-left: 1.2rem;
             padding-right: 1.2rem;
             padding-bottom: 3rem;
-            background: linear-gradient(135deg, rgba(15, 118, 110, 0.12), rgba(243, 201, 105, 0.12)),
-                        url('/static/images/amiibo_bg.png') center/600px repeat;
+            background-color: #f7f2e7;
+            background-image:
+                linear-gradient(135deg, rgba(247, 242, 231, 0.28), rgba(15, 118, 110, 0.1), rgba(243, 201, 105, 0.12)),
+                url('{% static "images/amiibo_bg_modern.png" %}');
+            background-image:
+                linear-gradient(135deg, rgba(247, 242, 231, 0.28), rgba(15, 118, 110, 0.1), rgba(243, 201, 105, 0.12)),
+                image-set(
+                    url('{% static "images/amiibo_bg_modern.webp" %}') type("image/webp"),
+                    url('{% static "images/amiibo_bg_modern.png" %}') type("image/png")
+                );
+            background-position: center;
+            background-size: cover;
+            background-repeat: no-repeat;
             background-attachment: fixed;
             color: var(--text);
             transition: background-color 0.3s ease, color 0.3s ease;
         }
 
         body.dark {
-            background: linear-gradient(160deg, rgba(6, 10, 14, 0.9), rgba(12, 18, 24, 0.88)),
-                        url('/static/images/amiibo_bg.png') center/520px repeat;
+            background-color: #060a0e;
+            background-image:
+                linear-gradient(160deg, rgba(6, 10, 14, 0.42), rgba(12, 18, 24, 0.66)),
+                url('{% static "images/amiibo_bg_modern_dark.png" %}');
+            background-image:
+                linear-gradient(160deg, rgba(6, 10, 14, 0.42), rgba(12, 18, 24, 0.66)),
+                image-set(
+                    url('{% static "images/amiibo_bg_modern_dark.webp" %}') type("image/webp"),
+                    url('{% static "images/amiibo_bg_modern_dark.png" %}') type("image/png")
+                );
             background-attachment: fixed;
         }
 
@@ -867,6 +886,7 @@
         const darkMode = localStorage.getItem(DARK_MODE_KEY) === 'true';
         if (darkMode) {
             document.body.classList.add('dark');
+            document.documentElement.classList.add('dark');
             document.getElementById('darkModeToggle').textContent = '☀️';
         }
 
@@ -1273,6 +1293,7 @@
     document.getElementById('darkModeToggle').addEventListener('click', () => {
         const body = document.body;
         const isDark = body.classList.toggle('dark');
+        document.documentElement.classList.toggle('dark', isDark);
         document.getElementById('darkModeToggle').textContent = isDark ? '☀️' : '🌙';
         localStorage.setItem(DARK_MODE_KEY, isDark);
         logEvent('dark-mode-updated', '/toggle-dark-mode/', { dark_mode: isDark });
