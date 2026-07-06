@@ -72,6 +72,70 @@ def test_amiibo_card_rows_allow_card_listing_titles():
     assert result["sample_count"] == 1
 
 
+def peach_band_amiibo():
+    return {
+        "name": "Peach - Power Up Band",
+        "amiiboSeries": "Super Nintendo World",
+        "gameSeries": "Super Mario",
+        "type": "Band",
+        "head": "00020003",
+        "tail": "039dff02",
+    }
+
+
+def test_title_match_requires_character_identity():
+    """A same-line listing for a different character must not be counted."""
+    amiibo = peach_band_amiibo()
+
+    # Wrong character (Mario) — rejected even though "power"/"band" match.
+    assert (
+        pricing._title_matches_amiibo(
+            "Super Nintendo World Mario Power-Up Band Amiibo Sealed", amiibo
+        )
+        is False
+    )
+    # Correct character (Peach) — accepted.
+    assert (
+        pricing._title_matches_amiibo(
+            "NEW Super Nintendo World Princess Peach Power-Up Band Amiibo Sealed",
+            amiibo,
+        )
+        is True
+    )
+
+
+def test_multi_pack_listings_are_excluded():
+    """Set / multi-pack listings must not pollute either bucket."""
+    items = [
+        ebay_item("Mario amiibo Super Smash Bros loose", "15.00", "Used"),
+        ebay_item("Mario amiibo Complete 8 set", "400.00", "New"),
+        ebay_item("Mario amiibo 3pcs set", "120.00", "New"),
+    ]
+
+    result = pricing.estimate_prices_from_ebay_items(mario_amiibo(), items)
+
+    assert result["loose_estimate_cents"] == 1500
+    assert result["new_estimate_cents"] is None
+    assert result["sample_count"] == 1
+
+
+def test_nib_below_loose_estimate_is_suppressed():
+    """A NIB estimate cheaper than loose is contaminated — drop it."""
+    items = [
+        ebay_item("Mario amiibo loose", "50.00", "Used"),
+        ebay_item("Mario amiibo loose OOB", "60.00", "Used"),
+        ebay_item("Mario amiibo new sealed", "20.00", "New"),
+        ebay_item("Mario amiibo new in box", "25.00", "New"),
+    ]
+
+    result = pricing.estimate_prices_from_ebay_items(mario_amiibo(), items)
+
+    assert result["loose_estimate_cents"] == 5500
+    assert result["new_estimate_cents"] is None
+    assert result["new_sample_count"] == 0
+    assert result["loose_sample_count"] == 2
+
+
 def test_normalize_pricing_for_display_falls_back_to_ebay_listing_link():
     display = pricing.normalize_pricing_for_display(mario_amiibo(), None)
 
