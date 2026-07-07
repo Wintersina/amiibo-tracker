@@ -496,7 +496,7 @@ def test_repository_skips_large_latest_doc_fallback(monkeypatch):
     assert result == {}
 
 
-def test_repository_prunes_old_snapshots_with_document_id_filter():
+def test_repository_prunes_old_snapshots_with_snapshot_date_filter():
     class FakeDoc:
         def __init__(self, doc_id):
             self.id = doc_id
@@ -558,7 +558,7 @@ def test_repository_prunes_old_snapshots_with_document_id_filter():
     )
 
     assert deleted == 1
-    assert client.daily.filter.field_path == "__name__"
+    assert client.daily.filter.field_path == "snapshot_date"
     assert client.daily.filter.op_string == "<"
     assert client.daily.filter.value == "2026-01-01"
     assert client.batch_instance.deleted == ["ref-2025-01-01"]

@@ -14,7 +14,6 @@ from urllib.parse import urlencode
 import requests
 from google.auth.exceptions import DefaultCredentialsError
 from google.cloud import firestore
-from google.cloud.firestore_v1.field_path import FieldPath
 
 from tracker.firestore_client import get_client
 
@@ -890,9 +889,13 @@ class AmiiboPricingRepository:
             .document(amiibo_id)
             .collection("daily")
         )
+        # Filter on the stored snapshot_date field rather than the document id.
+        # Firestore requires a document reference (not a bare string) when
+        # comparing against __name__/__key__, which raised "filter value must
+        # be a Key". snapshot_date is an ISO string, so "<" sorts by date.
         old_docs = daily.where(
             filter=firestore.FieldFilter(
-                FieldPath.document_id(), "<", before_date.isoformat()
+                "snapshot_date", "<", before_date.isoformat()
             )
         ).stream()
 
