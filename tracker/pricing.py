@@ -67,6 +67,13 @@ EXCLUDED_TITLE_TERMS = {
     "mystery",
     "plush",
     "keychain",
+    # Multi-pack / set listings: their combined prices contaminate both the
+    # loose and NIB medians (e.g. "Complete 8 set", "3 Types Set", "3pcs").
+    # Leading space on " set" avoids matching words like "sunset"/"offset".
+    " set",
+    "pcs",
+    "types",
+    "complete",
 }
 
 NAME_STOP_WORDS = {
@@ -191,6 +198,18 @@ def _item_total_cents(item: dict) -> int | None:
     return cents + shipping_cents
 
 
+def _character_tokens(name: str) -> list[str]:
+    """Distinctive tokens from the character portion of the name — the part
+    before the first '-' or '(' (e.g. 'Peach' in 'Peach - Power Up Band'),
+    which identifies *which* figure this is versus its series or variant."""
+    character_segment = re.split(r"[-(]", name or "")[0]
+    return [
+        token
+        for token in re.findall(r"[a-z0-9]+", character_segment.lower())
+        if len(token) > 2 and token not in NAME_STOP_WORDS
+    ]
+
+
 def _title_matches_amiibo(title: str, amiibo: dict) -> bool:
     normalized_title = title.lower()
     if "amiibo" not in normalized_title:
@@ -203,9 +222,21 @@ def _title_matches_amiibo(title: str, amiibo: dict) -> bool:
     if any(term in normalized_title for term in excluded_terms):
         return False
 
+    name = amiibo.get("name") or ""
+
+    # Identity gate: every token of the character's own name must appear, so a
+    # listing for a *different* figure in the same line (a Mario Power-Up Band
+    # when we're pricing Peach; a Palico when we're pricing Malzeno) can't be
+    # counted. This is the main defense against cross-product contamination.
+    character_tokens = _character_tokens(name)
+    if character_tokens and not all(
+        token in normalized_title for token in character_tokens
+    ):
+        return False
+
     tokens = [
         token
-        for token in re.findall(r"[a-z0-9]+", (amiibo.get("name") or "").lower())
+        for token in re.findall(r"[a-z0-9]+", name.lower())
         if len(token) > 2 and token not in NAME_STOP_WORDS
     ]
     if not tokens:
@@ -285,6 +316,19 @@ def estimate_prices_from_ebay_items(amiibo: dict, items: list[dict]) -> dict:
 
     loose_estimate = _median_cents(loose_values)
     new_estimate = _median_cents(new_values)
+
+    # Sanity guard: a NIB estimate below the loose estimate is not a real
+    # market signal — it means the "new" bucket is still contaminated (cheap
+    # mislabeled or wrong-variant listings). Discard it rather than show a
+    # backwards price; the loose estimate stands on its own.
+    if (
+        loose_estimate is not None
+        and new_estimate is not None
+        and new_estimate < loose_estimate
+    ):
+        new_estimate = None
+        new_values = []
+
     sample_count = len(loose_values) + len(new_values)
 
     return {

@@ -294,10 +294,10 @@ build:
 	docker-compose build
 
 run:
-	@echo "🚀 Starting service in Docker (gunicorn)..."
+	@echo "🏗️  Building (incremental) then starting service in Docker (gunicorn)..."
 	@echo "   → Open http://localhost:8080 (home) or http://localhost:8080/demo/"
 	@if [ -n "$(DOCKER_COMPOSE)" ]; then \
-		$(DOCKER_COMPOSE) up app; \
+		$(DOCKER_COMPOSE) up --build app; \
 	else \
 		echo "❌ Docker Compose not found — try 'make run-local'"; exit 1; \
 	fi
