@@ -109,6 +109,13 @@
             padding-top: 70px;
         }
 
+        .top-nav,
+        .top-nav *,
+        .top-nav *::before,
+        .top-nav *::after {
+            box-sizing: border-box;
+        }
+
         .top-nav {
             position: fixed;
             top: 0;
@@ -157,11 +164,17 @@
             display: flex;
             align-items: center;
             text-decoration: none;
+            flex: 0 0 auto;
         }
 
         .logo-text {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 46px;
             font-family: 'Geologica', -apple-system, BlinkMacSystemFont, system-ui, sans-serif !important;
             font-size: 1.5rem !important;
+            line-height: 1;
             font-weight: 700 !important;
             color: #fdf7e3;
             background: linear-gradient(135deg, rgba(243, 201, 105, 0.2), rgba(15, 118, 110, 0.2));
@@ -180,14 +193,20 @@
         }
 
         .nav-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 40px;
             color: #fdf7e3;
             text-decoration: none;
             font-family: 'Geologica', -apple-system, BlinkMacSystemFont, system-ui, sans-serif !important;
             font-weight: 600 !important;
             font-size: 1rem !important;
+            line-height: 1;
             padding: 0.5rem 1rem;
             border-radius: 8px;
             transition: background 0.2s ease, color 0.2s ease;
+            white-space: nowrap;
         }
 
         .nav-link:hover {
@@ -198,7 +217,9 @@
         .login-btn {
             display: inline-flex;
             align-items: center;
+            justify-content: center;
             gap: 0.6rem;
+            min-height: 46px;
             padding: 0.65rem 1.5rem;
             background: #ffffff;
             color: #3c4043;
@@ -206,10 +227,12 @@
             font-family: 'Geologica', -apple-system, BlinkMacSystemFont, system-ui, sans-serif !important;
             font-weight: 700 !important;
             font-size: 1rem !important;
+            line-height: 1;
             border-radius: 10px;
             border: 2px solid rgba(243, 201, 105, 0.3);
             transition: transform 0.2s ease, box-shadow 0.2s ease;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            white-space: nowrap;
         }
 
         .login-btn:hover {
@@ -231,6 +254,10 @@
             cursor: pointer;
             padding: 0.5rem;
             line-height: 1;
+            width: 46px;
+            height: 46px;
+            align-items: center;
+            justify-content: center;
         }
 
         .mobile-nav {
@@ -252,6 +279,7 @@
             font-family: 'Geologica', -apple-system, BlinkMacSystemFont, system-ui, sans-serif !important;
             font-weight: 600 !important;
             font-size: 1rem !important;
+            line-height: 1.2;
             padding: 0.85rem 1rem;
             border-radius: 8px;
             transition: background 0.2s ease;
@@ -308,11 +336,12 @@
             }
 
             .mobile-menu-btn {
-                display: block;
+                display: inline-flex;
             }
 
             .logo-text {
                 font-size: 1.2rem !important;
+                min-height: 42px;
                 padding: 0.4rem 1rem;
             }
         }
@@ -324,6 +353,7 @@
 
             .logo-text {
                 font-size: 1.1rem !important;
+                min-height: 40px;
                 padding: 0.35rem 0.9rem;
             }
         }

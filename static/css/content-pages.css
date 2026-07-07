@@ -16,12 +16,6 @@ body.content-page {
     background-image:
         linear-gradient(180deg, rgba(6, 10, 14, 0.74), rgba(12, 18, 24, 0.82)),
         url('../images/amiibo_bg_modern_dark.png');
-    background-image:
-        linear-gradient(180deg, rgba(6, 10, 14, 0.74), rgba(12, 18, 24, 0.82)),
-        image-set(
-            url('../images/amiibo_bg_modern_dark.webp') type("image/webp"),
-            url('../images/amiibo_bg_modern_dark.png') type("image/png")
-        );
     background-position: center;
     background-size: cover;
     background-repeat: no-repeat;
