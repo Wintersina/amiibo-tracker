@@ -1,0 +1,49 @@
+name: Update amiibo database
+
+on:
+  schedule:
+    # Daily at 09:17 UTC (off the hour to dodge GitHub's cron congestion)
+    - cron: '17 9 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update-db:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Sync amiibo database from live API
+        run: make update-amiibo-db 2>&1 | tee /tmp/update-amiibo-db.log
+
+      - name: Build PR body from sync output
+        run: |
+          {
+            echo "Automated daily sync of \`tracker/data/amiibo_database.json\` from the live API."
+            echo
+            echo '```'
+            cat /tmp/update-amiibo-db.log
+            echo '```'
+          } > /tmp/pr-body.md
+
+      - name: Open pull request if the database changed
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.AMIIBO_DB_PAT }}
+          add-paths: tracker/data/amiibo_database.json
+          branch: auto/update-amiibo-db
+          delete-branch: true
+          commit-message: Update amiibo database from live API
+          title: 'Update amiibo database'
+          body-path: /tmp/pr-body.md
