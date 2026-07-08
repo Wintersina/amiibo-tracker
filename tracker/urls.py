@@ -40,7 +40,12 @@ urlpatterns = [
     path("robots.txt", RobotsTxtView.as_view(), name="robots"),
     path("ads.txt", AdsTxtView.as_view(), name="ads_txt"),
     path(
-        "about/", TemplateView.as_view(template_name="tracker/about.html"), name="about"
+        "about/",
+        TemplateView.as_view(
+            template_name="tracker/about.html",
+            extra_context={"adsense_enabled": True},
+        ),
+        name="about",
     ),
     path("authors/<slug:slug>/", AuthorView.as_view(), name="author_detail"),
     path("demo/", DemoView.as_view(), name="demo"),

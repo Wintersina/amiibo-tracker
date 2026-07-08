@@ -6,18 +6,17 @@ from tracker.sitemaps import (
     StaticViewSitemap,
     AuthorSitemap,
     BlogPostSitemap,
-    AmiiboSitemap,
 )
 
-# Amiibo detail pages are now content-rich (pricing, related figures, FAQ) and
-# served with `index, follow`, so they belong in the sitemap. Listing them here
-# gives Google an authoritative crawl list with fresh lastmod signals, matching
-# the indexable meta on the pages themselves.
+# Amiibo detail pages are deliberately absent: their templated ~50-word
+# descriptions tripped AdSense's "low value content" review (June 2026), so
+# they are served with `noindex, follow` and must not be advertised to
+# crawlers here. Re-add AmiiboSitemap only for pages enriched with
+# substantial unique content, and flip their robots meta in lockstep.
 sitemaps = {
     "static": StaticViewSitemap,
     "authors": AuthorSitemap,
     "blog": BlogPostSitemap,
-    "amiibo": AmiiboSitemap,
 }
 
 urlpatterns = [

@@ -354,6 +354,54 @@
         padding: 0 2rem;
     }
 
+    /* Collector Value Section */
+    .collector-section {
+        max-width: 1200px;
+        margin: 4rem auto;
+        padding: 0 2rem;
+    }
+
+    .collector-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 1rem;
+    }
+
+    .collector-panel {
+        background: rgba(15, 23, 42, 0.72);
+        border: 1px solid rgba(243, 201, 105, 0.26);
+        border-radius: 8px;
+        padding: 1.2rem;
+    }
+
+    .collector-panel h2,
+    .collector-panel h3 {
+        margin: 0 0 0.65rem;
+        color: var(--saffron);
+        line-height: 1.25;
+    }
+
+    .collector-panel h2 {
+        font-size: 1.35rem;
+    }
+
+    .collector-panel h3 {
+        font-size: 1.05rem;
+    }
+
+    .collector-panel p {
+        margin: 0;
+        color: rgba(253, 247, 227, 0.8);
+        font-size: 0.96rem;
+        line-height: 1.6;
+    }
+
+    @media (max-width: 860px) {
+        .collector-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
     .guides-header {
         text-align: center;
         margin-bottom: 2.5rem;
@@ -617,6 +665,32 @@
     </div>
 </section>
 {% endif %}
+
+<section class="collector-section" aria-labelledby="collectorHeading">
+    <div class="collector-grid">
+        <article class="collector-panel">
+            <h2 id="collectorHeading">Built Around Collector Decisions</h2>
+            <p>
+                Goozamiibo combines a collection tracker, public AmiiboDex catalog, source-linked guides,
+                and marketplace context so collectors can decide what to buy, verify, display, or skip.
+            </p>
+        </article>
+        <article class="collector-panel">
+            <h3>Original Editorial Context</h3>
+            <p>
+                Guides explain compatibility, release timing, condition grading, counterfeit warning signs,
+                and pricing caveats instead of only repeating catalog fields.
+            </p>
+        </article>
+        <article class="collector-panel">
+            <h3>Transparent Data Handling</h3>
+            <p>
+                Collection data stays in your own Google Sheet. Public pages explain how estimates are produced,
+                when sources were checked, and where collectors should verify listings before spending money.
+            </p>
+        </article>
+    </div>
+</section>
 
 {% if latest_posts %}
 <section class="guides-section" aria-labelledby="guidesHeading">

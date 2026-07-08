@@ -1470,6 +1470,7 @@ class IndexView(View, AmiiboLocalFetchMixin):
 
         # Check for OAuth error from session
         context = seo.build()
+        context["adsense_enabled"] = True
         context["latest_posts"] = latest_posts
         context["top_priced_amiibos"] = top_priced_amiibos
         oauth_error = request.session.pop("oauth_error", None)
@@ -1489,7 +1490,10 @@ class DemoView(View):
         )
         seo.set_type("website")
 
-        return render(request, "tracker/demo.html", seo.build())
+        context = seo.build()
+        context["adsense_enabled"] = False
+
+        return render(request, "tracker/demo.html", context)
 
 
 class PrivacyPolicyView(View):
@@ -1503,6 +1507,7 @@ class PrivacyPolicyView(View):
         seo.set_type("website")
 
         context = {
+            "adsense_enabled": False,
             "data_usage": [
                 {
                     "item": "Email address",
@@ -1552,7 +1557,7 @@ class AuthorView(View):
             },
         )
 
-        context = {"author": author, "posts": posts}
+        context = {"author": author, "posts": posts, "adsense_enabled": True}
         context.update(seo.build())
         return render(request, "tracker/author.html", context)
 
@@ -1686,7 +1691,7 @@ class BlogListView(View, LoggingMixin):
         # Add Organization schema
         seo.add_schema("Organization", generate_organization_schema())
 
-        context = {"posts": posts}
+        context = {"posts": posts, "adsense_enabled": True}
         context.update(seo.build())
 
         return render(request, "tracker/blog_list.html", context)
@@ -1796,6 +1801,7 @@ class BlogPostView(View, LoggingMixin, AmiiboLocalFetchMixin):
         comment_banner = comment_banner_for(request.GET.get("comment"))
 
         context = {
+            "adsense_enabled": True,
             "post": post,
             "author": author,
             "author_url": author_url,
@@ -1912,7 +1918,7 @@ class AmiibodexView(View, LoggingMixin, AmiiboLocalFetchMixin):
         ]
         seo.add_schema("BreadcrumbList", generate_breadcrumb_schema(breadcrumbs))
 
-        context = {}
+        context = {"adsense_enabled": True}
         context.update(seo.build())
 
         try:
