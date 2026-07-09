@@ -103,6 +103,7 @@ ENSURE_VENV := \
 	fi; \
 	if [ ! -f $(VENV_DIR)/.deps-installed ] || [ requirements.txt -nt $(VENV_DIR)/.deps-installed ]; then \
 		echo "📦 Installing dependencies into $(VENV_DIR)/..."; \
+		$(PIP) install -q --upgrade pip && \
 		$(PIP) install -q -r requirements.txt && touch $(VENV_DIR)/.deps-installed; \
 	fi;
 
