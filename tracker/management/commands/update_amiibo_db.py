@@ -1,6 +1,6 @@
-"""Refresh tracker/data/amiibo_database.json from the live goozamiibo API.
+"""Refresh tracker/data/amiibo_database.json from the live amiibo API.
 
-Hits the production API (which proxies the upstream amiibo source), diffs the
+Hits the upstream API (https://amiiboapi.org), diffs the
 result against the local JSON by (head, tail) pair, and only writes when the
 content actually changes — so re-running on no-op produces a byte-identical
 file and a clean git status.
@@ -18,7 +18,7 @@ from pathlib import Path
 
 from django.core.management.base import BaseCommand, CommandError
 
-DEFAULT_API_URL = "https://goozamiibo.com/api/amiibo/"
+DEFAULT_API_URL = "https://amiiboapi.org/api/amiibo/"
 
 LOCAL_DB = Path(__file__).resolve().parents[2] / "data" / "amiibo_database.json"
 

@@ -18,7 +18,7 @@ help:
 	@echo ""
 	@echo "Amiibo database:"
 	@echo "  make update-amiibo-db      - Sync tracker/data/amiibo_database.json"
-	@echo "                               from https://goozamiibo.com/api/amiibo/"
+	@echo "                               from https://amiiboapi.org/api/amiibo/"
 	@echo "                               (writes only when content changes)"
 	@echo "  make update-amiibo-db-dry  - Show the diff without writing"
 	@echo "  (override endpoint with API_URL=https://...; e.g. for staging)"
@@ -180,7 +180,7 @@ scrape-docker:
 
 # Amiibo DB sync
 #
-# Hits the live API (default: https://goozamiibo.com/api/amiibo/), diffs
+# Hits the live API (default: https://amiiboapi.org/api/amiibo/), diffs
 # against tracker/data/amiibo_database.json keyed by (head, tail), and only
 # writes when the content changed — so no-op runs leave a clean git status.
 #
