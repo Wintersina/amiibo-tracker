@@ -321,6 +321,54 @@
       "type": "Figure"
     },
     {
+      "amiiboSeries": "Splatoon",
+      "character": "Shiver",
+      "gameSeries": "Splatoon",
+      "head": "08070000",
+      "image": "https://raw.githubusercontent.com/8bitDream/AmiiboAPI/master/images/icon_08070000-04f70402.png",
+      "name": "Shiver (Splatoon Raiders)",
+      "release": {
+        "au": "2026-07-23",
+        "eu": "2026-07-23",
+        "jp": "2026-07-23",
+        "na": "2026-07-23"
+      },
+      "tail": "04f70402",
+      "type": "Figure"
+    },
+    {
+      "amiiboSeries": "Splatoon",
+      "character": "Frye",
+      "gameSeries": "Splatoon",
+      "head": "08080000",
+      "image": "https://raw.githubusercontent.com/8bitDream/AmiiboAPI/master/images/icon_08080000-04f80402.png",
+      "name": "Frye (Splatoon Raiders)",
+      "release": {
+        "au": "2026-07-23",
+        "eu": "2026-07-23",
+        "jp": "2026-07-23",
+        "na": "2026-07-23"
+      },
+      "tail": "04f80402",
+      "type": "Figure"
+    },
+    {
+      "amiiboSeries": "Splatoon",
+      "character": "Big Man",
+      "gameSeries": "Splatoon",
+      "head": "08090000",
+      "image": "https://raw.githubusercontent.com/8bitDream/AmiiboAPI/master/images/icon_08090000-04f90402.png",
+      "name": "Big Man (Splatoon Raiders)",
+      "release": {
+        "au": "2026-07-23",
+        "eu": "2026-07-23",
+        "jp": "2026-07-23",
+        "na": "2026-07-23"
+      },
+      "tail": "04f90402",
+      "type": "Figure"
+    },
+    {
       "amiiboSeries": "Animal Crossing",
       "character": "Frett",
       "gameSeries": "Animal Crossing",
