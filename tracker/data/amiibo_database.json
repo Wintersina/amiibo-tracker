@@ -1729,6 +1729,38 @@
       "type": "Figure"
     },
     {
+      "amiiboSeries": "Resident Evil",
+      "character": "Grace Ashcroft",
+      "gameSeries": "Resident Evil",
+      "head": "35400000",
+      "image": "https://raw.githubusercontent.com/8bitDream/AmiiboAPI/master/images/icon_35400000-05032002.png",
+      "name": "Grace Ashcroft",
+      "release": {
+        "au": "2026-07-30",
+        "eu": "2026-07-30",
+        "jp": "2026-07-30",
+        "na": "2026-07-30"
+      },
+      "tail": "05032002",
+      "type": "Figure"
+    },
+    {
+      "amiiboSeries": "Resident Evil",
+      "character": "Leon S. Kennedy",
+      "gameSeries": "Resident Evil",
+      "head": "35410000",
+      "image": "https://raw.githubusercontent.com/8bitDream/AmiiboAPI/master/images/icon_35410000-05042002.png",
+      "name": "Leon S. Kennedy",
+      "release": {
+        "au": "2026-07-30",
+        "eu": "2026-07-30",
+        "jp": "2026-07-30",
+        "na": "2026-07-30"
+      },
+      "tail": "05042002",
+      "type": "Figure"
+    },
+    {
       "amiiboSeries": "Super Nintendo World",
       "character": "Mario",
       "gameSeries": "Super Mario",
