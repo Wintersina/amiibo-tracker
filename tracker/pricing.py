@@ -435,62 +435,16 @@ def _format_change_percent(first_cents: int | None, last_cents: int | None) -> s
     return f"{sign}{change:.0f}%"
 
 
-def _chart_coord(value: float) -> str:
-    return f"{value:.2f}".rstrip("0").rstrip(".")
-
-
-def _chart_line_path(coords: list[tuple[float, float]]) -> str:
-    if not coords:
-        return ""
-
-    start_x, start_y = coords[0]
-    if len(coords) == 1:
-        return f"M {_chart_coord(start_x)},{_chart_coord(start_y)}"
-
-    if len(coords) == 2:
-        end_x, end_y = coords[1]
-        return (
-            f"M {_chart_coord(start_x)},{_chart_coord(start_y)} "
-            f"L {_chart_coord(end_x)},{_chart_coord(end_y)}"
-        )
-
-    parts = [f"M {_chart_coord(start_x)},{_chart_coord(start_y)}"]
-    for index in range(len(coords) - 1):
-        p0 = coords[index - 1] if index > 0 else coords[index]
-        p1 = coords[index]
-        p2 = coords[index + 1]
-        p3 = coords[index + 2] if index + 2 < len(coords) else p2
-
-        c1_x = p1[0] + (p2[0] - p0[0]) / 6
-        c1_y = p1[1] + (p2[1] - p0[1]) / 6
-        c2_x = p2[0] - (p3[0] - p1[0]) / 6
-        c2_y = p2[1] - (p3[1] - p1[1]) / 6
-        parts.append(
-            "C "
-            f"{_chart_coord(c1_x)},{_chart_coord(c1_y)} "
-            f"{_chart_coord(c2_x)},{_chart_coord(c2_y)} "
-            f"{_chart_coord(p2[0])},{_chart_coord(p2[1])}"
-        )
-
-    return " ".join(parts)
-
-
-def _chart_area_path(
-    coords: list[tuple[float, float]], baseline_y: float = 54
-) -> str:
-    if len(coords) < 2:
-        return ""
-
-    start_x, _ = coords[0]
-    end_x, _ = coords[-1]
-    return (
-        f"M {_chart_coord(start_x)},{_chart_coord(baseline_y)} "
-        f"L {_chart_line_path(coords)[2:]} "
-        f"L {_chart_coord(end_x)},{_chart_coord(baseline_y)} Z"
-    )
-
-
 def build_price_chart_data(pricing: dict, history: list[dict] | None = None) -> dict:
+    """Shape saved snapshots into the payload static/js/price-chart.js renders.
+
+    Deliberately geometry-free. Snapshots land on an irregular cadence (the
+    scheduled refresh plus an extra run after every deploy), so positioning them
+    has to happen against a real time scale; doing that here would mean
+    re-implementing d3-scale in Python and re-running it on every resize. The
+    server's job is the numbers, the formatted strings for the table view, and
+    the summary deltas — the client owns the pixels.
+    """
     points = []
     seen_dates = set()
 
@@ -512,6 +466,9 @@ def build_price_chart_data(pricing: dict, history: list[dict] | None = None) -> 
                 "new_cents": new_cents,
                 "loose_display": format_price(loose_cents, currency),
                 "new_display": format_price(new_cents, currency),
+                "loose_samples": snapshot.get("loose_sample_count") or 0,
+                "new_samples": snapshot.get("new_sample_count") or 0,
+                "confidence": snapshot.get("confidence") or "",
             }
         )
 
@@ -529,6 +486,9 @@ def build_price_chart_data(pricing: dict, history: list[dict] | None = None) -> 
                 or format_price(pricing.get("loose_estimate_cents"), currency),
                 "new_display": pricing.get("new_display")
                 or format_price(pricing.get("new_estimate_cents"), currency),
+                "loose_samples": pricing.get("loose_sample_count") or 0,
+                "new_samples": pricing.get("new_sample_count") or 0,
+                "confidence": pricing.get("confidence") or "",
             }
         )
 
@@ -545,106 +505,50 @@ def build_price_chart_data(pricing: dict, history: list[dict] | None = None) -> 
             "has_chart": False,
             "points": [],
             "recent_points": [],
+            "series": [],
+            "currency": pricing.get("currency") or "USD",
             "min_display": "",
             "max_display": "",
-            "loose_polyline": "",
-            "new_polyline": "",
-            "loose_path": "",
-            "new_path": "",
-            "loose_area_path": "",
-            "new_area_path": "",
-            "has_loose_line": False,
-            "has_new_line": False,
             "loose_change": "",
             "new_change": "",
-            "y_ticks": [],
-            "x_ticks": [],
         }
 
-    min_value = min(values)
-    max_value = max(values)
-    if min_value == max_value:
-        padding = max(100, int(min_value * 0.1))
-        min_value = max(0, min_value - padding)
-        max_value = max_value + padding
+    for point in points:
+        point["has_loose"] = point.get("loose_cents") is not None
+        point["has_new"] = point.get("new_cents") is not None
 
-    value_range = max_value - min_value
-
-    def x_for(index: int) -> float:
-        if len(points) == 1:
-            return 50
-        return round((index / (len(points) - 1)) * 100, 2)
-
-    def y_for(value: int | None) -> float | None:
-        if value is None:
-            return None
-        return round(54 - ((value - min_value) / value_range) * 48, 2)
-
-    loose_polyline = []
-    new_polyline = []
-    for index, point in enumerate(points):
-        point["x"] = x_for(index)
-        point["loose_y"] = y_for(point.get("loose_cents"))
-        point["new_y"] = y_for(point.get("new_cents"))
-        point["has_loose"] = point["loose_y"] is not None
-        point["has_new"] = point["new_y"] is not None
-        if point["has_loose"]:
-            point["loose_point"] = f"{point['x']},{point['loose_y']}"
-            loose_polyline.append(point["loose_point"])
-        if point["has_new"]:
-            point["new_point"] = f"{point['x']},{point['new_y']}"
-            new_polyline.append(point["new_point"])
-        visible_y_values = [
-            value
-            for value in (point["loose_y"], point["new_y"])
-            if value is not None
-        ]
-        point["tooltip_y"] = (
-            round(sum(visible_y_values) / len(visible_y_values), 2)
-            if visible_y_values
-            else 54
-        )
-
-    loose_values = [point.get("loose_cents") for point in points if point["has_loose"]]
-    new_values = [point.get("new_cents") for point in points if point["has_new"]]
-    loose_coords = [
-        (point["x"], point["loose_y"]) for point in points if point["has_loose"]
-    ]
-    new_coords = [(point["x"], point["new_y"]) for point in points if point["has_new"]]
+    loose_values = [point["loose_cents"] for point in points if point["has_loose"]]
+    new_values = [point["new_cents"] for point in points if point["has_new"]]
     currency = pricing.get("currency") or "USD"
 
-    tick_values = [max_value, int((max_value + min_value) / 2), min_value]
-    y_ticks = [
+    # JSON-safe projection for the client. `sort_date` is a date object and the
+    # display strings are already formatted, so the browser never re-derives a
+    # currency format and can never disagree with the table view beside it.
+    series = [
         {
-            "y": y_for(value),
-            "y_percent": round((y_for(value) / 60) * 100, 2),
-            "label": format_price(value, currency),
+            "date": point["date"],
+            "label": point["label"],
+            "loose": point["loose_cents"],
+            "new": point["new_cents"],
+            "looseDisplay": point["loose_display"],
+            "newDisplay": point["new_display"],
+            "looseSamples": point["loose_samples"],
+            "newSamples": point["new_samples"],
+            "confidence": point["confidence"],
         }
-        for value in tick_values
-    ]
-    x_tick_indexes = sorted({0, len(points) // 2, len(points) - 1})
-    x_ticks = [
-        {
-            "x": points[index]["x"],
-            "label": points[index]["label"],
-        }
-        for index in x_tick_indexes
+        for point in points
     ]
 
     return {
         "has_chart": True,
         "points": points,
-        "recent_points": list(reversed(points[-5:])),
-        "min_display": format_price(min_value, currency),
-        "max_display": format_price(max_value, currency),
-        "loose_polyline": " ".join(loose_polyline),
-        "new_polyline": " ".join(new_polyline),
-        "loose_path": _chart_line_path(loose_coords),
-        "new_path": _chart_line_path(new_coords),
-        "loose_area_path": _chart_area_path(loose_coords),
-        "new_area_path": _chart_area_path(new_coords),
-        "has_loose_line": len(loose_polyline) > 1,
-        "has_new_line": len(new_polyline) > 1,
+        # The chart plots the whole retained window; the table beside it only
+        # recaps the three most recent snapshots, newest first.
+        "recent_points": list(reversed(points[-3:])),
+        "series": series,
+        "currency": currency,
+        "min_display": format_price(min(values), currency),
+        "max_display": format_price(max(values), currency),
         "loose_change": _format_change_percent(
             loose_values[0] if loose_values else None,
             loose_values[-1] if loose_values else None,
@@ -653,8 +557,6 @@ def build_price_chart_data(pricing: dict, history: list[dict] | None = None) -> 
             new_values[0] if new_values else None,
             new_values[-1] if new_values else None,
         ),
-        "y_ticks": y_ticks,
-        "x_ticks": x_ticks,
     }
 
 
@@ -894,9 +796,7 @@ class AmiiboPricingRepository:
         # comparing against __name__/__key__, which raised "filter value must
         # be a Key". snapshot_date is an ISO string, so "<" sorts by date.
         old_docs = daily.where(
-            filter=firestore.FieldFilter(
-                "snapshot_date", "<", before_date.isoformat()
-            )
+            filter=firestore.FieldFilter("snapshot_date", "<", before_date.isoformat())
         ).stream()
 
         deleted = 0

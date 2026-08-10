@@ -1,5 +1,6 @@
 import pytest
 import json
+import re
 from pathlib import Path
 from django.test import RequestFactory
 from django.http import Http404
@@ -346,9 +347,24 @@ class TestAmiiboDetailView:
         assert "$18" in content
         assert "$50" in content
         assert "Marketplace Snapshot Trend" in content
-        assert "price-hit-point" in content
-        assert "loosePriceArea" in content
         assert "View eBay listings" in content
+
+        # The chart is client-rendered: the page ships a mount point, the
+        # series as JSON, and both scripts. Nothing draws server-side.
+        assert "data-price-chart" in content
+        assert 'id="priceChartData"' in content
+        assert "js/vendor/d3-price-chart-subset.js" in content
+        assert "js/price-chart.js" in content
+
+        payload = json.loads(
+            re.search(
+                r'<script id="priceChartData" type="application/json">(.*?)</script>',
+                content,
+                re.S,
+            ).group(1)
+        )
+        assert [row["date"] for row in payload] == ["2026-06-27", "2026-06-28"]
+        assert payload[1]["looseDisplay"] == "$18"
 
 
 class TestCharacterDescriptions:
