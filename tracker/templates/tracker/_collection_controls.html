@@ -1,7 +1,7 @@
 {% comment %}
-Shared collection controls bar for the tracker (/tracker/) and demo (/demo/)
-pages. The markup is identical; the per-page difference (real Google Sheets
-API vs. localStorage) lives entirely in each page's JavaScript, not here.
+Shared collection controls for the tracker (/tracker/) and demo (/demo/) pages.
+The markup is identical; the per-page difference (real Google Sheets API vs.
+localStorage) lives entirely in each page's JavaScript, not here.
 
 Include with:
     {% include "tracker/_collection_controls.html" with welcome_name=user_name amiibo_types=amiibo_types dark_toggle_sheet_action=True %}   {# tracker #}
@@ -14,31 +14,31 @@ Params:
 * dark_toggle_sheet_action — optional True to tag the dark toggle as a
                             sheet-action (tracker disables it during API calls).
 
+Layout (static/css/collection-controls.css does the reshaping via grid areas):
+* desktop — one card above the grid, name + count pill left, controls right.
+* mobile  — a fixed bottom dock holding the count pill and the hamburger, which
+            slides the filter sheet up over a dimmed page. It is deliberately
+            the same height as the fixed top nav so the two bookend the page.
+
 The "Collected" pill is a clickable control: clicking (or Enter/Space) cycles
 the collection filter All -> Collected -> Uncollected, kept in sync with the
-#filterSelect dropdown by each page's script.
+#filterSelect dropdown by each page's script. Sheet open/close lives in
+static/js/collection-dock.js.
 {% endcomment %}
-<div class="top-controls">
-    <div class="welcome">
-        <div>
-            <div>Welcome, {{ welcome_name }}.</div>
-            <div id="collectionTotal" class="collection-pill" role="button" tabindex="0"
-                 aria-label="Filter by collection status; click to cycle all, collected, uncollected"
-                 title="Click to filter: All → Collected → Uncollected"
-                 data-track="collection-pill-toggle">Collected: 0</div>
-        </div>
-        <button class="hamburger-btn" id="hamburgerToggle" aria-label="Toggle Menu" data-track="collection-menu-toggle">☰</button>
-    </div>
-    <div class="control-row" id="mobileMenu">
+<div class="dock-backdrop" id="dockBackdrop" aria-hidden="true"></div>
+<div class="top-controls" id="collectionControls">
+    <div class="cc-identity">Welcome, {{ welcome_name }}.</div>
+
+    <div class="control-row" id="collectionSheet">
         <input id="searchInput" class="search-input" type="text" placeholder="Search Amiibo or date...">
-        <select id="filterSelect" class="filter-select">
+        <select id="filterSelect" class="filter-select" aria-label="Filter by collection status">
             <option value="all">Show All</option>
             <option value="collected">Collected Only</option>
             <option value="uncollected">Uncollected Only</option>
             {% if show_favorites %}<option value="favorites">♥ Favorites Only</option>{% endif %}
         </select>
         <div class="type-filters" id="typeFilters" aria-label="Filter by Amiibo type">
-            <span style="font-weight: 700;">Types:</span>
+            <span class="type-filters-label">Types</span>
             {% for type in amiibo_types %}
                 <label class="type-chip">
                     <input type="checkbox" data-type="{{ type.name }}" data-sheet-action {% if not type.ignored %}checked{% endif %}>
@@ -46,6 +46,17 @@ the collection filter All -> Collected -> Uncollected, kept in sync with the
                 </label>
             {% endfor %}
         </div>
-        <button id="darkModeToggle" class="dark-toggle" aria-label="Toggle Dark Mode" {% if dark_toggle_sheet_action %}data-sheet-action {% endif %}data-track="dark-mode-toggle">🌙</button>
+        <button id="darkModeToggle" class="dark-toggle" {% if dark_toggle_sheet_action %}data-sheet-action {% endif %}data-track="dark-mode-toggle">
+            <span id="darkModeIcon" aria-hidden="true">🌙</span>
+            <span class="dark-toggle-label">Theme</span>
+        </button>
     </div>
+
+    <div id="collectionTotal" class="collection-pill" role="button" tabindex="0"
+         aria-label="Filter by collection status; click to cycle all, collected, uncollected"
+         title="Click to filter: All → Collected → Uncollected"
+         data-track="collection-pill-toggle">Collected: 0</div>
+    <button class="hamburger-btn" id="hamburgerToggle" aria-label="Open filters"
+            aria-controls="collectionSheet" aria-expanded="false"
+            data-track="collection-menu-toggle">☰</button>
 </div>
