@@ -54,6 +54,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "tracker.context_processors.site_author",
+                "tracker.context_processors.support_links",
             ],
         },
     },

@@ -247,19 +247,54 @@
             height: 20px;
         }
 
-        .mobile-menu-btn {
-            display: none;
-            background: none;
-            border: none;
-            color: #fdf7e3;
-            font-size: 1.8rem;
-            cursor: pointer;
-            padding: 0.5rem;
-            line-height: 1;
-            width: 46px;
-            height: 46px;
+        /* Support / sponsor call-to-action, mirrored in the mobile drawer. */
+        .support-nav-btn {
+            display: inline-flex;
             align-items: center;
             justify-content: center;
+            gap: 0.45rem;
+            min-height: 46px;
+            padding: 0.6rem 1.1rem;
+            margin-right: 0.75rem;
+            color: #fdf7e3;
+            text-decoration: none;
+            font-family: 'Geologica', -apple-system, BlinkMacSystemFont, system-ui, sans-serif !important;
+            font-weight: 700 !important;
+            font-size: 0.95rem !important;
+            line-height: 1;
+            border-radius: 10px;
+            border: 2px solid rgba(243, 201, 105, 0.45);
+            background: linear-gradient(135deg, rgba(243, 201, 105, 0.22), rgba(15, 118, 110, 0.22));
+            transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .support-nav-btn:hover {
+            transform: translateY(-2px);
+            border-color: rgba(243, 201, 105, 0.8);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+        }
+
+        .mobile-menu-btn {
+            display: none;
+            background: linear-gradient(135deg, rgba(243, 201, 105, 0.16), rgba(15, 118, 110, 0.16));
+            border: 1.5px solid rgba(243, 201, 105, 0.45);
+            border-radius: 9px;
+            color: #fdf7e3;
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 0;
+            line-height: 1;
+            width: 34px;
+            height: 34px;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+        }
+
+        .mobile-menu-btn:hover {
+            transform: scale(1.05);
+            border-color: rgba(243, 201, 105, 0.8);
         }
 
         .mobile-nav {
@@ -318,23 +353,39 @@
             height: 22px;
         }
 
+        .mobile-nav-link.support {
+            border: 1.5px solid rgba(243, 201, 105, 0.45);
+            background: linear-gradient(135deg, rgba(243, 201, 105, 0.18), rgba(15, 118, 110, 0.18));
+            justify-content: center;
+            margin-top: 0.5rem;
+        }
+
+        /*
+         * Mobile bar is 45px (25% shorter than the old 60px) so it reads as a
+         * thin rail; the bottom filter dock on the tracker/demo pages matches
+         * it exactly, bookending the page.
+         */
         @media (max-width: 720px) {
             body {
-                padding-top: 60px;
+                padding-top: 45px;
             }
 
             .nav-container {
-                height: 60px;
-                padding: 0 1rem;
+                height: 45px;
+                padding: 0 0.75rem;
+                gap: 0.75rem;
             }
 
-            .nav-links,
+            .nav-links {
+                display: none;
+            }
+
             .nav-right {
                 display: none;
             }
 
             .nav-left {
-                gap: 1rem;
+                gap: 0.75rem;
             }
 
             .mobile-menu-btn {
@@ -342,21 +393,38 @@
             }
 
             .logo-text {
-                font-size: 1.2rem !important;
-                min-height: 42px;
-                padding: 0.4rem 1rem;
+                font-size: 1rem !important;
+                min-height: 32px;
+                padding: 0.25rem 0.75rem;
+                border-width: 1.5px;
+                border-radius: 9px;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            }
+
+            /* Only the homepage un-hides .nav-right; keep it inside the rail. */
+            .login-btn {
+                min-height: 32px;
+                padding: 0.3rem 0.8rem;
+                font-size: 0.85rem !important;
+                border-width: 1.5px;
+                border-radius: 9px;
+                gap: 0.4rem;
+            }
+
+            .login-btn img {
+                width: 16px;
+                height: 16px;
+            }
+
+            .support-nav-btn {
+                display: none;
             }
         }
 
         @media (max-width: 480px) {
-            .nav-container {
-                padding: 0 0.75rem;
-            }
-
             .logo-text {
-                font-size: 1.1rem !important;
-                min-height: 40px;
-                padding: 0.35rem 0.9rem;
+                font-size: 0.95rem !important;
+                padding: 0.25rem 0.65rem;
             }
         }
     </style>
@@ -384,6 +452,9 @@
             </div>
 
             <div class="nav-section nav-right">
+                <a href="{{ support_url }}" class="support-nav-btn" target="_blank" rel="noopener noreferrer" data-track="nav-support">
+                    <span aria-hidden="true">♥</span> Support
+                </a>
                 {% if request.session.user_email %}
                 <a href="{% url 'logout' %}" class="login-btn" data-track="logout-start">
                     Log out
@@ -410,6 +481,9 @@
             <a href="{% url 'blog_list' %}" class="mobile-nav-link" data-track="mobile-nav-blog">Blog</a>
             <a href="{% url 'author_detail' site_author.slug %}" class="mobile-nav-link" data-track="mobile-nav-author">Author</a>
             <a href="{% url 'privacy' %}" class="mobile-nav-link" data-track="mobile-nav-privacy">Privacy</a>
+            <a href="{{ support_url }}" class="mobile-nav-link support" target="_blank" rel="noopener noreferrer" data-track="mobile-nav-support">
+                <span aria-hidden="true">♥</span> Support the project
+            </a>
             {% if request.session.user_email %}
             <a href="{% url 'logout' %}" class="mobile-nav-link login" data-track="mobile-logout-start">
                 Log out

@@ -96,189 +96,11 @@
             margin-bottom: 1.8rem;
         }
 
-        .top-controls {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            padding: 1rem 1.25rem;
-            margin: 0 auto 1.5rem;
-            max-width: 1400px;
-            border-radius: 18px;
-            backdrop-filter: blur(12px);
-            background: linear-gradient(135deg, rgba(255, 255, 255, 0.88), rgba(255, 255, 255, 0.72));
-            border: 1px solid var(--card-border);
-            box-shadow: 0 16px 36px rgba(0, 0, 0, 0.12);
-        }
-
-        body.dark .top-controls {
-            background: linear-gradient(135deg, rgba(14, 20, 27, 0.92), rgba(14, 20, 27, 0.82));
-        }
-
-        .welcome {
-            margin-right: auto;
-            font-weight: 700;
-        }
-
-        .collection-pill {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.35rem;
-            margin-top: 0.4rem;
-            padding: 0.5rem 1.2rem;
-            min-width: 140px;
-            border-radius: 8px;
-            background: linear-gradient(135deg, rgba(243, 201, 105, 0.25), rgba(15, 118, 110, 0.2));
-            border: 1px solid rgba(243, 201, 105, 0.4);
-            color: var(--text);
-            font-weight: 700;
-            font-size: 0.95rem;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        }
-
-        body.dark .collection-pill {
-            background: linear-gradient(135deg, rgba(243, 201, 105, 0.2), rgba(15, 118, 110, 0.25));
-            border-color: rgba(243, 201, 105, 0.35);
-        }
-
-        /* Clickable, cycles the collection filter */
-        .collection-pill {
-            cursor: pointer;
-            user-select: none;
-            transition: transform 0.15s ease, box-shadow 0.15s ease,
-                border-color 0.15s ease, background 0.15s ease;
-        }
-
-        .collection-pill:hover {
-            transform: translateY(-1px);
-            border-color: rgba(243, 201, 105, 0.75);
-            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18);
-        }
-
-        .collection-pill:active {
-            transform: translateY(0);
-        }
-
-        .collection-pill:focus-visible {
-            outline: 2px solid var(--accent);
-            outline-offset: 2px;
-        }
-
-        .collection-pill.filtered {
-            border-color: var(--button-bg);
-            box-shadow: 0 0 0 2px rgba(15, 118, 110, 0.3);
-        }
-
-        .control-row {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.6rem;
-            align-items: center;
-        }
-
-        .type-filters {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.5rem;
-            align-items: center;
-        }
-
-        .type-chip {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.4rem;
-            padding: 0.35rem 0.75rem;
-            background: rgba(15, 118, 110, 0.08);
-            border-radius: 999px;
-            border: 1px solid var(--card-border);
-            color: var(--text);
-            font-weight: 600;
-        }
-
-        body.dark .type-chip {
-            background: rgba(34, 197, 94, 0.08);
-        }
-
-        .type-chip input {
-            accent-color: var(--button-bg);
-            width: 16px;
-            height: 16px;
-        }
-
-        .filter-select,
-        .search-input {
-            padding: 0.65em 1.1em;
-            font-size: 1em;
-            border-radius: 12px;
-            background-color: var(--card-bg);
-            color: var(--text);
-            border: 1px solid var(--card-border);
-            outline: none;
-            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
-            transition: border-color 0.2s ease, box-shadow 0.2s ease;
-            height: 46px;
-        }
-
-        .filter-select {
-            cursor: pointer;
-            min-width: 180px;
-            padding-right: 2.5em;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%230f172a' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: right 1em center;
-            background-size: 12px;
-            appearance: none;
-            -webkit-appearance: none;
-            -moz-appearance: none;
-        }
-
-        body.dark .filter-select {
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23e5e7eb' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
-        }
-
-        .filter-select:hover,
-        .search-input:focus {
-            border-color: var(--accent);
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
-        }
-
-        .search-input {
-            flex: 1;
-            min-width: 240px;
-            cursor: text;
-        }
-
-        .dark-toggle {
-            border: none;
-            border-radius: 12px;
-            padding: 0.65rem 1.2rem;
-            font-size: 0.95rem;
-            font-weight: 700;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.4rem;
-            text-decoration: none;
-            color: var(--text);
-            background: rgba(255, 255, 255, 0.75);
-            border: 1px solid var(--card-border);
-            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
-            transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
-            white-space: nowrap;
-            min-width: fit-content;
-            height: 46px;
-        }
-
-        body.dark .dark-toggle {
-            background: rgba(31, 41, 55, 0.85);
-            border-color: rgba(243, 201, 105, 0.25);
-        }
-
-        .dark-toggle:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
-        }
+        /*
+         * .top-controls, .collection-pill, .control-row, the type chips, the
+         * search/filter inputs, the theme toggle and the bottom dock all live
+         * in static/css/collection-controls.css (shared with the demo page).
+         */
 
         .amiibo-card {
             position: relative;
@@ -478,44 +300,10 @@
             font-weight: normal;
         }
 
-        .hamburger-btn {
-            display: none;
-            background: linear-gradient(135deg, rgba(15, 118, 110, 0.15), rgba(243, 201, 105, 0.15));
-            border: 2px solid rgba(15, 118, 110, 0.4);
-            border-radius: 12px;
-            padding: 0.6rem;
-            cursor: pointer;
-            font-size: 1.5rem;
-            line-height: 1;
-            transition: transform 0.2s ease, background 0.2s ease;
-            color: var(--text);
-            font-weight: 700;
-        }
-
-        .hamburger-btn:hover {
-            background: linear-gradient(135deg, rgba(15, 118, 110, 0.25), rgba(243, 201, 105, 0.25));
-            border-color: rgba(15, 118, 110, 0.6);
-        }
-
-        body.dark .hamburger-btn {
-            background: rgba(31, 41, 55, 0.85);
-            border-color: rgba(243, 201, 105, 0.35);
-        }
-
-        body.dark .hamburger-btn:hover {
-            background: rgba(31, 41, 55, 0.95);
-            border-color: rgba(243, 201, 105, 0.5);
-        }
-
-        .hamburger-btn:hover {
-            transform: scale(1.05);
-        }
-
         @media (max-width: 720px) {
             body {
                 padding-left: 0.75rem;
                 padding-right: 0.75rem;
-                padding-bottom: 2rem;
             }
 
             h1 {
@@ -526,87 +314,6 @@
             .intro {
                 font-size: 0.9rem;
                 margin-bottom: 1.2rem;
-            }
-
-            .top-controls {
-                flex-direction: column;
-                align-items: stretch;
-                padding: 0.85rem 1rem;
-                gap: 0.75rem;
-                top: 0.5rem;
-            }
-
-            .search-input {
-                width: 100%;
-                min-width: 100%;
-                font-size: 0.95rem;
-                padding: 0.65em 1.1em;
-                height: 46px;
-            }
-
-            .hamburger-btn {
-                display: block;
-                width: auto;
-                text-align: center;
-            }
-
-            .welcome {
-                font-size: 0.95rem;
-                margin-right: 0;
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                width: 100%;
-                order: 0;
-            }
-
-            .collection-pill {
-                margin-top: 0;
-                padding: 0.3rem 0.65rem;
-                min-width: auto;
-                font-size: 0.85rem;
-            }
-
-            .control-row {
-                width: 100%;
-                flex-direction: column;
-                gap: 0.5rem;
-                max-height: 0;
-                overflow: hidden;
-                transition: max-height 0.3s ease;
-                order: 2;
-            }
-
-            .control-row.open {
-                max-height: 1500px;
-            }
-
-            .type-filters {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 0.4rem;
-                width: 100%;
-            }
-
-            .type-chip {
-                padding: 0.3rem 0.6rem;
-                font-size: 0.85rem;
-            }
-
-            .filter-select {
-                width: 100%;
-                min-width: 100%;
-                font-size: 0.95rem;
-                padding: 0.65em 1.1em;
-                padding-right: 2.5em;
-                height: 46px;
-            }
-
-            .dark-toggle {
-                width: 100%;
-                justify-content: center;
-                padding: 0.6rem 1rem;
-                font-size: 0.9rem;
             }
 
             .game-series-group {
@@ -686,10 +393,6 @@
 
             h1 {
                 font-size: 1.4rem;
-            }
-
-            .top-controls {
-                padding: 0.75rem 0.85rem;
             }
 
             .amiibo-card {
@@ -945,6 +648,8 @@
         }
 
     </style>
+<link rel="stylesheet" href="{% static 'css/collection-controls.css' %}">
+<script defer src="{% static 'js/collection-dock.js' %}"></script>
 {% endblock %}
 
 {% block content %}
@@ -1601,7 +1306,7 @@
         const body = document.body;
         const isDark = body.classList.toggle('dark');
         document.documentElement.classList.toggle('dark', isDark);
-        document.getElementById('darkModeToggle').textContent = isDark ? '☀️' : '🌙';
+        document.getElementById('darkModeIcon').textContent = isDark ? '☀️' : '🌙';
 
         try {
             const response = await fetch('/toggle-dark-mode/', {
@@ -1649,13 +1354,7 @@
         window.location.href = `/blog/number-released/amiibo/${amiiboId}/`;
     }
 
-    // Hamburger menu toggle
-    document.getElementById('hamburgerToggle').addEventListener('click', () => {
-        const menu = document.getElementById('mobileMenu');
-        const hamburger = document.getElementById('hamburgerToggle');
-        menu.classList.toggle('open');
-        hamburger.textContent = menu.classList.contains('open') ? '✕' : '☰';
-    });
+    // Bottom-dock sheet toggle lives in static/js/collection-dock.js.
 
     window.addEventListener('DOMContentLoaded', () => {
         // Initialize dark mode from server-side config
@@ -1663,7 +1362,7 @@
         if (darkModeEnabled) {
             document.body.classList.add('dark');
             document.documentElement.classList.add('dark');
-            document.getElementById('darkModeToggle').textContent = '☀️';
+            document.getElementById('darkModeIcon').textContent = '☀️';
         }
 
         document.querySelectorAll('.type-filters input[type="checkbox"]').forEach(cb => {

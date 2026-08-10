@@ -350,8 +350,97 @@
     /* Latest Guides Section */
     .guides-section {
         max-width: 1200px;
-        margin: 4rem auto;
+        margin: 3rem auto;
         padding: 0 2rem;
+    }
+
+    /* Support Section */
+    .support-section {
+        max-width: 1200px;
+        margin: 3rem auto 4rem;
+        padding: 0 2rem;
+    }
+
+    .support-card {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1.5rem;
+        flex-wrap: wrap;
+        padding: 1.6rem 1.8rem;
+        border-radius: 12px;
+        background:
+            linear-gradient(135deg, rgba(243, 201, 105, 0.14), rgba(15, 118, 110, 0.14)),
+            rgba(15, 23, 42, 0.72);
+        border: 1px solid rgba(243, 201, 105, 0.34);
+    }
+
+    .support-copy {
+        flex: 1 1 320px;
+        min-width: 0;
+    }
+
+    .support-kicker {
+        display: block;
+        color: #66d9e8;
+        font-size: 0.7rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        margin-bottom: 0.35rem;
+    }
+
+    .support-copy h2 {
+        margin: 0 0 0.5rem;
+        font-size: clamp(1.35rem, 3vw, 1.8rem);
+        color: var(--saffron);
+        line-height: 1.2;
+    }
+
+    .support-copy p {
+        margin: 0;
+        color: rgba(253, 247, 227, 0.8);
+        font-size: 0.96rem;
+        line-height: 1.6;
+        max-width: 620px;
+    }
+
+    .support-btn {
+        flex: 0 0 auto;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.55rem;
+        padding: 0.9rem 1.8rem;
+        border-radius: 12px;
+        font-size: 1.05rem;
+        font-weight: 700;
+        text-decoration: none;
+        color: var(--ink);
+        background: linear-gradient(135deg, var(--saffron), #ffd37a);
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .support-btn:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    }
+
+    @media (max-width: 720px) {
+        .support-section {
+            margin: 2.5rem auto 3rem;
+            padding: 0 1rem;
+        }
+
+        .support-card {
+            padding: 1.3rem;
+        }
+
+        .support-btn {
+            width: 100%;
+            justify-content: center;
+        }
     }
 
     /* Collector Value Section */
@@ -402,37 +491,42 @@
         }
     }
 
+    /* Matches .prices-header so the two catalog strips read as one system. */
     .guides-header {
-        text-align: center;
-        margin-bottom: 2.5rem;
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 1rem;
+        flex-wrap: wrap;
+        margin-bottom: 1.5rem;
     }
 
     .guides-header h2 {
         font-size: clamp(1.8rem, 4vw, 2.6rem);
         color: var(--saffron);
-        margin: 0 0 0.75rem 0;
+        margin: 0 0 0.4rem 0;
     }
 
     .guides-header p {
-        color: rgba(253, 247, 227, 0.8);
-        font-size: 1.1rem;
-        line-height: 1.6;
-        max-width: 640px;
-        margin: 0 auto;
+        color: rgba(253, 247, 227, 0.78);
+        font-size: 1.02rem;
+        line-height: 1.55;
+        max-width: 620px;
+        margin: 0;
     }
 
     .guides-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-        gap: 1.5rem;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 0.85rem;
     }
 
     .guide-card {
         display: flex;
         flex-direction: column;
         background: rgba(15, 23, 42, 0.72);
-        border: 1px solid rgba(243, 201, 105, 0.3);
-        border-radius: 16px;
+        border: 1px solid rgba(243, 201, 105, 0.28);
+        border-radius: 8px;
         overflow: hidden;
         text-decoration: none;
         color: var(--cream);
@@ -440,9 +534,9 @@
     }
 
     .guide-card:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
-        border-color: var(--saffron);
+        transform: translateY(-3px);
+        box-shadow: 0 16px 34px rgba(0, 0, 0, 0.42);
+        border-color: rgba(102, 217, 232, 0.7);
     }
 
     .guide-thumb {
@@ -453,21 +547,23 @@
     }
 
     .guide-body {
-        padding: 1.25rem 1.5rem 1.5rem;
+        padding: 0.85rem 0.85rem 0.95rem;
         display: flex;
         flex-direction: column;
-        gap: 0.5rem;
+        gap: 0.35rem;
         flex: 1;
     }
 
     .guide-date {
-        font-size: 0.82rem;
+        font-size: 0.72rem;
         color: var(--saffron);
-        font-weight: 600;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
     }
 
     .guide-byline {
-        font-size: 0.78rem;
+        font-size: 0.74rem;
         color: rgba(253, 247, 227, 0.6);
     }
 
@@ -477,35 +573,37 @@
     }
 
     .guide-title {
-        font-size: 1.15rem;
+        font-size: 0.98rem;
         font-weight: 700;
-        margin: 0;
-        line-height: 1.35;
+        margin: 0.1rem 0 0;
+        line-height: 1.28;
     }
 
     .guide-excerpt {
-        font-size: 0.95rem;
-        color: rgba(253, 247, 227, 0.78);
-        line-height: 1.55;
+        font-size: 0.85rem;
+        color: rgba(253, 247, 227, 0.72);
+        line-height: 1.5;
         margin: 0;
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
     }
 
     .guides-all-link {
         display: inline-block;
-        margin: 2.5rem auto 0;
         text-align: center;
-        padding: 0.85rem 2rem;
-        border-radius: 12px;
+        padding: 0.6rem 1.35rem;
+        border-radius: 10px;
         font-weight: 700;
+        font-size: 0.9rem;
+        white-space: nowrap;
         text-decoration: none;
         color: var(--ink);
         background: linear-gradient(135deg, var(--saffron), #ffd37a);
         border: 2px solid rgba(255, 255, 255, 0.3);
         transition: transform 0.2s ease, box-shadow 0.2s ease;
-    }
-
-    .guides-all-wrap {
-        text-align: center;
     }
 
     .guides-all-link:hover {
@@ -695,11 +793,14 @@
 {% if latest_posts %}
 <section class="guides-section" aria-labelledby="guidesHeading">
     <div class="guides-header">
-        <h2 id="guidesHeading">Latest Amiibo Guides</h2>
-        <p>
-            In-depth guides on amiibo compatibility, rarity, spotting fakes, display ideas,
-            and what each figure unlocks across Nintendo games. Written for collectors, by collectors.
-        </p>
+        <div>
+            <h2 id="guidesHeading">Latest Amiibo Guides</h2>
+            <p>
+                Compatibility, rarity, spotting fakes, and what each figure unlocks
+                across Nintendo games. Written for collectors, by collectors.
+            </p>
+        </div>
+        <a href="{% url 'blog_list' %}" class="guides-all-link" data-track="home-all-guides">View all guides →</a>
     </div>
     <div class="guides-grid">
         {% for post in latest_posts %}
@@ -718,11 +819,21 @@
         </a>
         {% endfor %}
     </div>
-    <div class="guides-all-wrap">
-        <a href="{% url 'blog_list' %}" class="guides-all-link" data-track="home-all-guides">View all guides →</a>
-    </div>
 </section>
 {% endif %}
+
+<section class="support-section" aria-labelledby="supportHeading">
+    <div class="support-card">
+        <div class="support-copy">
+            <span class="support-kicker">Support</span>
+            <h2 id="supportHeading">Help keep Goozamiibo running</h2>
+            <p>Thanks for supporting the project.</p>
+        </div>
+        <a href="{{ support_url }}" class="support-btn" target="_blank" rel="noopener noreferrer" data-track="home-support">
+            <span aria-hidden="true">♥</span> Support
+        </a>
+    </div>
+</section>
 
 <!-- Error Modal -->
 {% if error %}

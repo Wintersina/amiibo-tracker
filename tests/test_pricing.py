@@ -145,8 +145,40 @@ def test_normalize_pricing_for_display_falls_back_to_ebay_listing_link():
     assert "Mario" in display["source_url"]
 
 
-def test_build_price_chart_data_creates_svg_points_and_recent_rows():
-    display = pricing.normalize_pricing_for_display(
+def chart_history_fixture():
+    return [
+        {
+            "snapshot_date": "2026-06-01",
+            "currency": "USD",
+            "loose_estimate_cents": 1800,
+            "new_estimate_cents": 5000,
+            "loose_sample_count": 6,
+            "new_sample_count": 3,
+            "confidence": "medium",
+        },
+        {
+            "snapshot_date": "2026-06-02",
+            "currency": "USD",
+            "loose_estimate_cents": 2000,
+            "new_estimate_cents": 5400,
+            "loose_sample_count": 9,
+            "new_sample_count": 9,
+            "confidence": "high",
+        },
+        {
+            "snapshot_date": "2026-06-03",
+            "currency": "USD",
+            "loose_estimate_cents": 2200,
+            "new_estimate_cents": 5600,
+            "loose_sample_count": 11,
+            "new_sample_count": 10,
+            "confidence": "high",
+        },
+    ]
+
+
+def chart_display_fixture():
+    return pricing.normalize_pricing_for_display(
         mario_amiibo(),
         {
             "currency": "USD",
@@ -157,12 +189,72 @@ def test_build_price_chart_data_creates_svg_points_and_recent_rows():
             "snapshot_date": "2026-06-03",
         },
     )
+
+
+def test_build_price_chart_data_emits_client_series_and_table_rows():
+    chart = pricing.build_price_chart_data(
+        chart_display_fixture(), chart_history_fixture()
+    )
+
+    assert chart["has_chart"] is True
+    assert chart["loose_change"] == "+22%"
+    assert chart["new_change"] == "+12%"
+    assert chart["currency"] == "USD"
+    # The chart plots every point; the table recaps only the newest three.
+    assert [point["label"] for point in chart["points"]] == [
+        "Jun 1",
+        "Jun 2",
+        "Jun 3",
+    ]
+    assert [point["label"] for point in chart["recent_points"]] == [
+        "Jun 3",
+        "Jun 2",
+        "Jun 1",
+    ]
+
+    series = chart["series"]
+    assert [row["date"] for row in series] == [
+        "2026-06-01",
+        "2026-06-02",
+        "2026-06-03",
+    ]
+    assert series[0]["loose"] == 1800
+    assert series[0]["looseDisplay"] == "$18"
+    assert series[0]["looseSamples"] == 6
+    assert series[0]["newSamples"] == 3
+    assert series[0]["confidence"] == "medium"
+
+
+def test_build_price_chart_series_is_json_serializable():
+    """json_script renders this straight into the page, so it must be clean."""
+    chart = pricing.build_price_chart_data(
+        chart_display_fixture(), chart_history_fixture()
+    )
+
+    encoded = json.loads(json.dumps(chart["series"]))
+
+    assert len(encoded) == 3
+    assert set(encoded[0]) == {
+        "date",
+        "label",
+        "loose",
+        "new",
+        "looseDisplay",
+        "newDisplay",
+        "looseSamples",
+        "newSamples",
+        "confidence",
+    }
+
+
+def test_build_price_chart_data_keeps_gaps_as_nulls():
+    """A snapshot missing one side must stay null so the line breaks there."""
     history = [
         {
             "snapshot_date": "2026-06-01",
             "currency": "USD",
             "loose_estimate_cents": 1800,
-            "new_estimate_cents": 5000,
+            "new_estimate_cents": None,
         },
         {
             "snapshot_date": "2026-06-02",
@@ -170,27 +262,43 @@ def test_build_price_chart_data_creates_svg_points_and_recent_rows():
             "loose_estimate_cents": 2000,
             "new_estimate_cents": 5400,
         },
-        {
-            "snapshot_date": "2026-06-03",
-            "currency": "USD",
-            "loose_estimate_cents": 2200,
-            "new_estimate_cents": 5600,
-        },
     ]
 
-    chart = pricing.build_price_chart_data(display, history)
+    chart = pricing.build_price_chart_data({"currency": "USD"}, history)
 
-    assert chart["has_chart"] is True
-    assert chart["has_loose_line"] is True
-    assert chart["has_new_line"] is True
-    assert len(chart["loose_polyline"].split()) == 3
-    assert chart["loose_path"].startswith("M ")
-    assert chart["loose_area_path"].endswith(" Z")
-    assert len(chart["y_ticks"]) == 3
-    assert chart["x_ticks"][0]["label"] == "Jun 1"
-    assert chart["loose_change"] == "+22%"
-    assert chart["new_change"] == "+12%"
-    assert chart["recent_points"][0]["label"] == "Jun 3"
+    assert chart["series"][0]["new"] is None
+    assert chart["series"][1]["new"] == 5400
+
+
+def test_build_price_chart_data_without_values_reports_no_chart():
+    chart = pricing.build_price_chart_data({"currency": "USD"}, [])
+
+    assert chart["has_chart"] is False
+    assert chart["series"] == []
+    assert chart["points"] == []
+    assert chart["recent_points"] == []
+
+
+def test_price_chart_table_recaps_only_the_newest_three_snapshots():
+    """The chart keeps the full window; the table stays a short recap."""
+    history = [
+        {
+            "snapshot_date": f"2026-06-{day:02d}",
+            "currency": "USD",
+            "loose_estimate_cents": 1000 + day,
+            "new_estimate_cents": 2000 + day,
+        }
+        for day in range(1, 9)
+    ]
+
+    chart = pricing.build_price_chart_data({"currency": "USD"}, history)
+
+    assert len(chart["series"]) == 8
+    assert [point["label"] for point in chart["recent_points"]] == [
+        "Jun 8",
+        "Jun 7",
+        "Jun 6",
+    ]
 
 
 def test_enrich_skips_firestore_reads_in_development(monkeypatch):
