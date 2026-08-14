@@ -12,6 +12,13 @@ no-op unless explicitly opted in:
     LOKI_API_KEY    Grafana Cloud API token
     LOKI_HASH_SALT  per-deployment salt for email hashing
     ENV_NAME        tags emitted logs (development/production)
+
+    USER_INTERACTION_TRACKING_ENABLED
+                    Overrides whether a per-user interaction counter is
+                    persisted in Firestore (see
+                    firestore_client.record_interaction). Unset, it follows
+                    ENV_NAME: on in production, off for local runs and tests so
+                    they never reach for GCP credentials.
 """
 
 import hashlib
@@ -33,6 +40,37 @@ def hash_email(email):
         f"{salt}{email.strip().lower()}".encode("utf-8")
     ).hexdigest()
     return digest[:16]
+
+
+def interaction_tracking_enabled():
+    """On in production, off everywhere else, overridable either way.
+
+    Keys off ENV_NAME (already set on the deployed container) so shipping this
+    needs no infrastructure change. USER_INTERACTION_TRACKING_ENABLED is the
+    escape hatch: set it to turn tracking on locally, or to "false" to kill the
+    Firestore writes in production without a redeploy of the app code.
+    """
+    override = os.environ.get("USER_INTERACTION_TRACKING_ENABLED")
+    if override is not None and override.strip():
+        return override.strip().lower() in ("1", "true", "yes")
+    return os.environ.get("ENV_NAME", "").strip().lower() == "production"
+
+
+def record_interaction(user_hash):
+    """Persist one interaction for ``user_hash`` in Firestore, best-effort.
+
+    Only authenticated users have a hash, so anonymous traffic is skipped for
+    free. Every failure is swallowed: the counter feeding the daily report must
+    never be the reason a request fails.
+    """
+    if not user_hash or not interaction_tracking_enabled():
+        return
+    try:
+        from tracker import firestore_client
+
+        firestore_client.record_interaction(user_hash)
+    except Exception:
+        logger.debug("user-interaction-record-failed", exc_info=True)
 
 
 class LokiHandler(logging.Handler):
@@ -154,16 +192,18 @@ def log_user_action(request, action, **extras):
         )
         path = getattr(request, "path", "") if request is not None else ""
         method = getattr(request, "method", "") if request is not None else ""
+        user_hash = hash_email(email)
         payload = {
             "event": action,
             "kind": "user-action",
             "action": action,
             "path": path,
             "method": method,
-            "user_hash": hash_email(email),
+            "user_hash": user_hash,
             "authenticated": bool(email),
         }
         payload.update(extras)
+        record_interaction(user_hash)
         # Mirror the LoggingMixin.log() shape so the daily report parser can
         # extract the JSON context with one regex across both code paths.
         context = {k: v for k, v in payload.items() if v is not None}

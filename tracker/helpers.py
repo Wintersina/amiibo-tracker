@@ -111,18 +111,22 @@ class LoggingMixin(object):
         return log_fn(msg, *log_args, extra=log_extra)
 
     def log_action(self, event: str, request=None, level: str = "info", **context):
-        from tracker.observability import hash_email
+        from tracker.observability import hash_email, record_interaction
 
         caller = inspect.stack()[1].function
         user_context = {}
 
         if request is not None:
             email = request.session.get("user_email")
+            user_hash = hash_email(email)
             user_context = {
                 "event": event,
-                "user_hash": hash_email(email),
+                "user_hash": user_hash,
                 "authenticated": bool(email),
             }
+            # Persist the per-user counter the daily report reads from. No-op
+            # for anonymous visitors (no hash) and when tracking is disabled.
+            record_interaction(user_hash)
         else:
             user_context = {"event": event}
 
