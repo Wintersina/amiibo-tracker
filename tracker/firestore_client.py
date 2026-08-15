@@ -1,3 +1,4 @@
+import json
 import os
 from datetime import datetime, timezone
 from functools import lru_cache
@@ -7,6 +8,8 @@ from google.cloud import firestore
 AMIIBO_COMMENTS_COLLECTION = "amiibo_comments"
 BLOG_COMMENTS_COLLECTION = "blog_comments"
 USER_INTERACTIONS_COLLECTION = "user_interactions"
+APP_CONFIG_COLLECTION = "app_config"
+OWNERS_DOC_ID = "owners"
 
 
 @lru_cache(maxsize=1)
@@ -133,6 +136,21 @@ def rekey_comments(
 # That is enough for the daily report to derive "new users on date D"
 # (first_seen falls on D), "active on D" (last_seen falls on D), and "total
 # unique users so far" (document count), without storing any per-event rows.
+#
+# The same document also carries the user's tracked amiibos, for catalog-wide
+# questions ("most collected", "rarest", "how many people have X"):
+#
+#     amiibos          str         JSON list of {id, name, collected, favorite}
+#     amiibo_count     int         how many entries are collected
+#     favorite_count   int         how many entries are favorited
+#     amiibos_synced_at timestamp  when the blob was last rebuilt from the sheet
+#
+# `amiibos` is a JSON *string* rather than a native Firestore array on purpose:
+# Firestore auto-indexes every element of an array field, so a ~950-entry list
+# of maps would write thousands of index entries per save. Every question we
+# want to ask is a cross-user aggregate that scans all documents anyway, so the
+# index buys nothing. Only collected-or-favorited amiibos are stored; the rest
+# of the catalog is implied by the local amiibo database.
 
 
 def _apply_interaction(transaction, ref, now):
@@ -183,3 +201,143 @@ def list_user_interactions() -> list[dict]:
     epoch = datetime(1970, 1, 1, tzinfo=timezone.utc)
     rows.sort(key=lambda r: r.get("last_seen") or epoch, reverse=True)
     return rows
+
+
+# ---------------------------------------------------------------------------
+# Tracked amiibos (the `amiibos` JSON blob on each user document)
+# ---------------------------------------------------------------------------
+
+
+def decode_amiibos(raw) -> list[dict]:
+    """Parse a stored `amiibos` blob into a list, tolerating junk.
+
+    Returns ``[]`` for anything unreadable so one corrupt document can never
+    take down a report that scans every user.
+    """
+    if isinstance(raw, list):  # tolerate a doc written as a native array
+        return [entry for entry in raw if isinstance(entry, dict)]
+    if not isinstance(raw, str) or not raw.strip():
+        return []
+    try:
+        parsed = json.loads(raw)
+    except json.JSONDecodeError:
+        return []
+    if not isinstance(parsed, list):
+        return []
+    return [entry for entry in parsed if isinstance(entry, dict)]
+
+
+def _encode_amiibos(entries) -> str:
+    return json.dumps(entries, separators=(",", ":"), sort_keys=True)
+
+
+def _amiibo_fields(entries) -> dict:
+    entries = sorted(entries, key=lambda e: e.get("id") or "")
+    return {
+        "amiibos": _encode_amiibos(entries),
+        "amiibo_count": sum(1 for e in entries if e.get("collected")),
+        "favorite_count": sum(1 for e in entries if e.get("favorite")),
+        "amiibos_synced_at": datetime.now(timezone.utc),
+    }
+
+
+def save_amiibo_snapshot(user_hash: str, entries: list[dict]) -> int:
+    """Replace a user's amiibo blob wholesale from an authoritative read.
+
+    Used at login, where the user's Google Sheet has just been read in full.
+    A merge-set is safe here (no read needed) because the blob is being
+    replaced outright and the interaction counters live in separate fields.
+    Returns the number of entries stored.
+    """
+    if not user_hash:
+        return 0
+    ref = get_client().collection(USER_INTERACTIONS_COLLECTION).document(user_hash)
+    ref.set(_amiibo_fields(entries), merge=True)
+    return len(entries)
+
+
+def _apply_amiibo_entry(transaction, ref, amiibo_id, name, collected, favorite):
+    """Patch one amiibo inside the blob, leaving the others untouched."""
+    snapshot = ref.get(transaction=transaction)
+    entries = decode_amiibos((snapshot.to_dict() or {}).get("amiibos"))
+
+    existing = next((e for e in entries if e.get("id") == amiibo_id), None)
+    if existing is None:
+        existing = {
+            "id": amiibo_id,
+            "name": name,
+            "collected": False,
+            "favorite": False,
+        }
+        entries.append(existing)
+    if name:
+        existing["name"] = name
+    if collected is not None:
+        existing["collected"] = collected
+    if favorite is not None:
+        existing["favorite"] = favorite
+
+    # Drop entries the user no longer tracks at all, so the blob stays a record
+    # of what someone has rather than everything they ever clicked.
+    entries = [e for e in entries if e.get("collected") or e.get("favorite")]
+    transaction.set(ref, _amiibo_fields(entries), merge=True)
+
+
+_apply_amiibo_entry_txn = firestore.transactional(_apply_amiibo_entry)
+
+
+def update_amiibo_entry(
+    user_hash: str,
+    amiibo_id: str,
+    name: str = "",
+    *,
+    collected: bool | None = None,
+    favorite: bool | None = None,
+) -> None:
+    """Flip one amiibo's collected/favorite flag in the user's blob.
+
+    Keeps the blob fresh between logins, when the full snapshot is rebuilt.
+    Read-modify-write under a transaction so two quick toggles cannot clobber
+    each other. ``None`` leaves a flag unchanged.
+    """
+    if not user_hash or not amiibo_id:
+        return
+    client = get_client()
+    ref = client.collection(USER_INTERACTIONS_COLLECTION).document(user_hash)
+    _apply_amiibo_entry_txn(
+        client.transaction(), ref, amiibo_id, name, collected, favorite
+    )
+
+
+# ---------------------------------------------------------------------------
+# App config: operator allowlist
+# ---------------------------------------------------------------------------
+#
+# Who may read /api/amiibo-stats/ from a logged-in browser session. This lives
+# in Firestore rather than in source because the repo is public — committing the
+# addresses would publish them permanently in git history — and rather than in
+# an env var because that would mean a Terraform change. It is also editable
+# from the Firestore console without a redeploy.
+
+
+def get_owner_emails() -> set:
+    """Read the operator allowlist. Returns an empty set when unset."""
+    doc = get_client().collection(APP_CONFIG_COLLECTION).document(OWNERS_DOC_ID).get()
+    if not doc.exists:
+        return set()
+    raw = (doc.to_dict() or {}).get("emails") or []
+    if isinstance(raw, str):  # tolerate a console edit that used a plain string
+        raw = raw.split(",")
+    return {str(e).strip().lower() for e in raw if str(e).strip()}
+
+
+def set_owner_emails(emails) -> set:
+    """Replace the operator allowlist. Returns what was stored."""
+    normalized = sorted({str(e).strip().lower() for e in emails if str(e).strip()})
+    (
+        get_client()
+        .collection(APP_CONFIG_COLLECTION)
+        .document(OWNERS_DOC_ID)
+        .set({"emails": normalized, "updated_at": datetime.now(timezone.utc)})
+    )
+    return set(normalized)

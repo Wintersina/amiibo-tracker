@@ -1,8 +1,10 @@
 /*
- * Bottom filter dock for tracker/_collection_controls.html.
+ * Bottom dock for tracker/_collection_controls.html.
  *
- * The dock only exists visually below 720px (see collection-controls.css); above
- * that the sheet is always laid out inline, so toggling the class is harmless.
+ * Two jobs: publishing the dock's height as --dock-height so the page can leave
+ * room for it, and the hamburger sheet. The sheet only exists visually below
+ * 720px (see collection-controls.css); above that the controls are always laid
+ * out inline, so toggling the class is harmless.
  * Loaded with defer by both the tracker and demo pages.
  */
 (function () {
@@ -12,6 +14,23 @@
 
     if (!controls || !toggle) {
         return;
+    }
+
+    /*
+     * The dock is fixed, so the page's bottom padding has to match its height,
+     * which moves as the control row wraps. Measured rather than hard-coded;
+     * the CSS carries a fallback for the first paint.
+     */
+    function publishHeight() {
+        document.documentElement.style.setProperty(
+            '--dock-height', controls.offsetHeight + 'px');
+    }
+
+    if (typeof ResizeObserver === 'function') {
+        new ResizeObserver(publishHeight).observe(controls);
+    } else {
+        window.addEventListener('resize', publishHeight);
+        publishHeight();
     }
 
     function setOpen(open) {

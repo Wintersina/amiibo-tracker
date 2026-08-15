@@ -830,7 +830,6 @@ class TestAmiiboLifeScraper:
         assert match is not None
         assert match["name"] == "Kirby (& Warp Star)"
 
-
     def test_is_set_or_bundle(self):
         """Test detection of sets, bundles, and grouped items."""
         scraper = AmiiboLifeScraper()

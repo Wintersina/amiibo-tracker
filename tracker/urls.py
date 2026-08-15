@@ -25,6 +25,7 @@ from tracker.views import (
     NintendoScraperAPIView,
     DailyReportAPIView,
     DailyReportTriggerView,
+    AmiiboStatsAPIView,
     PriceRefreshAPIView,
     PriceRefreshTriggerView,
     AuthorView,
@@ -110,6 +111,11 @@ urlpatterns = [
         "api/refresh-prices/",
         PriceRefreshAPIView.as_view(),
         name="refresh_prices_api",
+    ),
+    path(
+        "api/amiibo-stats/",
+        AmiiboStatsAPIView.as_view(),
+        name="amiibo_stats_api",
     ),
     path(
         "internal/run-daily-report",

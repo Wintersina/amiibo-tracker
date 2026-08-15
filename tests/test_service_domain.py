@@ -108,18 +108,43 @@ def test_seed_new_amiibos_appends_missing_rows():
 
     service.seed_new_amiibos(new_amiibos)
 
-    assert ["newseriestail", "New", "series", None, "Figure", "0", "0"] in service.sheet.rows
+    assert [
+        "newseriestail",
+        "New",
+        "series",
+        None,
+        "Figure",
+        "0",
+        "0",
+    ] in service.sheet.rows
     assert len(service.sheet.append_rows_calls) == 1
     # ensure the existing amiibo was not duplicated
-    assert service.sheet.rows.count(
-        ["existingseriesexistingtail", "Existing Amiibo", "series", "", "Figure", "0"]
-    ) == 1
+    assert (
+        service.sheet.rows.count(
+            [
+                "existingseriesexistingtail",
+                "Existing Amiibo",
+                "series",
+                "",
+                "Figure",
+                "0",
+            ]
+        )
+        == 1
+    )
 
 
 def test_seed_new_amiibos_backfills_missing_columns():
     service = build_service()
     # Existing row missing game series, release date, and type
-    service.sheet.rows[1] = ["existingseriesexistingtail", "Existing Amiibo", "", "", "", "1"]
+    service.sheet.rows[1] = [
+        "existingseriesexistingtail",
+        "Existing Amiibo",
+        "",
+        "",
+        "",
+        "1",
+    ]
 
     amiibos = [
         {
@@ -221,10 +246,10 @@ def test_batched_update_falls_back_to_update_when_missing_batch():
     service._batched_update(update_requests, batch_size=1)
 
     assert (
-        ("A2:F2", [["fallback", "Name", "", "", "", "0"]])
-        in service.sheet.update_calls
-    )
+        "A2:F2",
+        [["fallback", "Name", "", "", "", "0"]],
+    ) in service.sheet.update_calls
     assert (
-        ("A3:F3", [["fallback2", "Name", "", "", "", "0"]])
-        in service.sheet.update_calls
-    )
+        "A3:F3",
+        [["fallback2", "Name", "", "", "", "0"]],
+    ) in service.sheet.update_calls

@@ -1,3 +1,5 @@
+import csv
+import io
 import json
 import logging
 import os
@@ -37,6 +39,8 @@ from tracker.helpers import (
 )
 from tracker.service_domain import AmiiboService, GoogleSheetConfigManager
 from tracker.scrapers import AmiiboLifeScraper
+from tracker import amiibo_report, collection_snapshot
+from tracker.observability import hash_email
 from tracker.firestore_client import (
     AMIIBO_COMMENTS_COLLECTION,
     BLOG_COMMENTS_COLLECTION,
@@ -202,6 +206,21 @@ def initialize_tracking_sheet_for_login(request, manager: GoogleSheetClientManag
     amiibos = filter_public_amiibos(service.fetch_amiibos())
     service.seed_new_amiibos(amiibos)
     request.session["tracking_sheet_ready"] = True
+
+    # The sheet has just been seeded, so this is the one moment we hold an
+    # authoritative view of everything the user tracks. Mirror it into the
+    # user_interactions blob (best-effort; never blocks the login).
+    try:
+        collected_map, favorite_map = service.get_collected_and_favorite_status()
+        collection_snapshot.record_login_snapshot(
+            hash_email(request.session.get("user_email")),
+            amiibos,
+            collected_map,
+            favorite_map,
+        )
+    except Exception:
+        logger.debug("login-amiibo-snapshot-failed", exc_info=True)
+
     return {"seeded_amiibo_count": len(amiibos)}
 
 
@@ -422,6 +441,11 @@ class ToggleCollectedView(View, LoggingMixin):
                 amiibo_id=amiibo_id,
                 action=action,
             )
+            collection_snapshot.record_toggle(
+                hash_email(request.session.get("user_email")),
+                amiibo_id,
+                collected=action == "collect",
+            )
             return JsonResponse({"status": "success"})
 
         except GoogleSheetsError as error:
@@ -573,6 +597,11 @@ class ToggleFavoriteView(View, LoggingMixin):
                 request,
                 amiibo_id=amiibo_id,
                 action=action,
+            )
+            collection_snapshot.record_toggle(
+                hash_email(request.session.get("user_email")),
+                amiibo_id,
+                favorite=action == "favorite",
             )
             return JsonResponse({"status": "success"})
 
@@ -1521,7 +1550,7 @@ class PrivacyPolicyView(View):
                     "item": "Google Sheets access",
                     "purpose": "Lets Amiibo Tracker create and update your AmiiboCollection sheet so we can store your collection status and dark mode preference without touching any other documents.",
                 },
-            ]
+            ],
         }
         context.update(seo.build())
 
@@ -2586,6 +2615,97 @@ class PriceRefreshAPIView(View, LoggingMixin, AmiiboLocalFetchMixin):
                 "endpoint": "POST to this URL to refresh AmiiboDex price estimates",
             }
         )
+
+
+@method_decorator(csrf_exempt, name="dispatch")
+class AmiiboStatsAPIView(View, LoggingMixin):
+    """Owner-only endpoint that generates the tracked-amiibo report on demand.
+
+    Unlike the other API views here this one *returns data* rather than firing a
+    side effect, so it is not open. Two ways to authenticate:
+
+    * a logged-in session whose email is an operator's (amiibo_report
+      .owner_emails) — open the URL in a browser you're already signed into;
+    * the shared token, as an `X-Stats-Token` header or `?token=`, for curl and
+      the `make amiibo-stats-remote` target.
+
+    GET  /api/amiibo-stats/?token=...              overview JSON
+    GET  /api/amiibo-stats/?token=...&top=25       longer leaderboards
+    GET  /api/amiibo-stats/?token=...&amiibo=Mario one amiibo's holders
+    GET  /api/amiibo-stats/?token=...&format=csv   full per-amiibo table
+    """
+
+    def get(self, request):
+        # Rate limited before the token check so a guessing attack cannot use
+        # this endpoint as an oracle at speed.
+        denial = check_rate_limit(
+            request,
+            bucket="amiibo-stats",
+            per_ip_max=20,
+            per_ip_window=600,
+            global_max=60,
+            global_window=3600,
+        )
+        if denial:
+            return JsonResponse({"status": "error", "message": denial}, status=429)
+
+        # Two ways in: a logged-in owner session (just visit the URL in a
+        # browser), or the shared token (curl, make, anything automated).
+        # Being merely logged in is not enough — see amiibo_report.owner_emails.
+        presented = request.headers.get("X-Stats-Token") or request.GET.get("token")
+        via_session = amiibo_report.is_owner_session(request)
+        if not (via_session or amiibo_report.token_is_valid(presented)):
+            # Never echo the presented value back, and never log it.
+            self.log_action(
+                "amiibo-stats-api-denied",
+                request,
+                level="warning",
+                token_present=bool(presented),
+            )
+            return JsonResponse(
+                {"status": "error", "message": "Not authorized."}, status=403
+            )
+
+        try:
+            if request.GET.get("amiibo"):
+                matches = amiibo_report.lookup(request.GET["amiibo"])
+                if not matches:
+                    return JsonResponse(
+                        {"status": "not found", "amiibo": request.GET["amiibo"]},
+                        status=404,
+                    )
+                return JsonResponse({"status": "ok", "matches": matches})
+
+            if request.GET.get("format") == "csv":
+                rows = amiibo_report.full_table()
+                buffer = io.StringIO()
+                writer = csv.DictWriter(buffer, fieldnames=list(rows[0]))
+                writer.writeheader()
+                writer.writerows(rows)
+                response = HttpResponse(buffer.getvalue(), content_type="text/csv")
+                response["Content-Disposition"] = (
+                    'attachment; filename="amiibo-stats.csv"'
+                )
+                return response
+
+            try:
+                top = max(1, min(int(request.GET.get("top", 10)), 200))
+            except (TypeError, ValueError):
+                top = 10
+
+            report = amiibo_report.build_report(top=top)
+            self.log_action(
+                "amiibo-stats-api-generated",
+                request,
+                level="info",
+                total_users=report["total_users"],
+            )
+            return JsonResponse({"status": "ok", **report})
+        except Exception as exc:
+            self.log_action(
+                "amiibo-stats-api-error", request, level="error", error=str(exc)
+            )
+            return JsonResponse({"status": "error", "message": str(exc)}, status=500)
 
 
 @method_decorator(csrf_exempt, name="dispatch")

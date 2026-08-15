@@ -346,9 +346,7 @@ class AmiiboLifeScraper(LoggingMixin):
                 response.raise_for_status()
                 soup = BeautifulSoup(response.content, "html.parser")
             except requests.RequestException as e:
-                self.log_warning(
-                    "Request to series page failed", url=url, error=str(e)
-                )
+                self.log_warning("Request to series page failed", url=url, error=str(e))
                 continue
 
             seen_hrefs = set()
@@ -393,9 +391,7 @@ class AmiiboLifeScraper(LoggingMixin):
                 count += 1
 
             if count:
-                self.log_info(
-                    f"Found {count} new TBA figure(s) on series page: {slug}"
-                )
+                self.log_info(f"Found {count} new TBA figure(s) on series page: {slug}")
 
         return amiibos
 

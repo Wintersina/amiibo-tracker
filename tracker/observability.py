@@ -134,6 +134,9 @@ class PageViewMiddleware:
         "/sitemap",
         "/api/remove-bg/",
         "/api/scrape-nintendo/",
+        # A GET machine endpoint — without this every stats call would land in
+        # the page-view stream and inflate the numbers the report is measuring.
+        "/api/amiibo-stats/",
         "/toggle/",
         "/toggle-dark-mode/",
         "/toggle-type-filter/",

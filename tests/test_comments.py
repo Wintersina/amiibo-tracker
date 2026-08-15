@@ -209,7 +209,9 @@ def _reply(rf, parent_id, body="A reply", session=None):
 
 def test_reply_to_valid_parent_passes_parent_id(rf, monkeypatch):
     captured = {}
-    monkeypatch.setattr(comments, "add_comment", lambda **kw: captured.update(kw) or "id")
+    monkeypatch.setattr(
+        comments, "add_comment", lambda **kw: captured.update(kw) or "id"
+    )
     # A visible, top-level parent on the same amiibo.
     monkeypatch.setattr(
         comments,

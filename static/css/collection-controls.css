@@ -4,12 +4,14 @@
  * the search box, filters and type chips lives here instead of being duplicated
  * in each template's inline <style>.
  *
- * One DOM, two shapes (grid areas do the reordering):
- *   desktop (>720px) - a card above the grid: name + count pill on the left,
- *                      search / filter / types / theme on the right.
- *   mobile  (<=720px) - a fixed bottom dock (count pill + hamburger) that
- *                      mirrors the fixed top nav, with the filter sheet
- *                      sliding up over a dimmed page.
+ * The card is pinned to the bottom of the viewport at every width; only its
+ * shape changes (grid areas do the reordering):
+ *   desktop (>720px) - a full-bleed bar: name + count pill on the left,
+ *                      search / filter / types / theme on the right, all of it
+ *                      always visible.
+ *   mobile  (<=720px) - a slim dock (count pill + hamburger) that mirrors the
+ *                      fixed top nav, with the filter sheet sliding up over a
+ *                      dimmed page.
  *
  * Colour comes from the per-page custom properties (--text, --accent, ...),
  * so this file works unchanged on both light and dark themes.
@@ -19,7 +21,18 @@
     display: none;
 }
 
+/*
+ * Fixed rather than scrolling away with the grid, so the controls stay reachable
+ * from anywhere in a very long list. The bar is full-bleed, but its side padding
+ * holds the contents to the grid's own 1400px so the name still lines up with
+ * the cards above it.
+ */
 .top-controls {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 999;
     display: grid;
     grid-template-columns: auto minmax(0, 1fr);
     grid-template-areas:
@@ -28,14 +41,23 @@
     align-items: center;
     column-gap: 1rem;
     row-gap: 0.4rem;
-    padding: 1rem 1.25rem;
-    margin: 0 auto 1.5rem;
-    max-width: 1400px;
-    border-radius: 18px;
+    padding: 0.9rem max(1.25rem, calc((100% - 1400px) / 2));
+    margin: 0;
+    border-radius: 16px 16px 0 0;
     backdrop-filter: blur(12px);
     background: linear-gradient(135deg, rgba(255, 255, 255, 0.88), rgba(255, 255, 255, 0.72));
-    border: 1px solid var(--card-border);
-    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.12);
+    border: none;
+    border-top: 1px solid var(--card-border);
+    box-shadow: 0 -14px 34px rgba(0, 0, 0, 0.16);
+}
+
+/*
+ * Room for the bar so the last row of cards is never covered by it.
+ * collection-dock.js keeps --dock-height in step with the real height, which
+ * moves when the control row wraps; the fallback covers first paint and no-JS.
+ */
+body {
+    padding-bottom: calc(var(--dock-height, 132px) + 1.5rem);
 }
 
 body.dark .top-controls {
@@ -334,7 +356,10 @@ body.dark .hamburger-btn:hover {
 /* =============================================================== mobile: dock */
 
 @media (max-width: 720px) {
-    /* Leaves room for the dock so the last row of cards is never covered. */
+    /*
+     * A fixed 45px rather than --dock-height: down here the sheet overlays the
+     * page when it opens, so the padding only has to clear the collapsed rail.
+     */
     body {
         padding-bottom: calc(45px + env(safe-area-inset-bottom, 0px) + 1rem);
     }
@@ -356,18 +381,8 @@ body.dark .hamburger-btn:hover {
     }
 
     .top-controls {
-        position: fixed;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        top: auto;
-        z-index: 999;
-        margin: 0;
-        max-width: none;
         padding: 0 0 env(safe-area-inset-bottom, 0px);
-        border: none;
-        border-top: 1px solid rgba(243, 201, 105, 0.28);
-        border-radius: 16px 16px 0 0;
+        border-top-color: rgba(243, 201, 105, 0.28);
         column-gap: 0.6rem;
         row-gap: 0;
         grid-template-columns: minmax(0, 1fr) auto;

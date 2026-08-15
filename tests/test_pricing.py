@@ -442,8 +442,9 @@ def test_price_refresh_skips_current_and_updates_stale_amiibo():
                     "snapshot_date": "2026-06-28",
                     "loose_estimate_cents": 1800,
                 },
+                # Last refreshed in a previous month, so genuinely stale.
                 "00000001-00000002": {
-                    "snapshot_date": "2026-06-27",
+                    "snapshot_date": "2026-05-27",
                     "loose_estimate_cents": 1700,
                 },
             }
@@ -947,3 +948,153 @@ def test_amiibodex_renders_cached_price(monkeypatch):
     assert "Loose $18 / NIB $50" in body
     assert "medium confidence" in body
     assert "View eBay listings" in body
+
+
+# ---------------------------------------------------------------------------
+# Refresh cadence: monthly, not per-deploy
+# ---------------------------------------------------------------------------
+#
+# The scheduler refreshes on the 1st, but every deploy also pings
+# /api/refresh-prices/. A per-day freshness check meant any merge later in the
+# month re-swept all ~950 amiibos against eBay; these lock in the monthly rule.
+
+
+def test_snapshot_from_same_month_counts_as_current():
+    snapshot = {"snapshot_date": "2026-06-01"}
+
+    # A deploy on the 20th must not trigger a refresh.
+    assert pricing.pricing_snapshot_is_current(snapshot, date(2026, 6, 20)) is True
+
+
+def test_snapshot_from_previous_month_is_stale():
+    snapshot = {"snapshot_date": "2026-05-31"}
+
+    assert pricing.pricing_snapshot_is_current(snapshot, date(2026, 6, 1)) is False
+
+
+def test_snapshot_from_same_month_previous_year_is_stale():
+    snapshot = {"snapshot_date": "2025-06-15"}
+
+    assert pricing.pricing_snapshot_is_current(snapshot, date(2026, 6, 15)) is False
+
+
+def test_missing_or_unparseable_snapshot_is_never_current():
+    assert pricing.pricing_snapshot_is_current(None, date(2026, 6, 15)) is False
+    assert pricing.pricing_snapshot_is_current({}, date(2026, 6, 15)) is False
+    assert (
+        pricing.pricing_snapshot_is_current(
+            {"snapshot_date": "not-a-date"}, date(2026, 6, 15)
+        )
+        is False
+    )
+
+
+def test_period_can_be_forced_back_to_daily(monkeypatch):
+    snapshot = {"snapshot_date": "2026-06-01"}
+    monkeypatch.setenv("AMIIBO_PRICE_REFRESH_PERIOD", "day")
+
+    assert pricing.pricing_snapshot_is_current(snapshot, date(2026, 6, 20)) is False
+    assert pricing.pricing_snapshot_is_current(snapshot, date(2026, 6, 1)) is True
+
+
+def test_period_defaults_to_month_for_junk_values(monkeypatch):
+    monkeypatch.setenv("AMIIBO_PRICE_REFRESH_PERIOD", "fortnight")
+
+    assert pricing.price_refresh_period() == "month"
+
+
+def test_redeploy_mid_month_does_no_ebay_work():
+    """The whole point: a merge on the 20th must cost zero eBay calls."""
+
+    class ConfiguredEbayClient:
+        configured = True
+
+        def __init__(self):
+            self.auth_calls = 0
+            self.search_calls = 0
+
+        def ensure_authenticated(self):
+            self.auth_calls += 1
+
+        def search_amiibo(self, amiibo):
+            self.search_calls += 1
+            return []
+
+    class FakeRepository:
+        def get_latest_map(self, amiibo_ids):
+            return {
+                "00000000-00000001": {
+                    "snapshot_date": "2026-06-01",
+                    "loose_estimate_cents": 1800,
+                }
+            }
+
+        def save_snapshot(self, *_args):
+            raise AssertionError("must not write during a mid-month redeploy")
+
+        def save_latest_index(self, *_args):
+            raise AssertionError("must not reindex during a mid-month redeploy")
+
+    ebay_client = ConfiguredEbayClient()
+    result = pricing.AmiiboPriceRefreshService(
+        ebay_client=ebay_client,
+        repository=FakeRepository(),
+        today=date(2026, 6, 20),
+    ).refresh([mario_amiibo()])
+
+    assert result["status"] == "ok"
+    assert result["already_current"] == 1
+    assert result["updated"] == 0
+    # Not even an auth handshake — the run costs one Firestore read.
+    assert ebay_client.auth_calls == 0
+    assert ebay_client.search_calls == 0
+
+
+def test_new_month_after_a_missed_schedule_still_refreshes():
+    """A deploy must be able to cover a month the scheduler missed."""
+
+    class ConfiguredEbayClient:
+        configured = True
+
+        def __init__(self):
+            self.search_calls = 0
+
+        def ensure_authenticated(self):
+            pass
+
+        def search_amiibo(self, amiibo):
+            self.search_calls += 1
+            return [ebay_item("Mario amiibo loose", "15.00", "Used")]
+
+    class FakeRepository:
+        def __init__(self):
+            self.saved = []
+
+        def get_latest_map(self, amiibo_ids):
+            return {
+                "00000000-00000001": {
+                    "snapshot_date": "2026-06-01",
+                    "loose_estimate_cents": 1800,
+                }
+            }
+
+        def save_snapshot(self, amiibo_id, item_pricing, snapshot_date):
+            self.saved.append(amiibo_id)
+
+        def prune_old_snapshots(self, amiibo_id, before_date):
+            return 0
+
+        def save_latest_index(self, pricing_by_id, snapshot_date):
+            pass
+
+    ebay_client = ConfiguredEbayClient()
+    repository = FakeRepository()
+    result = pricing.AmiiboPriceRefreshService(
+        ebay_client=ebay_client,
+        repository=repository,
+        today=date(2026, 7, 14),
+    ).refresh([mario_amiibo()])
+
+    assert result["updated"] == 1
+    assert ebay_client.search_calls == 1
+    assert repository.saved == ["00000000-00000001"]

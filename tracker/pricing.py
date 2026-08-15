@@ -149,6 +149,7 @@ def price_refresh_runtime_config() -> dict:
         or "EBAY_US",
         "env_name": os.environ.get("ENV_NAME", ""),
         "local_cache_enabled": local_price_cache_enabled(),
+        "refresh_period": price_refresh_period(),
     }
 
 
@@ -412,10 +413,35 @@ def _parse_snapshot_date(value) -> date | None:
         return None
 
 
-def pricing_snapshot_is_current(pricing: dict | None, snapshot_date: date) -> bool:
+def price_refresh_period() -> str:
+    """How long a saved snapshot counts as current: "month" (default) or "day"."""
+    value = (os.environ.get("AMIIBO_PRICE_REFRESH_PERIOD") or "").strip().lower()
+    return value if value in {"day", "month"} else "month"
+
+
+def _period_key(value: date, period: str):
+    return (value.year, value.month) if period == "month" else value
+
+
+def pricing_snapshot_is_current(
+    pricing: dict | None, snapshot_date: date, period: str | None = None
+) -> bool:
+    """True when `pricing` already covers the period `snapshot_date` falls in.
+
+    Monthly by default. The scheduled refresh runs on the 1st, but every deploy
+    also pings /api/refresh-prices/, and a per-day comparison meant any merge on
+    another day re-swept all ~950 amiibos against eBay and rewrote every
+    snapshot. Comparing whole periods makes those deploy-time runs no-ops for
+    the rest of the month, while still letting a deploy cover a month the
+    scheduler missed.
+    """
     if not pricing:
         return False
-    return _parse_snapshot_date(pricing.get("snapshot_date")) == snapshot_date
+    parsed = _parse_snapshot_date(pricing.get("snapshot_date"))
+    if parsed is None:
+        return False
+    period = period or price_refresh_period()
+    return _period_key(parsed, period) == _period_key(snapshot_date, period)
 
 
 def _format_chart_date(value) -> str:

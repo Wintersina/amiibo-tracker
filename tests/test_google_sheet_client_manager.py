@@ -191,15 +191,19 @@ def test_initialize_default_worksheets_respects_existing_data():
     spreadsheet.worksheets[manager.work_sheet_amiibo_manager] = DummyWorksheet(
         manager.work_sheet_amiibo_manager
     )
-    spreadsheet.worksheets[manager.work_sheet_amiibo_manager].rows.append([
-        "custom",
-    ])
+    spreadsheet.worksheets[manager.work_sheet_amiibo_manager].rows.append(
+        [
+            "custom",
+        ]
+    )
     spreadsheet.worksheets[manager.work_sheet_config_manager] = DummyWorksheet(
         manager.work_sheet_config_manager
     )
-    spreadsheet.worksheets[manager.work_sheet_config_manager].rows.append([
-        "config",
-    ])
+    spreadsheet.worksheets[manager.work_sheet_config_manager].rows.append(
+        [
+            "config",
+        ]
+    )
 
     manager._initialize_default_worksheets(spreadsheet)
 
@@ -230,7 +234,9 @@ def test_spreadsheet_cache_reused_between_instances():
 
     assert first.spreadsheet is shared_sheet
 
-    second = GoogleSheetClientManager(sheet_name="Shared", credentials_file="creds.json")
+    second = GoogleSheetClientManager(
+        sheet_name="Shared", credentials_file="creds.json"
+    )
 
     def fail_open():  # pragma: no cover - fails if cache misses
         raise AssertionError("should reuse cached spreadsheet")
