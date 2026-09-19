@@ -5009,6 +5009,22 @@
       "type": "Figure"
     },
     {
+      "amiiboSeries": "Legend Of Zelda",
+      "character": "Mineru's Construct",
+      "gameSeries": "The Legend of Zelda",
+      "head": "010d0000",
+      "image": "https://raw.githubusercontent.com/8bitDream/AmiiboAPI/master/images/icon_010d0000-04a70902.png",
+      "name": "Mineru's Construct",
+      "release": {
+        "au": "2026-09-17",
+        "eu": "2026-09-17",
+        "jp": "2026-09-17",
+        "na": "2026-09-17"
+      },
+      "tail": "04a70902",
+      "type": "Figure"
+    },
+    {
       "amiiboSeries": "Animal Crossing",
       "character": "Chops",
       "gameSeries": "Animal Crossing",
